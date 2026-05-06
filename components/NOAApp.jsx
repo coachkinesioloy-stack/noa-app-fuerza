@@ -644,7 +644,7 @@ function CoachAtletas({ onVerAtleta }) {
       </Modal>
 
       {/* Modal nuevo atleta */}
-      <Modal open={nuevoModal} onClose={()=>{setNuevoModal(false);setMsg({tipo:"",texto:""});}} title="Nuevo atleta">
+      <Modal open={nuevoModal} onClose={()=>{setNuevoModal(false);setMsg({tipo:"",texto:""}); }} title="Nuevo atleta">
         <div style={{ padding:"10px 14px",background:C.jade+"0E",border:`1px solid ${C.jade}22`,borderRadius:8,marginBottom:16,fontSize:12,color:C.textS,fontFamily:F.sans }}>
           El código (ATL-01, ATL-02…) se asigna automáticamente. El atleta va a poder ingresar con el email y contraseña que definas acá.
         </div>
@@ -663,7 +663,7 @@ function CoachAtletas({ onVerAtleta }) {
         )}
         <div style={{ display:"flex",gap:10 }}>
           {msg.tipo!=="ok"&&<Btn onClick={crearAtleta} disabled={saving||!formNuevo.email||!formNuevo.password} full>{saving?"Creando…":"Crear atleta"}</Btn>}
-          <Btn onClick={()=>{setNuevoModal(false);setMsg({tipo:"",texto:""));}} outline full>{msg.tipo==="ok"?"Cerrar":"Cancelar"}</Btn>
+          <Btn onClick={()=>{setNuevoModal(false);setMsg({tipo:"",texto:""});}} outline full>{msg.tipo==="ok"?"Cerrar":"Cancelar"}</Btn>
         </div>
       </Modal>
     </div>
