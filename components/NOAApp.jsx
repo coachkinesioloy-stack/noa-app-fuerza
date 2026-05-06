@@ -263,6 +263,7 @@ const NAV_COACH = [
   {id:"c_ciclos",    icon:"◉", label:"Ciclos"},
   {id:"c_planificar",icon:"◆", label:"Planificar"},
   {id:"c_ejercicios",icon:"◇", label:"Ejercicios"},
+  {id:"c_vista",     icon:"◎", label:"Ver como atleta"},
 ];
 
 function Sidebar({ sec, setSec, rol, perfil, onLogout }) {
@@ -517,14 +518,23 @@ function CalendarioAtleta({ user }) {
 }
 
 // ─────────────────────────────────────────
-// COACH — MIS ATLETAS
+// COACH — MIS ATLETAS (alta desde dashboard)
 // ─────────────────────────────────────────
-function CoachAtletas() {
+function nextCodigo(atletas) {
+  const nums=atletas.map(a=>parseInt((a.atleta_codigo||"").replace("ATL-",""))||0).filter(n=>n>0);
+  const max=nums.length?Math.max(...nums):0;
+  return `ATL-${String(max+1).padStart(2,"0")}`;
+}
+
+function CoachAtletas({ onVerAtleta }) {
   const [atletas,setAtletas]=useState([]);
   const [loading,setLoading]=useState(true);
   const [editando,setEditando]=useState(null);
   const [formEdit,setFormEdit]=useState({});
-  const [infoModal,setInfoModal]=useState(false);
+  const [nuevoModal,setNuevoModal]=useState(false);
+  const [formNuevo,setFormNuevo]=useState({nombre:"",email:"",password:"",perfil_deporte:"",peso_actual:"",talla:""});
+  const [saving,setSaving]=useState(false);
+  const [msg,setMsg]=useState({tipo:"",texto:""});
 
   useEffect(()=>{cargar();},[]);
 
@@ -534,10 +544,59 @@ function CoachAtletas() {
     setAtletas(data||[]);setLoading(false);
   };
 
-  const guardar=async()=>{
+  const guardarEdicion=async()=>{
     const sb=await getSB();
     await sb.from("profiles").update(formEdit).eq("id",editando.id);
     setEditando(null);cargar();
+  };
+
+  const crearAtleta=async()=>{
+    if (!formNuevo.email||!formNuevo.password){
+      setMsg({tipo:"error",texto:"Email y contraseña son obligatorios"});return;
+    }
+    if (formNuevo.password.length<6){
+      setMsg({tipo:"error",texto:"La contraseña debe tener al menos 6 caracteres"});return;
+    }
+    setSaving(true);setMsg({tipo:"",texto:""});
+    try {
+      const sb=await getSB();
+      // 1. Crear usuario en Supabase Auth
+      const {data:authData,error:authError}=await sb.auth.signUp({
+        email:formNuevo.email,
+        password:formNuevo.password,
+      });
+      if (authError) throw new Error(authError.message);
+      const newId=authData.user?.id;
+      if (!newId) throw new Error("No se pudo crear el usuario. Verificá que el email no exista.");
+      // 2. Insertar perfil con código automático
+      const codigo=nextCodigo(atletas);
+      const {error:profError}=await sb.from("profiles").insert({
+        id:newId,
+        atleta_codigo:codigo,
+        nombre:formNuevo.nombre||null,
+        rol:"atleta",
+        perfil_deporte:formNuevo.perfil_deporte||null,
+        peso_actual:formNuevo.peso_actual?parseFloat(formNuevo.peso_actual):null,
+        talla:formNuevo.talla?parseFloat(formNuevo.talla):null,
+        activo:true,
+      });
+      if (profError) throw new Error(profError.message);
+      // 3. Agregar a USUARIOS en memoria para login inmediato
+      USUARIOS.push({
+        email:formNuevo.email,
+        password:formNuevo.password,
+        id:newId,
+        nombre:formNuevo.nombre||null,
+        rol:"atleta",
+        atleta_codigo:codigo,
+      });
+      setMsg({tipo:"ok",texto:`✓ ${codigo} creado correctamente. Email: ${formNuevo.email}`});
+      setFormNuevo({nombre:"",email:"",password:"",perfil_deporte:"",peso_actual:"",talla:""});
+      await cargar();
+    } catch(e) {
+      setMsg({tipo:"error",texto:`Error: ${e.message}`});
+    }
+    setSaving(false);
   };
 
   if (loading) return <div style={{padding:32}}><Spinner/></div>;
@@ -545,51 +604,67 @@ function CoachAtletas() {
   return (
     <div style={{ padding:"28px 32px",maxWidth:900 }}>
       <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24 }}>
-        <SectionHeader title="Mis atletas" sub={`${atletas.length} atletas · editá nombre y perfil desde acá`}/>
-        <Btn onClick={()=>setInfoModal(true)} outline sm>+ Agregar atleta</Btn>
+        <SectionHeader title="Mis atletas" sub={`${atletas.length} atletas registrados`}/>
+        <Btn onClick={()=>{setNuevoModal(true);setMsg({tipo:"",texto:""});}}>+ Nuevo atleta</Btn>
       </div>
+
       <Card style={{ padding:0,overflow:"hidden" }}>
-        <div style={{ display:"grid",gridTemplateColumns:"80px 1fr 140px 100px 70px 60px",padding:"9px 18px",fontSize:10,fontWeight:700,color:C.textD,letterSpacing:"0.08em",textTransform:"uppercase",borderBottom:`1px solid ${C.border}`,fontFamily:F.sans }}>
+        <div style={{ display:"grid",gridTemplateColumns:"80px 1fr 140px 100px 70px 120px",padding:"9px 18px",fontSize:10,fontWeight:700,color:C.textD,letterSpacing:"0.08em",textTransform:"uppercase",borderBottom:`1px solid ${C.border}`,fontFamily:F.sans }}>
           <div>ID</div><div>Nombre</div><div>Perfil</div><div>Peso</div><div>Estado</div><div/>
         </div>
         {atletas.length===0?(
           <div style={{ padding:"32px 18px",textAlign:"center",color:C.textD,fontFamily:F.sans,fontSize:13 }}>
-            Agregá atletas desde el botón de arriba
+            No hay atletas todavía · creá el primero con el botón de arriba
           </div>
         ):atletas.map((a,i)=>(
-          <div key={a.id} style={{ display:"grid",gridTemplateColumns:"80px 1fr 140px 100px 70px 60px",padding:"11px 18px",alignItems:"center",borderBottom:i<atletas.length-1?`1px solid ${C.border}`:"none" }}>
+          <div key={a.id} style={{ display:"grid",gridTemplateColumns:"80px 1fr 140px 100px 70px 120px",padding:"11px 18px",alignItems:"center",borderBottom:i<atletas.length-1?`1px solid ${C.border}`:"none" }}>
             <Tag color={C.jade} sm>{a.atleta_codigo||"—"}</Tag>
             <div style={{ fontSize:13,fontWeight:600,color:a.nombre?C.text:C.textD,fontFamily:F.sans }}>{a.nombre||"Sin nombre"}</div>
             <div style={{ fontSize:12,color:C.textS,fontFamily:F.sans }}>{a.perfil_deporte||"—"}</div>
             <div style={{ fontSize:12,color:C.textS,fontFamily:F.sans }}>{a.peso_actual?`${a.peso_actual}kg`:"—"}</div>
             <Tag color={a.activo!==false?C.jade:C.textD} sm>{a.activo!==false?"Activo":"Inactivo"}</Tag>
-            <Btn sm outline onClick={()=>{setEditando(a);setFormEdit({nombre:a.nombre||"",perfil_deporte:a.perfil_deporte||"",peso_actual:a.peso_actual||"",talla:a.talla||"",activo:a.activo!==false});}}>Editar</Btn>
+            <div style={{display:"flex",gap:6}}>
+              <Btn sm onClick={()=>onVerAtleta&&onVerAtleta(a)} color={C.blue}>Ver</Btn>
+              <Btn sm outline onClick={()=>{setEditando(a);setFormEdit({nombre:a.nombre||"",perfil_deporte:a.perfil_deporte||"",peso_actual:a.peso_actual||"",talla:a.talla||"",activo:a.activo!==false});}}>Editar</Btn>
+            </div>
           </div>
         ))}
       </Card>
+
+      {/* Modal editar */}
       <Modal open={!!editando} onClose={()=>setEditando(null)} title={`Editar ${editando?.atleta_codigo||"atleta"}`}>
         <FInput label="Nombre completo" value={formEdit.nombre||""} onChange={e=>setFormEdit({...formEdit,nombre:e.target.value})}/>
         <FSelect label="Perfil deportivo" value={formEdit.perfil_deporte||""} onChange={e=>setFormEdit({...formEdit,perfil_deporte:e.target.value})} options={[{value:"",label:"Sin especificar"},...PERFILES_DEP.map(p=>({value:p,label:p}))]}/>
         <FInput label="Peso (kg)" value={formEdit.peso_actual||""} onChange={e=>setFormEdit({...formEdit,peso_actual:e.target.value})} type="number" step="0.1"/>
         <FInput label="Talla (cm)" value={formEdit.talla||""} onChange={e=>setFormEdit({...formEdit,talla:e.target.value})} type="number"/>
         <div style={{ display:"flex",gap:10,marginTop:4 }}>
-          <Btn onClick={guardar} full>Guardar cambios</Btn>
+          <Btn onClick={guardarEdicion} full>Guardar cambios</Btn>
           <Btn onClick={()=>setEditando(null)} outline full>Cancelar</Btn>
         </div>
       </Modal>
-      <Modal open={infoModal} onClose={()=>setInfoModal(false)} title="Agregar atleta">
-        <div style={{ padding:"14px 16px",background:C.jade+"0E",border:`1px solid ${C.jade}30`,borderRadius:9,marginBottom:16 }}>
-          <div style={{ fontSize:13,color:C.jade,fontFamily:F.sans,lineHeight:1.9 }}>
-            <strong>Paso 1:</strong> Agregá el atleta en el archivo <code style={{color:C.amber}}>NOAApp.jsx</code> en la lista <code style={{color:C.amber}}>USUARIOS</code> arriba del todo<br/>
-            <strong>Paso 2:</strong> En Supabase SQL Editor ejecutá:<br/>
-            <code style={{ fontSize:11,color:C.amber,display:"block",marginTop:8,padding:8,background:C.surface,borderRadius:6,lineHeight:1.8 }}>
-              INSERT INTO profiles (id, atleta_codigo, rol)<br/>
-              VALUES ('UUID-NUEVO', 'ATL-01', 'atleta');
-            </code>
-            <strong style={{marginTop:8,display:"block"}}>Paso 3:</strong> Hacé push a GitHub y Vercel redesplega solo
-          </div>
+
+      {/* Modal nuevo atleta */}
+      <Modal open={nuevoModal} onClose={()=>{setNuevoModal(false);setMsg({tipo:"",texto:""});}} title="Nuevo atleta">
+        <div style={{ padding:"10px 14px",background:C.jade+"0E",border:`1px solid ${C.jade}22`,borderRadius:8,marginBottom:16,fontSize:12,color:C.textS,fontFamily:F.sans }}>
+          El código (ATL-01, ATL-02…) se asigna automáticamente. El atleta va a poder ingresar con el email y contraseña que definas acá.
         </div>
-        <Btn onClick={()=>setInfoModal(false)} full>Entendido</Btn>
+        <FInput label="Nombre completo" value={formNuevo.nombre} onChange={e=>setFormNuevo({...formNuevo,nombre:e.target.value})} placeholder="Ej: Juan Pérez"/>
+        <FInput label="Email *" value={formNuevo.email} onChange={e=>setFormNuevo({...formNuevo,email:e.target.value})} type="email" placeholder="atleta@gmail.com"/>
+        <FInput label="Contraseña *" value={formNuevo.password} onChange={e=>setFormNuevo({...formNuevo,password:e.target.value})} type="password" placeholder="Mínimo 6 caracteres"/>
+        <FSelect label="Perfil deportivo" value={formNuevo.perfil_deporte} onChange={e=>setFormNuevo({...formNuevo,perfil_deporte:e.target.value})} options={[{value:"",label:"Sin especificar"},...PERFILES_DEP.map(p=>({value:p,label:p}))]}/>
+        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
+          <FInput label="Peso (kg)" value={formNuevo.peso_actual} onChange={e=>setFormNuevo({...formNuevo,peso_actual:e.target.value})} type="number" step="0.1" placeholder="75"/>
+          <FInput label="Talla (cm)" value={formNuevo.talla} onChange={e=>setFormNuevo({...formNuevo,talla:e.target.value})} type="number" placeholder="175"/>
+        </div>
+        {msg.texto&&(
+          <div style={{ padding:"10px 14px",borderRadius:8,marginBottom:12,background:msg.tipo==="ok"?C.jade+"18":C.red+"18",border:`1px solid ${msg.tipo==="ok"?C.jade+"55":C.red+"55"}`,fontSize:12,color:msg.tipo==="ok"?C.jade:C.red,fontFamily:F.sans }}>
+            {msg.texto}
+          </div>
+        )}
+        <div style={{ display:"flex",gap:10 }}>
+          {msg.tipo!=="ok"&&<Btn onClick={crearAtleta} disabled={saving||!formNuevo.email||!formNuevo.password} full>{saving?"Creando…":"Crear atleta"}</Btn>}
+          <Btn onClick={()=>{setNuevoModal(false);setMsg({tipo:"",texto:""));}} outline full>{msg.tipo==="ok"?"Cerrar":"Cancelar"}</Btn>
+        </div>
       </Modal>
     </div>
   );
@@ -1087,6 +1162,59 @@ function NOACoach({ perfil }) {
   );
 }
 
+
+// ─────────────────────────────────────────
+// COACH — VER DASHBOARD DEL ATLETA
+// El coach ve exactamente lo que ve el atleta
+// ─────────────────────────────────────────
+function CoachVistaAtleta({ atleta, onVolver }) {
+  const [tab, setTab] = useState("calendario");
+  const fakeUser = { id: atleta.id, email: "" };
+
+  const tabs = [
+    { id:"calendario",   label:"Calendario" },
+    { id:"sesion",       label:"Sesión de hoy" },
+    { id:"biomarcadores",label:"Biomarcadores" },
+    { id:"marcas",       label:"Marcas" },
+  ];
+
+  return (
+    <div style={{ padding:"28px 32px", maxWidth:1000 }}>
+      {/* Header con badge "modo vista" */}
+      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
+        <button onClick={onVolver} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, color:C.textS, padding:"6px 12px", cursor:"pointer", fontSize:12, fontFamily:F.sans, display:"flex", alignItems:"center", gap:6 }}>
+          ← Volver
+        </button>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ width:32, height:32, borderRadius:8, background:C.blue+"22", border:`1px solid ${C.blue}44`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:F.serif, color:C.blue, fontSize:14 }}>
+            {(atleta.nombre||atleta.atleta_codigo||"?")[0].toUpperCase()}
+          </div>
+          <div>
+            <div style={{ fontFamily:F.serif, fontSize:18, color:C.white }}>{atleta.nombre||"Sin nombre"}</div>
+            <div style={{ fontSize:10, color:C.textS, fontFamily:F.sans }}>{atleta.atleta_codigo} · vista coach</div>
+          </div>
+        </div>
+        <Tag color={C.blue}>Modo vista coach</Tag>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display:"flex", gap:6, marginBottom:24, borderBottom:`1px solid ${C.border}`, paddingBottom:12 }}>
+        {tabs.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{ padding:"7px 16px", borderRadius:8, border:"none", background:tab===t.id?C.blue+"22":"transparent", color:tab===t.id?C.blue:C.textS, fontSize:12, fontWeight:tab===t.id?700:400, cursor:"pointer", fontFamily:F.sans, borderBottom:tab===t.id?`2px solid ${C.blue}`:"2px solid transparent" }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Contenido según tab */}
+      {tab==="calendario"   && <CalendarioAtleta user={fakeUser}/>}
+      {tab==="sesion"       && <SesionHoy user={fakeUser}/>}
+      {tab==="biomarcadores"&& <Biomarcadores user={fakeUser}/>}
+      {tab==="marcas"       && <Marcas user={fakeUser}/>}
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────
 // APP RAÍZ
 // ─────────────────────────────────────────
@@ -1142,16 +1270,21 @@ export default function NOAApp() {
     </>
   );
 
+  const [atletaVista,setAtletaVista]=useState(null);
+
   const views={
     hoy:          <SesionHoy user={user}/>,
     calendario:   <CalendarioAtleta user={user}/>,
     biomarcadores:<Biomarcadores user={user}/>,
     marcas:       <Marcas user={user}/>,
     noa_coach:    <NOACoach perfil={perfil}/>,
-    c_atletas:    <CoachAtletas user={user}/>,
+    c_atletas:    <CoachAtletas user={user} onVerAtleta={(a)=>{setAtletaVista(a);setSec("c_vista");}}/>,
     c_ciclos:     <CoachCiclos user={user}/>,
     c_planificar: <CoachPlanificar user={user}/>,
     c_ejercicios: <CoachEjercicios user={user}/>,
+    c_vista:      atletaVista
+      ? <CoachVistaAtleta atleta={atletaVista} onVolver={()=>setSec("c_atletas")}/>
+      : <div style={{padding:"28px 32px"}}><SectionHeader title="Ver como atleta" sub="Elegí un atleta desde Mis atletas → Ver dashboard"/></div>,
   };
 
   return (
