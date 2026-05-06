@@ -56,6 +56,23 @@ function demoMsg(p) {
 }
 
 // ─────────────────────────────────────────
+// USUARIOS — editá acá tus credenciales
+// ─────────────────────────────────────────
+const USUARIOS = [
+  {
+    email: "coachkinesioloy@gmail.com",
+    password: "Rodri2025!",
+    id: "2cd5e425-15f2-4667-8ac1-be3f78637f75",
+    nombre: "Rodri",
+    rol: "coach",
+    atleta_codigo: null,
+  },
+  // Cuando agregues atletas, ponelos así:
+  // { email: "atleta1@gmail.com", password: "clave123", id: "UUID-ATL-01", nombre: null, rol: "atleta", atleta_codigo: "ATL-01" },
+  // { email: "atleta2@gmail.com", password: "clave456", id: "UUID-ATL-02", nombre: null, rol: "atleta", atleta_codigo: "ATL-02" },
+];
+
+// ─────────────────────────────────────────
 // PALETA + TIPOS
 // ─────────────────────────────────────────
 const C = {
@@ -161,7 +178,7 @@ function EmptyState({ title, sub }) {
 }
 
 // ─────────────────────────────────────────
-// LOGIN
+// LOGIN — usa tabla USUARIOS local
 // ─────────────────────────────────────────
 function Login({ onLogin }) {
   const [email,setEmail]=useState("");
@@ -172,14 +189,33 @@ function Login({ onLogin }) {
   const doLogin = async () => {
     if (!email||!pass){setError("Completá email y contraseña");return;}
     setLoading(true);setError("");
-    const sb = await getSB();
-    if (!sb){setError("Error de conexión");setLoading(false);return;}
-    const {data,error:e} = await sb.auth.signInWithPassword({email,password:pass});
-    if (e){setError("Email o contraseña incorrectos");setLoading(false);return;}
-    const {data:p} = await sb.from("profiles").select("*").eq("id",data.user.id).single();
-    onLogin(data.user,p);
+
+    // Buscar en tabla local de usuarios
+    const usuario = USUARIOS.find(u => u.email.toLowerCase()===email.toLowerCase() && u.password===pass);
+
+    if (!usuario) {
+      setError("Email o contraseña incorrectos");
+      setLoading(false);
+      return;
+    }
+
+    // Construir objetos user y perfil
+    const fakeUser = { id: usuario.id, email: usuario.email };
+    const fakePerfil = {
+      id: usuario.id,
+      nombre: usuario.nombre,
+      rol: usuario.rol,
+      atleta_codigo: usuario.atleta_codigo || null,
+    };
+
+    // Conectar Supabase de fondo (para que las queries funcionen)
+    await getSB();
+
+    onLogin(fakeUser, fakePerfil);
     setLoading(false);
   };
+
+  const handleKey = (e) => { if (e.key==="Enter") doLogin(); };
 
   return (
     <div style={{ minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
@@ -192,7 +228,17 @@ function Login({ onLogin }) {
         </div>
         <Card glow>
           <FInput label="Email" value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="tu@email.com"/>
-          <FInput label="Contraseña" value={pass} onChange={e=>setPass(e.target.value)} type="password" placeholder="••••••••"/>
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:5,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>Contraseña</div>
+            <input
+              type="password"
+              value={pass}
+              onChange={e=>setPass(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder="••••••••"
+              style={{ width:"100%",padding:"9px 12px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,boxSizing:"border-box" }}
+            />
+          </div>
           {error&&<div style={{ fontSize:12,color:C.red,marginBottom:12,fontFamily:F.sans }}>{error}</div>}
           <Btn onClick={doLogin} disabled={loading} full>{loading?"Ingresando…":"Ingresar"}</Btn>
         </Card>
@@ -426,8 +472,6 @@ function CalendarioAtleta({ user }) {
   return (
     <div style={{ padding:"28px 32px",maxWidth:1000 }}>
       <SectionHeader title="Mi calendario" sub={`${ciclo.nombre} · ${ciclo.semanas} semanas · ${ciclo.sesiones_semana} días/semana`} tags={[{label:ciclo.tipo?.replace(/_/g," ")||"ciclo",color:tipoC}]}/>
-
-      {/* Pills de semana */}
       <div style={{ display:"flex",gap:8,marginBottom:24,flexWrap:"wrap" }}>
         {semsArr.map(s=>(
           <button key={s} onClick={()=>setSemSel(s)} style={{ padding:"7px 16px",borderRadius:9,border:`1.5px solid ${semSel===s?tipoC:s===semActual?tipoC+"55":C.border}`,background:semSel===s?tipoC+"1E":"transparent",color:semSel===s?tipoC:s===semActual?tipoC+"AA":C.textS,fontSize:12,fontWeight:semSel===s?700:400,cursor:"pointer",fontFamily:F.sans,display:"flex",alignItems:"center",gap:6 }}>
@@ -437,8 +481,6 @@ function CalendarioAtleta({ user }) {
           </button>
         ))}
       </div>
-
-      {/* Grid de días */}
       <div style={{ display:"grid",gridTemplateColumns:`repeat(${Math.min(ciclo.sesiones_semana,4)},1fr)`,gap:14 }}>
         {diasArr.map(dia=>{
           const ejsDia=semPlan[dia]||[];
@@ -465,7 +507,6 @@ function CalendarioAtleta({ user }) {
           );
         })}
       </div>
-
       {Object.keys(semPlan).length===0&&(
         <div style={{ marginTop:20,padding:"16px 20px",background:C.surface,border:`1px dashed ${C.border}`,borderRadius:12,textAlign:"center" }}>
           <span style={{ fontSize:13,color:C.textD,fontFamily:F.sans }}>Tu coach todavía no cargó ejercicios para esta semana</span>
@@ -507,14 +548,13 @@ function CoachAtletas() {
         <SectionHeader title="Mis atletas" sub={`${atletas.length} atletas · editá nombre y perfil desde acá`}/>
         <Btn onClick={()=>setInfoModal(true)} outline sm>+ Agregar atleta</Btn>
       </div>
-
       <Card style={{ padding:0,overflow:"hidden" }}>
         <div style={{ display:"grid",gridTemplateColumns:"80px 1fr 140px 100px 70px 60px",padding:"9px 18px",fontSize:10,fontWeight:700,color:C.textD,letterSpacing:"0.08em",textTransform:"uppercase",borderBottom:`1px solid ${C.border}`,fontFamily:F.sans }}>
           <div>ID</div><div>Nombre</div><div>Perfil</div><div>Peso</div><div>Estado</div><div/>
         </div>
         {atletas.length===0?(
           <div style={{ padding:"32px 18px",textAlign:"center",color:C.textD,fontFamily:F.sans,fontSize:13 }}>
-            Creá atletas en Supabase → Authentication → Users, luego editá el perfil acá
+            Agregá atletas desde el botón de arriba
           </div>
         ):atletas.map((a,i)=>(
           <div key={a.id} style={{ display:"grid",gridTemplateColumns:"80px 1fr 140px 100px 70px 60px",padding:"11px 18px",alignItems:"center",borderBottom:i<atletas.length-1?`1px solid ${C.border}`:"none" }}>
@@ -527,8 +567,6 @@ function CoachAtletas() {
           </div>
         ))}
       </Card>
-
-      {/* Modal editar atleta */}
       <Modal open={!!editando} onClose={()=>setEditando(null)} title={`Editar ${editando?.atleta_codigo||"atleta"}`}>
         <FInput label="Nombre completo" value={formEdit.nombre||""} onChange={e=>setFormEdit({...formEdit,nombre:e.target.value})}/>
         <FSelect label="Perfil deportivo" value={formEdit.perfil_deporte||""} onChange={e=>setFormEdit({...formEdit,perfil_deporte:e.target.value})} options={[{value:"",label:"Sin especificar"},...PERFILES_DEP.map(p=>({value:p,label:p}))]}/>
@@ -539,19 +577,16 @@ function CoachAtletas() {
           <Btn onClick={()=>setEditando(null)} outline full>Cancelar</Btn>
         </div>
       </Modal>
-
-      {/* Modal info nuevo atleta */}
       <Modal open={infoModal} onClose={()=>setInfoModal(false)} title="Agregar atleta">
         <div style={{ padding:"14px 16px",background:C.jade+"0E",border:`1px solid ${C.jade}30`,borderRadius:9,marginBottom:16 }}>
-          <div style={{ fontSize:13,color:C.jade,fontFamily:F.sans,lineHeight:1.8 }}>
-            <strong>Paso 1:</strong> Ir a <strong>Supabase → Authentication → Users → "Add user"</strong><br/>
-            <strong>Paso 2:</strong> Ingresar el email y contraseña del atleta<br/>
-            <strong>Paso 3:</strong> En SQL Editor ejecutar:<br/>
-            <code style={{ fontSize:11,color:C.amber,display:"block",marginTop:8,padding:8,background:C.surface,borderRadius:6 }}>
+          <div style={{ fontSize:13,color:C.jade,fontFamily:F.sans,lineHeight:1.9 }}>
+            <strong>Paso 1:</strong> Agregá el atleta en el archivo <code style={{color:C.amber}}>NOAApp.jsx</code> en la lista <code style={{color:C.amber}}>USUARIOS</code> arriba del todo<br/>
+            <strong>Paso 2:</strong> En Supabase SQL Editor ejecutá:<br/>
+            <code style={{ fontSize:11,color:C.amber,display:"block",marginTop:8,padding:8,background:C.surface,borderRadius:6,lineHeight:1.8 }}>
               INSERT INTO profiles (id, atleta_codigo, rol)<br/>
-              VALUES ('UUID-DEL-USUARIO', 'ATL-01', 'atleta');
+              VALUES ('UUID-NUEVO', 'ATL-01', 'atleta');
             </code>
-            <strong style={{ marginTop:8,display:"block" }}>Paso 4:</strong> Volvé acá y editá el nombre y perfil
+            <strong style={{marginTop:8,display:"block"}}>Paso 3:</strong> Hacé push a GitHub y Vercel redesplega solo
           </div>
         </div>
         <Btn onClick={()=>setInfoModal(false)} full>Entendido</Btn>
@@ -604,7 +639,6 @@ function CoachCiclos({ user }) {
         <SectionHeader title="Ciclos" sub="Creá y gestioná los bloques de tus atletas"/>
         <Btn onClick={()=>setModal(true)}>+ Nuevo ciclo</Btn>
       </div>
-
       {ciclos.length===0?<EmptyState title="Sin ciclos" sub="Creá el primer ciclo con el botón de arriba"/>:(
         <div style={{ display:"grid",gap:12 }}>
           {ciclos.map(c=>{
@@ -631,7 +665,6 @@ function CoachCiclos({ user }) {
           })}
         </div>
       )}
-
       <Modal open={modal} onClose={()=>setModal(false)} title="Nuevo ciclo">
         <FSelect label="Atleta" value={form.atleta_id} onChange={e=>setForm({...form,atleta_id:e.target.value})}
           options={[{value:"",label:"— Elegir atleta —"},...atletas.map(a=>({value:a.id,label:`${a.atleta_codigo||"?"} — ${a.nombre||"Sin nombre"}`}))]}/>
@@ -743,17 +776,14 @@ function CoachPlanificar({ user }) {
   return (
     <div style={{ padding:"28px 32px",maxWidth:1000 }}>
       <SectionHeader title="Planificar" sub="Asigná ejercicios por atleta · semana · día"/>
-
       <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20 }}>
         <FSelect label="Atleta" value={atletaSel} onChange={e=>setAtletaSel(e.target.value)}
           options={[{value:"",label:"— Elegir atleta —"},...atletas.map(a=>({value:a.id,label:`${a.atleta_codigo||"?"} — ${a.nombre||"Sin nombre"}`}))]}/>
         <FSelect label="Ciclo" value={cicloSel} onChange={e=>setCicloSel(e.target.value)}
           options={[{value:"",label:"— Elegir ciclo —"},...ciclos.map(c=>({value:String(c.id),label:`${c.nombre} (${c.semanas} sem)`}))]}/>
       </div>
-
       {cicloSel&&(
         <>
-          {/* Semana */}
           <div style={{ display:"flex",gap:8,marginBottom:12,flexWrap:"wrap",alignItems:"center" }}>
             <span style={{ fontSize:11,color:C.textS,fontFamily:F.sans,minWidth:60 }}>SEMANA:</span>
             {semsDisp.map(s=>(
@@ -763,8 +793,6 @@ function CoachPlanificar({ user }) {
               </button>
             ))}
           </div>
-
-          {/* Día */}
           <div style={{ display:"flex",gap:8,marginBottom:20,flexWrap:"wrap",alignItems:"center" }}>
             <span style={{ fontSize:11,color:C.textS,fontFamily:F.sans,minWidth:60 }}>DÍA:</span>
             {diasDisp.map(d=>(
@@ -774,8 +802,6 @@ function CoachPlanificar({ user }) {
               </button>
             ))}
           </div>
-
-          {/* Ejercicios del día */}
           <Card style={{ marginBottom:14 }}>
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14 }}>
               <div style={{ fontFamily:F.serif,fontSize:17,color:C.white }}>
@@ -784,11 +810,8 @@ function CoachPlanificar({ user }) {
               </div>
               <Btn sm onClick={()=>setAddModal(true)}>+ Agregar ejercicio</Btn>
             </div>
-
             {ejsDia.length===0?(
-              <div style={{ textAlign:"center",padding:"24px 0",color:C.textD,fontFamily:F.sans,fontSize:13 }}>
-                Sin ejercicios todavía · hacé clic en "+ Agregar ejercicio"
-              </div>
+              <div style={{ textAlign:"center",padding:"24px 0",color:C.textD,fontFamily:F.sans,fontSize:13 }}>Sin ejercicios · hacé clic en "+ Agregar ejercicio"</div>
             ):(
               <div style={{ display:"grid",gap:8 }}>
                 {ejsDia.map((ej,i)=>(
@@ -811,10 +834,7 @@ function CoachPlanificar({ user }) {
           </Card>
         </>
       )}
-
       {!atletaSel&&<EmptyState title="Elegí un atleta" sub="Seleccioná un atleta y su ciclo para empezar a planificar"/>}
-
-      {/* Modal agregar */}
       <Modal open={addModal} onClose={()=>setAddModal(false)} title={`Agregar a Sem ${semSel} · ${DIAS[diaSel]}`}>
         <FSelect label="Ejercicio *" value={form.ejercicio_id} onChange={e=>setForm({...form,ejercicio_id:e.target.value})}
           options={[{value:"",label:"— Elegir ejercicio —"},...ejercicios.map(e=>({value:String(e.id),label:`${e.nombre}${e.grupo_muscular?` (${e.grupo_muscular})`:""}`}))]}/>
@@ -875,9 +895,7 @@ function CoachEjercicios({ user }) {
         <SectionHeader title="Ejercicios" sub={`${ejercicios.length} ejercicios en el banco`}/>
         <Btn onClick={()=>setModal(true)}>+ Nuevo ejercicio</Btn>
       </div>
-
       <input value={filtro} onChange={e=>setFiltro(e.target.value)} placeholder="Buscar por nombre o grupo muscular..." style={{ width:"100%",padding:"9px 13px",background:C.card,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,marginBottom:16,boxSizing:"border-box" }}/>
-
       <Card style={{ padding:0,overflow:"hidden" }}>
         <div style={{ display:"grid",gridTemplateColumns:"1fr 120px 130px 90px 90px",padding:"9px 18px",fontSize:10,fontWeight:700,color:C.textD,letterSpacing:"0.08em",textTransform:"uppercase",borderBottom:`1px solid ${C.border}`,fontFamily:F.sans }}>
           <div>Ejercicio</div><div>Patrón</div><div>Grupo</div><div>Nivel</div><div>Tipo</div>
@@ -897,7 +915,6 @@ function CoachEjercicios({ user }) {
           </div>
         ))}
       </Card>
-
       <Modal open={modal} onClose={()=>setModal(false)} title="Nuevo ejercicio">
         <FInput label="Nombre *" value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} placeholder="Ej: Zancada con mancuernas"/>
         <FInput label="Grupo muscular" value={form.grupo_muscular} onChange={e=>setForm({...form,grupo_muscular:e.target.value})} placeholder="Pierna, Pecho, Espalda..."/>
@@ -919,7 +936,7 @@ function CoachEjercicios({ user }) {
 }
 
 // ─────────────────────────────────────────
-// BIOMARCADORES (atleta)
+// BIOMARCADORES
 // ─────────────────────────────────────────
 function Biomarcadores({ user }) {
   const [form,setForm]=useState({peso_kg:"",hrv:"",fc_reposo:"",calidad_sueno:7,dolor_muscular:3,estres:3,motivacion:8});
@@ -962,13 +979,11 @@ function Biomarcadores({ user }) {
           <div style={{ fontSize:9,fontWeight:700,color:rC,letterSpacing:"0.12em",textTransform:"uppercase",fontFamily:F.sans }}>readiness</div>
         </div>
       </div>
-
       <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14 }}>
         <FInput label="Peso (kg)" value={form.peso_kg} onChange={e=>setForm({...form,peso_kg:e.target.value})} type="number" step="0.1" placeholder="82.4"/>
         <FInput label="HRV (ms)" value={form.hrv} onChange={e=>setForm({...form,hrv:e.target.value})} type="number" placeholder="68"/>
         <FInput label="FC reposo (bpm)" value={form.fc_reposo} onChange={e=>setForm({...form,fc_reposo:e.target.value})} type="number" placeholder="54"/>
       </div>
-
       {rangos.map(c=>{
         const v=form[c.k];
         const col=c.pos?(v>=7?C.jade:v>=5?C.amber:C.red):(v>=7?C.red:v>=4?C.amber:C.jade);
@@ -984,14 +999,13 @@ function Biomarcadores({ user }) {
           </Card>
         );
       })}
-
       <Btn onClick={guardar} style={{marginTop:8}}>{saved?"✓ Registrado":"Guardar biomarcadores"}</Btn>
     </div>
   );
 }
 
 // ─────────────────────────────────────────
-// MARCAS (atleta)
+// MARCAS
 // ─────────────────────────────────────────
 function Marcas({ user }) {
   const [marcas,setMarcas]=useState([]);
@@ -1009,7 +1023,7 @@ function Marcas({ user }) {
   return (
     <div style={{ padding:"28px 32px",maxWidth:820 }}>
       <SectionHeader title="Mis marcas" sub="1RM real y estimado — Epley: kg × (1 + reps/30)"/>
-      {marcas.length===0?<EmptyState title="Sin marcas todavía" sub="Tus marcas personales aparecerán acá a medida que entrenes"/>:(
+      {marcas.length===0?<EmptyState title="Sin marcas todavía" sub="Tus marcas aparecerán acá a medida que entrenes"/>:(
         <Card style={{ padding:0,overflow:"hidden" }}>
           <div style={{ display:"grid",gridTemplateColumns:"1fr 130px 130px 110px",padding:"9px 18px",fontSize:10,fontWeight:700,color:C.textD,letterSpacing:"0.08em",textTransform:"uppercase",borderBottom:`1px solid ${C.border}`,fontFamily:F.sans }}>
             <div>Ejercicio</div><div>1RM Real</div><div>Estimado</div><div>Fecha</div>
@@ -1083,29 +1097,19 @@ export default function NOAApp() {
   const [sec,setSec]=useState("hoy");
 
   useEffect(()=>{
-    const init=async()=>{
-      const sb=await getSB();
-      if (!sb){setAppLoading(false);return;}
-      const {data:{session}}=await sb.auth.getSession();
-      if (session?.user){
-        const {data:p}=await sb.from("profiles").select("*").eq("id",session.user.id).single();
-        setUser(session.user);setPerfil(p);
-        setSec(p?.rol==="coach"?"c_atletas":"hoy");
-      }
-      sb.auth.onAuthStateChange(async(_,sess)=>{
-        if (sess?.user){
-          const {data:p}=await sb.from("profiles").select("*").eq("id",sess.user.id).single();
-          setUser(sess.user);setPerfil(p);
-          setSec(p?.rol==="coach"?"c_atletas":"hoy");
-        } else {setUser(null);setPerfil(null);}
-      });
-      setAppLoading(false);
-    };
-    init();
+    // Inicializar Supabase en background (para las queries)
+    getSB().then(()=>setAppLoading(false));
   },[]);
 
-  const logout=async()=>{const sb=await getSB();await sb?.auth.signOut();setUser(null);setPerfil(null);};
-  const handleLogin=(u,p)=>{setUser(u);setPerfil(p);setSec(p?.rol==="coach"?"c_atletas":"hoy");};
+  const handleLogin=(u,p)=>{
+    setUser(u);setPerfil(p);
+    setSec(p?.rol==="coach"?"c_atletas":"hoy");
+  };
+
+  const logout=()=>{
+    setUser(null);setPerfil(null);setSec("hoy");
+  };
+
   const rol=perfil?.rol||"atleta";
 
   const GLOBAL_CSS=`
@@ -1139,15 +1143,15 @@ export default function NOAApp() {
   );
 
   const views={
-    hoy:         <SesionHoy user={user}/>,
-    calendario:  <CalendarioAtleta user={user}/>,
+    hoy:          <SesionHoy user={user}/>,
+    calendario:   <CalendarioAtleta user={user}/>,
     biomarcadores:<Biomarcadores user={user}/>,
-    marcas:      <Marcas user={user}/>,
-    noa_coach:   <NOACoach perfil={perfil}/>,
-    c_atletas:   <CoachAtletas user={user}/>,
-    c_ciclos:    <CoachCiclos user={user}/>,
-    c_planificar:<CoachPlanificar user={user}/>,
-    c_ejercicios:<CoachEjercicios user={user}/>,
+    marcas:       <Marcas user={user}/>,
+    noa_coach:    <NOACoach perfil={perfil}/>,
+    c_atletas:    <CoachAtletas user={user}/>,
+    c_ciclos:     <CoachCiclos user={user}/>,
+    c_planificar: <CoachPlanificar user={user}/>,
+    c_ejercicios: <CoachEjercicios user={user}/>,
   };
 
   return (
