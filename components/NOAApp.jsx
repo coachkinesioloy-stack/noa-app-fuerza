@@ -1170,19 +1170,18 @@ function NOACoach({ perfil }) {
 function CoachVistaAtleta({ atleta, onVolver }) {
   const [tab, setTab] = useState("calendario");
   const fakeUser = { id: atleta.id, email: "" };
-
   const tabs = [
     { id:"calendario",   label:"Calendario" },
     { id:"sesion",       label:"Sesión de hoy" },
     { id:"biomarcadores",label:"Biomarcadores" },
     { id:"marcas",       label:"Marcas" },
   ];
-
+  // Usamos display:none en vez de && para no violar reglas de hooks
   return (
-    <div style={{ padding:"28px 32px", maxWidth:1000 }}>
-      {/* Header con badge "modo vista" */}
-      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
-        <button onClick={onVolver} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, color:C.textS, padding:"6px 12px", cursor:"pointer", fontSize:12, fontFamily:F.sans, display:"flex", alignItems:"center", gap:6 }}>
+    <div style={{ maxWidth:1000 }}>
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", gap:12, padding:"28px 32px 0" }}>
+        <button onClick={onVolver} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, color:C.textS, padding:"6px 12px", cursor:"pointer", fontSize:12, fontFamily:F.sans }}>
           ← Volver
         </button>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -1196,21 +1195,19 @@ function CoachVistaAtleta({ atleta, onVolver }) {
         </div>
         <Tag color={C.blue}>Modo vista coach</Tag>
       </div>
-
       {/* Tabs */}
-      <div style={{ display:"flex", gap:6, marginBottom:24, borderBottom:`1px solid ${C.border}`, paddingBottom:12 }}>
+      <div style={{ display:"flex", gap:6, margin:"16px 32px 0", borderBottom:`1px solid ${C.border}`, paddingBottom:12 }}>
         {tabs.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{ padding:"7px 16px", borderRadius:8, border:"none", background:tab===t.id?C.blue+"22":"transparent", color:tab===t.id?C.blue:C.textS, fontSize:12, fontWeight:tab===t.id?700:400, cursor:"pointer", fontFamily:F.sans, borderBottom:tab===t.id?`2px solid ${C.blue}`:"2px solid transparent" }}>
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{ padding:"7px 16px", borderRadius:8, border:"none", background:tab===t.id?C.blue+"22":"transparent", color:tab===t.id?C.blue:C.textS, fontSize:12, fontWeight:tab===t.id?700:400, cursor:"pointer", fontFamily:F.sans }}>
             {t.label}
           </button>
         ))}
       </div>
-
-      {/* Contenido según tab */}
-      {tab==="calendario"   && <CalendarioAtleta user={fakeUser}/>}
-      {tab==="sesion"       && <SesionHoy user={fakeUser}/>}
-      {tab==="biomarcadores"&& <Biomarcadores user={fakeUser}/>}
-      {tab==="marcas"       && <Marcas user={fakeUser}/>}
+      {/* Siempre montados, ocultados con display */}
+      <div style={{ display: tab==="calendario" ? "block" : "none" }}><CalendarioAtleta user={fakeUser}/></div>
+      <div style={{ display: tab==="sesion" ? "block" : "none" }}><SesionHoy user={fakeUser}/></div>
+      <div style={{ display: tab==="biomarcadores" ? "block" : "none" }}><Biomarcadores user={fakeUser}/></div>
+      <div style={{ display: tab==="marcas" ? "block" : "none" }}><Marcas user={fakeUser}/></div>
     </div>
   );
 }
