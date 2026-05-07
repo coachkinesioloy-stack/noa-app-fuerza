@@ -693,7 +693,17 @@ function CoachCiclos({ user }) {
     if (!form.atleta_id||!form.nombre)return;
     setSaving(true);
     const sb=await getSB();
-    await sb.from("ciclos").insert({...form,coach_id:user.id,semanas:parseInt(form.semanas),sesiones_semana:parseInt(form.sesiones_semana)});
+    const {error}=await sb.from("ciclos").insert({
+      atleta_id:form.atleta_id,
+      nombre:form.nombre,
+      tipo:form.tipo,
+      fecha_inicio:form.fecha_inicio,
+      semanas:parseInt(form.semanas),
+      sesiones_semana:parseInt(form.sesiones_semana),
+      notas:form.notas||null,
+      activo:true,
+    });
+    if (error){alert("Error al crear ciclo: "+error.message);setSaving(false);return;}
     await cargar();setModal(false);setSaving(false);
   };
 
@@ -778,7 +788,7 @@ function CoachPlanificar({ user }) {
   const [plan,setPlan]=useState({});
   const [loading,setLoading]=useState(true);
   const [addModal,setAddModal]=useState(false);
-  const [form,setForm]=useState({ejercicio_id:"",series:3,reps:"8",intensidad_pct:"",carga_kg:"",notas_coach:""});
+  const [form,setForm]=useState({ejercicio_id:"",busqueda:"",series:3,reps:"8",intensidad_pct:"",carga_kg:"",descanso_seg:"120",rir:"",notas_coach:""});
   const [saving,setSaving]=useState(false);
 
   useEffect(()=>{init();},[]);
@@ -819,16 +829,20 @@ function CoachPlanificar({ user }) {
     setSaving(true);
     const sb=await getSB();
     const orden=(plan[semSel]?.[diaSel]||[]).length+1;
-    await sb.from("sesiones_plan").insert({
+    const {error:insErr}=await sb.from("sesiones_plan").insert({
       ciclo_id:parseInt(cicloSel),semana:semSel,dia:diaSel,orden,
       ejercicio_id:parseInt(form.ejercicio_id),
-      series:parseInt(form.series)||3,reps:form.reps||"8",
+      series:parseInt(form.series)||3,
+      reps:form.reps||"8",
       intensidad_pct:form.intensidad_pct?parseFloat(form.intensidad_pct):null,
       carga_kg:form.carga_kg?parseFloat(form.carga_kg):null,
+      descanso_seg:form.descanso_seg?parseInt(form.descanso_seg):120,
+      rir:form.rir?parseInt(form.rir):null,
       notas_coach:form.notas_coach||null,
     });
+    if(insErr){alert("Error: "+insErr.message);setSaving(false);return;}
     await cargarPlan(cicloSel);
-    setForm({ejercicio_id:"",series:3,reps:"8",intensidad_pct:"",carga_kg:"",notas_coach:""});
+    setForm({ejercicio_id:"",busqueda:"",series:3,reps:"8",intensidad_pct:"",carga_kg:"",descanso_seg:"120",rir:"",notas_coach:""});
     setAddModal(false);setSaving(false);
   };
 
@@ -891,11 +905,13 @@ function CoachPlanificar({ user }) {
                     <div style={{ width:24,height:24,borderRadius:6,background:C.jade+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:C.jade,fontWeight:700,flexShrink:0 }}>{i+1}</div>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:13,fontWeight:600,color:C.text,fontFamily:F.sans }}>{ej.ejercicios?.nombre}</div>
-                      <div style={{ display:"flex",gap:10,marginTop:2,flexWrap:"wrap" }}>
-                        <span style={{ fontSize:11,color:C.jade }}>{ej.series} × {ej.reps}</span>
-                        {ej.carga_kg&&<span style={{ fontSize:11,color:C.textS }}>{ej.carga_kg}kg</span>}
-                        {ej.intensidad_pct&&<span style={{ fontSize:11,color:C.textS }}>{ej.intensidad_pct}% 1RM</span>}
-                        {ej.notas_coach&&<span style={{ fontSize:11,color:C.amber }}>📌 {ej.notas_coach}</span>}
+                      <div style={{ display:"flex",gap:8,marginTop:3,flexWrap:"wrap",alignItems:"center" }}>
+                        <span style={{ fontSize:12,color:C.jade,fontWeight:700 }}>{ej.series}×{ej.reps}</span>
+                        {ej.carga_kg&&<Tag color={C.blue} sm>{ej.carga_kg}kg</Tag>}
+                        {ej.intensidad_pct&&<Tag color={C.violet} sm>{ej.intensidad_pct}%</Tag>}
+                        {ej.descanso_seg&&<Tag color={C.textS} sm>⏱ {ej.descanso_seg}"</Tag>}
+                        {ej.rir!=null&&ej.rir!==""&&<Tag color={C.amber} sm>RIR {ej.rir}</Tag>}
+                        {ej.notas_coach&&<span style={{ fontSize:10,color:C.amber }}>📌 {ej.notas_coach}</span>}
                       </div>
                     </div>
                     <button onClick={()=>eliminar(ej.id)} style={{ background:"none",border:"none",color:C.textD,cursor:"pointer",fontSize:18,padding:"2px 6px",lineHeight:1 }}>×</button>
@@ -907,18 +923,49 @@ function CoachPlanificar({ user }) {
         </>
       )}
       {!atletaSel&&<EmptyState title="Elegí un atleta" sub="Seleccioná un atleta y su ciclo para empezar a planificar"/>}
-      <Modal open={addModal} onClose={()=>setAddModal(false)} title={`Agregar a Sem ${semSel} · ${DIAS[diaSel]}`}>
-        <FSelect label="Ejercicio *" value={form.ejercicio_id} onChange={e=>setForm({...form,ejercicio_id:e.target.value})}
-          options={[{value:"",label:"— Elegir ejercicio —"},...ejercicios.map(e=>({value:String(e.id),label:`${e.nombre}${e.grupo_muscular?` (${e.grupo_muscular})`:""}`}))]}/>
-        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
+      <Modal open={addModal} onClose={()=>setAddModal(false)} title={`Sem ${semSel} · ${DIAS[diaSel]} · Agregar ejercicio`}>
+        {/* Búsqueda de ejercicio */}
+        <div style={{ marginBottom:12 }}>
+          <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:5,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>Ejercicio *</div>
+          <input
+            value={form.busqueda||""}
+            onChange={e=>{
+              setForm({...form,busqueda:e.target.value,ejercicio_id:""});
+            }}
+            placeholder="Escribí para buscar..."
+            style={{ width:"100%",padding:"9px 12px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,boxSizing:"border-box",marginBottom:4 }}
+          />
+          {form.busqueda&&!form.ejercicio_id&&(
+            <div style={{ maxHeight:180,overflowY:"auto",background:C.deep,border:`1px solid ${C.border}`,borderRadius:8 }}>
+              {ejercicios.filter(e=>e.nombre.toLowerCase().includes((form.busqueda||"").toLowerCase())).slice(0,8).map(e=>(
+                <div key={e.id} onClick={()=>setForm({...form,ejercicio_id:String(e.id),busqueda:e.nombre})}
+                  style={{ padding:"9px 12px",cursor:"pointer",fontSize:12,color:C.text,fontFamily:F.sans,borderBottom:`1px solid ${C.border}` }}
+                  onMouseEnter={ev=>ev.currentTarget.style.background=C.surface}
+                  onMouseLeave={ev=>ev.currentTarget.style.background="transparent"}>
+                  <strong>{e.nombre}</strong>
+                  {e.grupo_muscular&&<span style={{color:C.textS}}> · {e.grupo_muscular}</span>}
+                </div>
+              ))}
+              {ejercicios.filter(e=>e.nombre.toLowerCase().includes((form.busqueda||"").toLowerCase())).length===0&&(
+                <div style={{ padding:"9px 12px",fontSize:12,color:C.textD,fontFamily:F.sans }}>Sin resultados</div>
+              )}
+            </div>
+          )}
+          {form.ejercicio_id&&<div style={{ fontSize:11,color:C.jade,fontFamily:F.sans }}>✓ {form.busqueda}</div>}
+        </div>
+        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10 }}>
           <FInput label="Series" value={form.series} onChange={e=>setForm({...form,series:e.target.value})} type="number" min="1" max="10"/>
           <FInput label="Reps" value={form.reps} onChange={e=>setForm({...form,reps:e.target.value})} placeholder="8 | 8-10 | AMRAP"/>
-          <FInput label="% 1RM (opcional)" value={form.intensidad_pct} onChange={e=>setForm({...form,intensidad_pct:e.target.value})} type="number" min="0" max="110" step="2.5" placeholder="85"/>
-          <FInput label="Carga kg (opcional)" value={form.carga_kg} onChange={e=>setForm({...form,carga_kg:e.target.value})} type="number" min="0" step="2.5"/>
+          <FInput label="Pausa (seg)" value={form.descanso_seg||""} onChange={e=>setForm({...form,descanso_seg:e.target.value})} type="number" min="0" step="15" placeholder="120"/>
         </div>
-        <FInput label="Nota para el atleta (opcional)" value={form.notas_coach} onChange={e=>setForm({...form,notas_coach:e.target.value})} placeholder="Pausa en fondo, explosivo en subida..."/>
+        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10 }}>
+          <FInput label="% 1RM" value={form.intensidad_pct} onChange={e=>setForm({...form,intensidad_pct:e.target.value})} type="number" min="0" max="110" step="2.5" placeholder="75"/>
+          <FInput label="Carga kg" value={form.carga_kg} onChange={e=>setForm({...form,carga_kg:e.target.value})} type="number" min="0" step="2.5" placeholder="100"/>
+          <FInput label="RIR" value={form.rir||""} onChange={e=>setForm({...form,rir:e.target.value})} type="number" min="0" max="5" placeholder="2"/>
+        </div>
+        <FInput label="Observación para el atleta" value={form.notas_coach} onChange={e=>setForm({...form,notas_coach:e.target.value})} placeholder="Pausa en fondo, explosivo en subida, técnica estricta..."/>
         <div style={{ display:"flex",gap:10 }}>
-          <Btn onClick={agregar} disabled={saving||!form.ejercicio_id} full>{saving?"Guardando…":"Agregar"}</Btn>
+          <Btn onClick={agregar} disabled={saving||!form.ejercicio_id} full>{saving?"Guardando…":"Agregar ejercicio"}</Btn>
           <Btn onClick={()=>setAddModal(false)} outline full>Cancelar</Btn>
         </div>
       </Modal>
