@@ -551,29 +551,26 @@ function CoachAtletas({ onVerAtleta }) {
   };
 
   const crearAtleta=async()=>{
-    if (!formNuevo.email||!formNuevo.password){
-      setMsg({tipo:"error",texto:"Email y contraseña son obligatorios"});return;
+    if (!formNuevo.nombre||!formNuevo.email||!formNuevo.password){
+      setMsg({tipo:"error",texto:"Nombre, email y contraseña son obligatorios"});return;
     }
     if (formNuevo.password.length<6){
       setMsg({tipo:"error",texto:"La contraseña debe tener al menos 6 caracteres"});return;
     }
     setSaving(true);setMsg({tipo:"",texto:""});
     try {
-      const sb=await getSB();
-      // 1. Crear usuario en Supabase Auth
-      const {data:authData,error:authError}=await sb.auth.signUp({
-        email:formNuevo.email,
-        password:formNuevo.password,
+      // Generar UUID v4 en el cliente
+      const newId = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{
+        const r=Math.random()*16|0;
+        return (c==="x"?r:(r&0x3|0x8)).toString(16);
       });
-      if (authError) throw new Error(authError.message);
-      const newId=authData.user?.id;
-      if (!newId) throw new Error("No se pudo crear el usuario. Verificá que el email no exista.");
-      // 2. Insertar perfil con código automático
       const codigo=nextCodigo(atletas);
+      const sb=await getSB();
+      // Insertar directo en profiles (sin pasar por Auth)
       const {error:profError}=await sb.from("profiles").insert({
         id:newId,
         atleta_codigo:codigo,
-        nombre:formNuevo.nombre||null,
+        nombre:formNuevo.nombre,
         rol:"atleta",
         perfil_deporte:formNuevo.perfil_deporte||null,
         peso_actual:formNuevo.peso_actual?parseFloat(formNuevo.peso_actual):null,
@@ -581,16 +578,16 @@ function CoachAtletas({ onVerAtleta }) {
         activo:true,
       });
       if (profError) throw new Error(profError.message);
-      // 3. Agregar a USUARIOS en memoria para login inmediato
+      // Guardar en lista local USUARIOS para que pueda logearse
       USUARIOS.push({
         email:formNuevo.email,
         password:formNuevo.password,
         id:newId,
-        nombre:formNuevo.nombre||null,
+        nombre:formNuevo.nombre,
         rol:"atleta",
         atleta_codigo:codigo,
       });
-      setMsg({tipo:"ok",texto:`✓ ${codigo} creado correctamente. Email: ${formNuevo.email}`});
+      setMsg({tipo:"ok",texto:`✓ ${codigo} — ${formNuevo.nombre} creado. Ya puede ingresar.`});
       setFormNuevo({nombre:"",email:"",password:"",perfil_deporte:"",peso_actual:"",talla:""});
       await cargar();
     } catch(e) {
