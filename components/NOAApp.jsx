@@ -1216,13 +1216,14 @@ function CoachVistaAtleta({ atleta, onVolver }) {
 // APP RAÍZ
 // ─────────────────────────────────────────
 export default function NOAApp() {
+  // TODOS los hooks al tope — nunca dentro de condicionales
   const [user,setUser]=useState(null);
   const [perfil,setPerfil]=useState(null);
   const [appLoading,setAppLoading]=useState(true);
   const [sec,setSec]=useState("hoy");
+  const [atletaVista,setAtletaVista]=useState(null);
 
   useEffect(()=>{
-    // Inicializar Supabase en background (para las queries)
     getSB().then(()=>setAppLoading(false));
   },[]);
 
@@ -1231,10 +1232,7 @@ export default function NOAApp() {
     setSec(p?.rol==="coach"?"c_atletas":"hoy");
   };
 
-  const logout=()=>{
-    setUser(null);setPerfil(null);setSec("hoy");
-  };
-
+  const logout=()=>{ setUser(null);setPerfil(null);setSec("hoy"); };
   const rol=perfil?.rol||"atleta";
 
   const GLOBAL_CSS=`
@@ -1249,6 +1247,26 @@ export default function NOAApp() {
     select option{background:${C.card};color:${C.text}}
     @keyframes spin{to{transform:rotate(360deg)}}
   `;
+
+  // Render de contenido — función para evitar instanciar todo a la vez
+  const renderContent = () => {
+    if (!user) return null;
+    switch(sec) {
+      case "hoy":           return <SesionHoy user={user}/>;
+      case "calendario":    return <CalendarioAtleta user={user}/>;
+      case "biomarcadores": return <Biomarcadores user={user}/>;
+      case "marcas":        return <Marcas user={user}/>;
+      case "noa_coach":     return <NOACoach perfil={perfil}/>;
+      case "c_atletas":     return <CoachAtletas user={user} onVerAtleta={(a)=>{setAtletaVista(a);setSec("c_vista");}}/>;
+      case "c_ciclos":      return <CoachCiclos user={user}/>;
+      case "c_planificar":  return <CoachPlanificar user={user}/>;
+      case "c_ejercicios":  return <CoachEjercicios user={user}/>;
+      case "c_vista":       return atletaVista
+        ? <CoachVistaAtleta atleta={atletaVista} onVolver={()=>setSec("c_atletas")}/>
+        : <div style={{padding:"28px 32px"}}><SectionHeader title="Ver como atleta" sub="Elegí un atleta desde Mis atletas → botón Ver"/></div>;
+      default: return null;
+    }
+  };
 
   if (appLoading) return (
     <div style={{ minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center" }}>
@@ -1267,30 +1285,13 @@ export default function NOAApp() {
     </>
   );
 
-  const [atletaVista,setAtletaVista]=useState(null);
-
-  const views={
-    hoy:          <SesionHoy user={user}/>,
-    calendario:   <CalendarioAtleta user={user}/>,
-    biomarcadores:<Biomarcadores user={user}/>,
-    marcas:       <Marcas user={user}/>,
-    noa_coach:    <NOACoach perfil={perfil}/>,
-    c_atletas:    <CoachAtletas user={user} onVerAtleta={(a)=>{setAtletaVista(a);setSec("c_vista");}}/>,
-    c_ciclos:     <CoachCiclos user={user}/>,
-    c_planificar: <CoachPlanificar user={user}/>,
-    c_ejercicios: <CoachEjercicios user={user}/>,
-    c_vista:      atletaVista
-      ? <CoachVistaAtleta atleta={atletaVista} onVolver={()=>setSec("c_atletas")}/>
-      : <div style={{padding:"28px 32px"}}><SectionHeader title="Ver como atleta" sub="Elegí un atleta desde Mis atletas → Ver dashboard"/></div>,
-  };
-
   return (
     <>
       <style>{GLOBAL_CSS}</style>
       <div style={{ display:"flex",minHeight:"100vh",background:C.bg }}>
         <Sidebar sec={sec} setSec={setSec} rol={rol} perfil={perfil} onLogout={logout}/>
         <main style={{ flex:1,overflowY:"auto",minHeight:"100vh" }}>
-          {views[sec]||null}
+          {renderContent()}
         </main>
       </div>
     </>
