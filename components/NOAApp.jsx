@@ -790,6 +790,12 @@ function CoachPlanificar({ user }) {
   const [addModal,setAddModal]=useState(false);
   const [form,setForm]=useState({ejercicio_id:"",busqueda:"",series:3,reps:"8",intensidad_pct:"",carga_kg:"",descanso_seg:"120",rir:"",notas_coach:""});
   const [saving,setSaving]=useState(false);
+  const [dupModal,setDupModal]=useState(false);
+  const [dupTipo,setDupTipo]=useState("dia"); // "dia" | "semana"
+  const [dupSemsDest,setDupSemsDest]=useState([]);
+  const [dupDiaDest,setDupDiaDest]=useState(1);
+  const [dupProgresion,setDupProgresion]=useState(0); // % extra por semana
+  const [dupSaving,setDupSaving]=useState(false);
 
   useEffect(()=>{init();},[]);
   useEffect(()=>{if(atletaSel)cargarCiclos(atletaSel);},[atletaSel]);
@@ -852,6 +858,79 @@ function CoachPlanificar({ user }) {
     cargarPlan(cicloSel);
   };
 
+  // Duplicar día actual a otras semanas (con o sin progresión)
+  const duplicarDia=async()=>{
+    if (!dupSemsDest.length||!cicloSel)return;
+    setDupSaving(true);
+    const sb=await getSB();
+    const origen=plan[semSel]?.[diaSel]||[];
+    if (!origen.length){setDupSaving(false);return;}
+    const rows=[];
+    dupSemsDest.forEach(semDest=>{
+      const factor=1+(parseFloat(dupProgresion)||0)/100*(semDest-semSel);
+      origen.forEach((ej,i)=>{
+        const nuevaCarga=ej.carga_kg?Math.round(ej.carga_kg*factor*100)/100:null;
+        rows.push({
+          ciclo_id:parseInt(cicloSel),
+          semana:semDest,
+          dia:dupTipo==="dia"?dupDiaDest:ej.dia,
+          orden:i+1,
+          ejercicio_id:ej.ejercicio_id,
+          series:ej.series,
+          reps:ej.reps,
+          intensidad_pct:ej.intensidad_pct,
+          carga_kg:nuevaCarga,
+          descanso_seg:ej.descanso_seg,
+          rir:ej.rir,
+          notas_coach:ej.notas_coach,
+        });
+      });
+    });
+    const {error}=await sb.from("sesiones_plan").insert(rows);
+    if (error){alert("Error al duplicar: "+error.message);}
+    else{await cargarPlan(cicloSel);}
+    setDupModal(false);setDupSaving(false);setDupSemsDest([]);
+  };
+
+  // Duplicar semana entera a otras semanas
+  const duplicarSemana=async()=>{
+    if (!dupSemsDest.length||!cicloSel)return;
+    setDupSaving(true);
+    const sb=await getSB();
+    const semOrigen=plan[semSel]||{};
+    const rows=[];
+    dupSemsDest.forEach(semDest=>{
+      const factor=1+(parseFloat(dupProgresion)||0)/100*(semDest-semSel);
+      Object.entries(semOrigen).forEach(([dia,ejerciciosDia])=>{
+        ejerciciosDia.forEach((ej,i)=>{
+          const nuevaCarga=ej.carga_kg?Math.round(ej.carga_kg*factor*100)/100:null;
+          rows.push({
+            ciclo_id:parseInt(cicloSel),
+            semana:semDest,
+            dia:parseInt(dia),
+            orden:i+1,
+            ejercicio_id:ej.ejercicio_id,
+            series:ej.series,
+            reps:ej.reps,
+            intensidad_pct:ej.intensidad_pct,
+            carga_kg:nuevaCarga,
+            descanso_seg:ej.descanso_seg,
+            rir:ej.rir,
+            notas_coach:ej.notas_coach,
+          });
+        });
+      });
+    });
+    const {error}=await sb.from("sesiones_plan").insert(rows);
+    if (error){alert("Error al duplicar: "+error.message);}
+    else{await cargarPlan(cicloSel);}
+    setDupModal(false);setDupSaving(false);setDupSemsDest([]);
+  };
+
+  const toggleSemDest=(s)=>{
+    setDupSemsDest(prev=>prev.includes(s)?prev.filter(x=>x!==s):[...prev,s]);
+  };
+
   const cicloActual=ciclos.find(c=>String(c.id)===cicloSel);
   const diasDisp=cicloActual?Array.from({length:cicloActual.sesiones_semana},(_,i)=>i+1):[1,2,3];
   const semsDisp=cicloActual?Array.from({length:cicloActual.semanas},(_,i)=>i+1):[1,2,3,4];
@@ -889,12 +968,16 @@ function CoachPlanificar({ user }) {
             ))}
           </div>
           <Card style={{ marginBottom:14 }}>
-            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14 }}>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8 }}>
               <div style={{ fontFamily:F.serif,fontSize:17,color:C.white }}>
                 Semana {semSel} · {DIAS[diaSel]}
                 <span style={{ fontSize:12,color:C.textS,fontFamily:F.sans,marginLeft:10 }}>{ejsDia.length} ejercicios</span>
               </div>
-              <Btn sm onClick={()=>setAddModal(true)}>+ Agregar ejercicio</Btn>
+              <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
+                {ejsDia.length>0&&<Btn sm outline color={C.amber} onClick={()=>{setDupTipo("dia");setDupSemsDest([]);setDupProgresion(0);setDupDiaDest(diaSel);setDupModal(true);}}>⧉ Duplicar día</Btn>}
+                {Object.values(plan[semSel]||{}).flat().length>0&&<Btn sm outline color={C.violet} onClick={()=>{setDupTipo("semana");setDupSemsDest([]);setDupProgresion(0);setDupModal(true);}}>⧉ Duplicar semana</Btn>}
+                <Btn sm onClick={()=>setAddModal(true)}>+ Agregar</Btn>
+              </div>
             </div>
             {ejsDia.length===0?(
               <div style={{ textAlign:"center",padding:"24px 0",color:C.textD,fontFamily:F.sans,fontSize:13 }}>Sin ejercicios · hacé clic en "+ Agregar ejercicio"</div>
@@ -923,6 +1006,74 @@ function CoachPlanificar({ user }) {
         </>
       )}
       {!atletaSel&&<EmptyState title="Elegí un atleta" sub="Seleccioná un atleta y su ciclo para empezar a planificar"/>}
+
+      {/* Modal duplicar */}
+      <Modal open={dupModal} onClose={()=>setDupModal(false)} title={dupTipo==="dia"?`Duplicar ${DIAS[diaSel]} (Sem ${semSel})`:`Duplicar Semana ${semSel} completa`}>
+        <div style={{ padding:"10px 14px",background:dupTipo==="semana"?C.violet+"0E":C.amber+"0E",border:`1px solid ${dupTipo==="semana"?C.violet:C.amber}30`,borderRadius:8,marginBottom:16,fontSize:12,color:C.textS,fontFamily:F.sans }}>
+          {dupTipo==="dia"
+            ? `Se copiarán los ${ejsDia.length} ejercicios del ${DIAS[diaSel]} a las semanas que elijas.`
+            : `Se copiarán todos los días de la Semana ${semSel} (${Object.values(plan[semSel]||{}).flat().length} ejercicios en total) a las semanas que elijas.`
+          }
+        </div>
+
+        {/* Selector semanas destino */}
+        <div style={{ marginBottom:16 }}>
+          <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:8,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>Copiar a las semanas:</div>
+          <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
+            {semsDisp.filter(s=>s!==semSel).map(s=>(
+              <button key={s} onClick={()=>toggleSemDest(s)} style={{ padding:"7px 16px",borderRadius:8,border:`1.5px solid ${dupSemsDest.includes(s)?(dupTipo==="semana"?C.violet:C.amber):C.border}`,background:dupSemsDest.includes(s)?(dupTipo==="semana"?C.violet+"22":C.amber+"22"):"transparent",color:dupSemsDest.includes(s)?(dupTipo==="semana"?C.violet:C.amber):C.textS,fontSize:12,fontWeight:dupSemsDest.includes(s)?700:400,cursor:"pointer",fontFamily:F.sans }}>
+                Sem {s} {plan[s]&&Object.values(plan[s]).flat().length>0?"●":""}
+              </button>
+            ))}
+          </div>
+          {dupSemsDest.length>0&&(
+            <div style={{ fontSize:11,color:C.textS,marginTop:6,fontFamily:F.sans }}>
+              {dupSemsDest.length} semana{dupSemsDest.length>1?"s":""} seleccionada{dupSemsDest.length>1?"s":""}
+              {plan[dupSemsDest[0]]&&Object.values(plan[dupSemsDest[0]]).flat().length>0&&
+                <span style={{color:C.amber}}> · ⚠ ya tienen ejercicios (se agregarán)</span>
+              }
+            </div>
+          )}
+        </div>
+
+        {/* Selector día destino (solo para duplicar día) */}
+        {dupTipo==="dia"&&(
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:8,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>En qué día pegarlo:</div>
+            <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
+              {diasDisp.map(d=>(
+                <button key={d} onClick={()=>setDupDiaDest(d)} style={{ padding:"7px 16px",borderRadius:8,border:`1.5px solid ${dupDiaDest===d?C.amber:C.border}`,background:dupDiaDest===d?C.amber+"22":"transparent",color:dupDiaDest===d?C.amber:C.textS,fontSize:12,fontWeight:dupDiaDest===d?700:400,cursor:"pointer",fontFamily:F.sans }}>
+                  {DIAS[d]}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Progresión */}
+        <div style={{ marginBottom:16 }}>
+          <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:8,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>
+            Progresión de carga por semana: <strong style={{color:dupProgresion>0?C.jade:C.text}}>{dupProgresion>0?`+${dupProgresion}%`:"Sin cambio (copia exacta)"}</strong>
+          </div>
+          <input type="range" min={0} max={10} step={2.5} value={dupProgresion} onChange={e=>setDupProgresion(parseFloat(e.target.value))} style={{ width:"100%",accentColor:C.jade }}/>
+          <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:C.textD,fontFamily:F.sans,marginTop:4 }}>
+            <span>Copia exacta</span><span>+2.5%/sem</span><span>+5%/sem</span><span>+7.5%/sem</span><span>+10%/sem</span>
+          </div>
+          {dupProgresion>0&&<div style={{ fontSize:11,color:C.textS,marginTop:6,fontFamily:F.sans }}>
+            Solo afecta la carga en kg. Series y reps se copian igual.
+          </div>}
+        </div>
+
+        <div style={{ display:"flex",gap:10 }}>
+          <Btn
+            onClick={dupTipo==="dia"?duplicarDia:duplicarSemana}
+            disabled={dupSaving||!dupSemsDest.length}
+            color={dupTipo==="semana"?C.violet:C.amber}
+            full
+          >{dupSaving?"Duplicando…":`Duplicar a ${dupSemsDest.length} semana${dupSemsDest.length!==1?"s":""}`}</Btn>
+          <Btn onClick={()=>setDupModal(false)} outline full>Cancelar</Btn>
+        </div>
+      </Modal>
       <Modal open={addModal} onClose={()=>setAddModal(false)} title={`Sem ${semSel} · ${DIAS[diaSel]} · Agregar ejercicio`}>
         {/* Búsqueda de ejercicio */}
         <div style={{ marginBottom:12 }}>
