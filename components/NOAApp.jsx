@@ -67,9 +67,15 @@ const USUARIOS = [
     rol: "coach",
     atleta_codigo: null,
   },
-  // Cuando agregues atletas, ponelos así:
-  // { email: "atleta1@gmail.com", password: "clave123", id: "UUID-ATL-01", nombre: null, rol: "atleta", atleta_codigo: "ATL-01" },
-  // { email: "atleta2@gmail.com", password: "clave456", id: "UUID-ATL-02", nombre: null, rol: "atleta", atleta_codigo: "ATL-02" },
+  {
+    email: "proferodrigomanuel@gmail.com",
+    password: "Ro241178",
+    id: "a9159992-7dc3-410d-aba5-cdb11de25ece",
+    nombre: "rodrigo fernandez",
+    rol: "atleta",
+    atleta_codigo: "ATL-01",
+  },
+  // Nuevos atletas se agregan acá automáticamente o manualmente
 ];
 
 // ─────────────────────────────────────────
