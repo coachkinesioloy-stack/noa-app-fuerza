@@ -28,23 +28,32 @@ async function getSB() {
 // ─────────────────────────────────────────
 async function askNOA(q, ctx = {}) {
   const key = process.env.NEXT_PUBLIC_GROQ_KEY;
-  if (!key || key === "gsk_...") return demoMsg(q);
+  if (!key || key === "gsk_..." || !key.startsWith("gsk_")) return demoMsg(q);
   try {
+    const sistema = `Sos NOA Coach, asistente experto en entrenamiento de fuerza de la app NOA (Never Over, Always).
+Respondé en español rioplatense. Máximo 3 párrafos. Sé conciso y técnico.
+Contexto del atleta: ${JSON.stringify(ctx, null, 2)}
+Áreas: periodización, tonelaje, %1RM, RIR, RPE, recuperación, ciclos de fuerza (adaptación, hipertrofia, fza resistencia, fza potencia, submáxima, neural), biomarcadores (HRV, sueño, DOMS).
+Fórmula 1RM Epley: kg × (1 + reps/30). Carga para %: 1RM × % / 100.`;
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "llama3-70b-8192",
         messages: [
-          { role: "system", content: `Sos NOA Coach, experto en entrenamiento de fuerza. Contexto: ${JSON.stringify(ctx)}. Respondé en español rioplatense, máximo 3 párrafos, conciso y técnico. NOA = Never Over, Always.` },
+          { role: "system", content: sistema },
           { role: "user", content: q }
         ],
-        temperature: 0.7, max_tokens: 400
+        temperature: 0.7, max_tokens: 500
       })
     });
+    if (!r.ok) {
+      const err = await r.json();
+      return `Error Groq (${r.status}): ${err.error?.message||"Sin detalle"}`;
+    }
     const d = await r.json();
     return d.choices?.[0]?.message?.content || "Sin respuesta.";
-  } catch { return "Error de conexión con NOA Coach."; }
+  } catch(e) { return `Error de conexión: ${e.message}`; }
 }
 
 function demoMsg(p) {
@@ -636,12 +645,31 @@ function CoachAtletas({ onVerAtleta }) {
 
       {/* Modal editar */}
       <Modal open={!!editando} onClose={()=>setEditando(null)} title={`Editar ${editando?.atleta_codigo||"atleta"}`}>
+        {/* Credenciales del atleta */}
+        {editando&&(()=>{
+          const u=USUARIOS.find(u=>u.id===editando.id);
+          return u?(
+            <div style={{ padding:"10px 14px",background:C.jade+"0E",border:`1px solid ${C.jade}30`,borderRadius:8,marginBottom:14 }}>
+              <div style={{ fontSize:11,fontWeight:700,color:C.jade,marginBottom:6,fontFamily:F.sans,letterSpacing:"0.06em" }}>CREDENCIALES DE ACCESO</div>
+              <div style={{ fontSize:12,color:C.textS,fontFamily:F.sans }}>Email: <strong style={{color:C.text}}>{u.email}</strong></div>
+              <div style={{ fontSize:12,color:C.textS,fontFamily:F.sans,marginTop:3 }}>Contraseña: <strong style={{color:C.text}}>{u.password}</strong></div>
+            </div>
+          ):null;
+        })()}
         <FInput label="Nombre completo" value={formEdit.nombre||""} onChange={e=>setFormEdit({...formEdit,nombre:e.target.value})}/>
         <FSelect label="Perfil deportivo" value={formEdit.perfil_deporte||""} onChange={e=>setFormEdit({...formEdit,perfil_deporte:e.target.value})} options={[{value:"",label:"Sin especificar"},...PERFILES_DEP.map(p=>({value:p,label:p}))]}/>
         <FInput label="Peso (kg)" value={formEdit.peso_actual||""} onChange={e=>setFormEdit({...formEdit,peso_actual:e.target.value})} type="number" step="0.1"/>
         <FInput label="Talla (cm)" value={formEdit.talla||""} onChange={e=>setFormEdit({...formEdit,talla:e.target.value})} type="number"/>
         <div style={{ display:"flex",gap:10,marginTop:4 }}>
           <Btn onClick={guardarEdicion} full>Guardar cambios</Btn>
+          <Btn onClick={async()=>{
+            if(!confirm("¿Borrar este atleta? Esta acción no se puede deshacer."))return;
+            const sb=await getSB();
+            await sb.from("profiles").delete().eq("id",editando.id);
+            const idx=USUARIOS.findIndex(u=>u.id===editando.id);
+            if(idx>=0)USUARIOS.splice(idx,1);
+            setEditando(null);cargar();
+          }} color={C.red} outline full>Borrar atleta</Btn>
           <Btn onClick={()=>setEditando(null)} outline full>Cancelar</Btn>
         </div>
       </Modal>
@@ -1321,19 +1349,55 @@ function Marcas({ user }) {
 // ─────────────────────────────────────────
 // NOA COACH IA
 // ─────────────────────────────────────────
-function NOACoach({ perfil }) {
-  const [msgs,setMsgs]=useState([{rol:"noa",texto:"Hola, soy NOA Coach. Estoy entrenado con el contexto de tu planificación. ¿En qué puedo ayudarte?"}]);
+function NOACoach({ perfil, user }) {
+  const [msgs,setMsgs]=useState([{rol:"noa",texto:"Hola! Soy NOA Coach 💪\n\nEstoy cargando tu contexto de entrenamiento para darte respuestas personalizadas. ¿En qué puedo ayudarte?"}]);
   const [input,setInput]=useState("");
   const [loading,setLoading]=useState(false);
+  const [ctx,setCtx]=useState({perfil});
+  const [groqActivo,setGroqActivo]=useState(false);
   const ref=useRef(null);
 
-  const quick=["¿Cuánto tonelaje esta semana?","¿Puedo aumentar la carga?","¿Qué es el RIR?","Explicame el ciclo neural","¿Mi HRV es bueno?"];
+  // Cargar contexto real del atleta desde Supabase
+  useEffect(()=>{
+    const cargarCtx=async()=>{
+      const key=process.env.NEXT_PUBLIC_GROQ_KEY;
+      setGroqActivo(!!key&&key.startsWith("gsk_"));
+      if (!user?.id) return;
+      const sb=await getSB();if(!sb)return;
+      // Ciclo activo
+      const {data:ciclos}=await sb.from("ciclos").select("*").eq("atleta_id",user.id).eq("activo",true).limit(1);
+      const ciclo=ciclos?.[0];
+      // Biomarcadores de hoy
+      const today=new Date().toISOString().split("T")[0];
+      const {data:bio}=await sb.from("biomarcadores").select("*").eq("atleta_id",user.id).eq("fecha",today).single().catch(()=>({data:null}));
+      // Último tonelaje
+      const {data:logs}=await sb.from("logs_entrenamiento").select("semana,tonelaje,rpe").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(20);
+      const tonSem={};
+      logs?.forEach(l=>{if(l.semana)tonSem[l.semana]=(tonSem[l.semana]||0)+(l.tonelaje||0);});
+      setCtx({
+        atleta:{nombre:perfil?.nombre,perfil:perfil?.perfil_deporte,peso:perfil?.peso_actual},
+        ciclo:ciclo?{nombre:ciclo.nombre,tipo:ciclo.tipo,semanas:ciclo.semanas,sesiones:ciclo.sesiones_semana}:null,
+        biomarcadores:bio?{hrv:bio.hrv,sueno:bio.calidad_sueno,doms:bio.dolor_muscular,estres:bio.estres,motivacion:bio.motivacion,readiness:bio.readiness_score}:null,
+        tonelaje_por_semana:tonSem,
+      });
+    };
+    cargarCtx();
+  },[user]);
+
+  const quick=[
+    "¿Cuánto tonelaje debería hacer esta semana?",
+    "¿Puedo aumentar la carga hoy?",
+    "¿Qué es el RIR y cómo lo uso?",
+    "Explicame mi ciclo actual",
+    "¿Mi HRV indica que estoy recuperado?",
+    "¿Cómo progreso de hipertrofia a fuerza?",
+  ];
 
   const send=async(txt=input)=>{
     if (!txt.trim()||loading)return;
     setMsgs(p=>[...p,{rol:"user",texto:txt}]);
     setInput("");setLoading(true);
-    const r=await askNOA(txt,{perfil});
+    const r=await askNOA(txt,ctx);
     setMsgs(p=>[...p,{rol:"noa",texto:r}]);
     setLoading(false);
     setTimeout(()=>ref.current?.scrollIntoView({behavior:"smooth"}),80);
@@ -1341,8 +1405,23 @@ function NOACoach({ perfil }) {
 
   return (
     <div style={{ padding:"28px 32px",maxWidth:720,display:"flex",flexDirection:"column",height:"calc(100vh - 56px)" }}>
-      <SectionHeader title="NOA Coach" sub="Powered by Groq · LLaMA 3 70B"/>
-      <div style={{ display:"flex",gap:7,flexWrap:"wrap",marginBottom:16 }}>
+      <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16 }}>
+        <SectionHeader title="NOA Coach" sub={groqActivo?"Groq · LLaMA 3 70B · contexto real del atleta":"Modo demo · configurá NEXT_PUBLIC_GROQ_KEY en Vercel"}/>
+        <div style={{ display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,background:groqActivo?C.jade+"18":C.amber+"18",border:`1px solid ${groqActivo?C.jade+"44":C.amber+"44"}` }}>
+          <div style={{ width:7,height:7,borderRadius:"50%",background:groqActivo?C.jade:C.amber }}/>
+          <span style={{ fontSize:10,fontWeight:700,color:groqActivo?C.jade:C.amber,fontFamily:F.sans,letterSpacing:"0.05em" }}>{groqActivo?"GROQ ACTIVO":"DEMO"}</span>
+        </div>
+      </div>
+      {ctx.ciclo&&(
+        <div style={{ display:"flex",gap:8,marginBottom:12,padding:"8px 12px",background:C.surface,borderRadius:9,border:`1px solid ${C.border}`,flexWrap:"wrap" }}>
+          <span style={{ fontSize:11,color:C.textS,fontFamily:F.sans }}>Contexto cargado:</span>
+          <Tag color={C.jade} sm>{ctx.ciclo.tipo?.replace(/_/g," ")||"ciclo"}</Tag>
+          <Tag color={C.blue} sm>{ctx.ciclo.semanas} sem</Tag>
+          {ctx.biomarcadores?.hrv&&<Tag color={C.violet} sm>HRV {ctx.biomarcadores.hrv}ms</Tag>}
+          {ctx.biomarcadores?.readiness&&<Tag color={ctx.biomarcadores.readiness>=75?C.jade:C.amber} sm>Readiness {ctx.biomarcadores.readiness}</Tag>}
+        </div>
+      )}
+      <div style={{ display:"flex",gap:6,flexWrap:"wrap",marginBottom:14 }}>
         {quick.map(q=><button key={q} onClick={()=>send(q)} style={{ padding:"5px 12px",borderRadius:99,border:`1px solid ${C.border}`,background:"transparent",color:C.textS,fontSize:11,cursor:"pointer",fontFamily:F.sans,transition:"all 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.jade+"88";e.currentTarget.style.color=C.jade;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.textS;}}>{q}</button>)}
       </div>
       <div style={{ flex:1,overflowY:"auto",background:C.deep,border:`1px solid ${C.border}`,borderRadius:14,padding:16,marginBottom:14,display:"flex",flexDirection:"column",gap:14 }}>
@@ -1457,7 +1536,7 @@ export default function NOAApp() {
       case "calendario":    return <CalendarioAtleta user={user}/>;
       case "biomarcadores": return <Biomarcadores user={user}/>;
       case "marcas":        return <Marcas user={user}/>;
-      case "noa_coach":     return <NOACoach perfil={perfil}/>;
+      case "noa_coach":     return <NOACoach perfil={perfil} user={user}/>;
       case "c_atletas":     return <CoachAtletas user={user} onVerAtleta={(a)=>{setAtletaVista(a);setSec("c_vista");}}/>;
       case "c_ciclos":      return <CoachCiclos user={user}/>;
       case "c_planificar":  return <CoachPlanificar user={user}/>;
