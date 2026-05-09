@@ -304,46 +304,84 @@ const NAV_COACH = [
   {id:"c_vista",     icon:"◎", label:"Ver como atleta"},
 ];
 
-function Sidebar({ sec, setSec, rol, perfil, onLogout }) {
+function Sidebar({ sec, setSec, rol, perfil, onLogout, open, setOpen }) {
   const nav = rol==="coach"?NAV_COACH:NAV_ATLETA;
   return (
-    <aside style={{ width:224,minWidth:224,background:C.deep,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",height:"100vh",position:"sticky",top:0 }}>
-      <div style={{ padding:"22px 20px 16px",borderBottom:`1px solid ${C.border}` }}>
-        <div style={{ display:"flex",alignItems:"center",gap:10 }}>
-          <div style={{ width:38,height:38,borderRadius:10,background:`linear-gradient(135deg,${C.jade3},${C.jade})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,color:C.deep,fontFamily:F.serif,boxShadow:`0 0 14px ${C.jade}44` }}>N</div>
-          <div>
-            <div style={{ fontFamily:F.serif,fontSize:18,color:C.white,lineHeight:1 }}>NOA</div>
-            <div style={{ fontSize:9,color:C.jade,letterSpacing:"0.14em",marginTop:2,fontFamily:F.sans,textTransform:"uppercase" }}>never over, always</div>
+    <>
+      {/* Overlay mobile */}
+      {open && (
+        <div onClick={()=>setOpen(false)} style={{
+          position:"fixed",inset:0,background:"#000000BB",
+          zIndex:90,display:"block",
+        }}/>
+      )}
+
+      <aside style={{
+        width:224, minWidth:224,
+        background:C.deep,
+        borderRight:`1px solid ${C.border}`,
+        display:"flex", flexDirection:"column",
+        height:"100vh",
+        position:"fixed", top:0, left:0,
+        zIndex:100,
+        transform: open ? "translateX(0)" : "translateX(-100%)",
+        transition:"transform 0.25s ease",
+      }}>
+        {/* Logo + cerrar */}
+        <div style={{ padding:"18px 16px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+          <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+            <div style={{ width:36,height:36,borderRadius:10,background:`linear-gradient(135deg,${C.jade3},${C.jade})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,color:C.deep,fontFamily:F.serif,boxShadow:`0 0 14px ${C.jade}44` }}>N</div>
+            <div>
+              <div style={{ fontFamily:F.serif,fontSize:17,color:C.white,lineHeight:1 }}>NOA</div>
+              <div style={{ fontSize:9,color:C.jade,letterSpacing:"0.14em",marginTop:2,fontFamily:F.sans,textTransform:"uppercase" }}>never over, always</div>
+            </div>
+          </div>
+          <button onClick={()=>setOpen(false)} style={{ background:"none",border:`1px solid ${C.border}`,borderRadius:7,color:C.textS,width:28,height:28,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center" }}>×</button>
+        </div>
+
+        {/* Perfil */}
+        <div style={{ padding:"10px 14px",borderBottom:`1px solid ${C.border}` }}>
+          <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+            <div style={{ width:30,height:30,borderRadius:7,background:C.jade+"22",border:`1px solid ${C.jade}44`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F.serif,color:C.jade,fontSize:13,flexShrink:0 }}>
+              {(perfil?.nombre||perfil?.atleta_codigo||"?")[0].toUpperCase()}
+            </div>
+            <div style={{ overflow:"hidden" }}>
+              <div style={{ fontSize:12,fontWeight:600,color:C.text,fontFamily:F.sans,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{perfil?.nombre||perfil?.atleta_codigo||"Usuario"}</div>
+              <div style={{ fontSize:10,color:C.jade,textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:F.sans }}>{rol}</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div style={{ padding:"10px 16px",borderBottom:`1px solid ${C.border}` }}>
-        <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-          <div style={{ width:30,height:30,borderRadius:7,background:C.jade+"22",border:`1px solid ${C.jade}44`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F.serif,color:C.jade,fontSize:13 }}>
-            {(perfil?.nombre||perfil?.atleta_codigo||"?")[0].toUpperCase()}
-          </div>
-          <div>
-            <div style={{ fontSize:12,fontWeight:600,color:C.text,fontFamily:F.sans }}>{perfil?.nombre||perfil?.atleta_codigo||"Usuario"}</div>
-            <div style={{ fontSize:10,color:C.jade,textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:F.sans }}>{rol}</div>
-          </div>
+        {/* Nav */}
+        <nav style={{ flex:1,padding:"10px 10px",overflowY:"auto" }}>
+          {nav.map(item=>{
+            const active=sec===item.id;
+            return (
+              <button key={item.id} onClick={()=>{setSec(item.id);setOpen(false);}} style={{
+                display:"flex",alignItems:"center",gap:9,width:"100%",
+                padding:"10px 12px",
+                background:active?C.jade+"14":"transparent",
+                border:"none",
+                borderLeft:`2px solid ${active?C.jade:"transparent"}`,
+                borderRadius:"0 8px 8px 0",
+                color:active?C.jade:C.textS,
+                fontSize:13,fontWeight:active?600:400,
+                cursor:"pointer",textAlign:"left",
+                transition:"all 0.15s",fontFamily:F.sans,marginBottom:2,
+              }}>
+                <span style={{ fontSize:15,opacity:active?1:0.5 }}>{item.icon}</span>
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div style={{ padding:"12px 16px",borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+          <div style={{ fontSize:9,color:C.textD,fontFamily:F.sans }}>NOA v2.0</div>
+          <button onClick={onLogout} style={{ fontSize:10,color:C.textD,background:"none",border:"none",cursor:"pointer",fontFamily:F.sans }}>Salir →</button>
         </div>
-      </div>
-
-      <nav style={{ flex:1,padding:"10px 10px",overflowY:"auto" }}>
-        {nav.map(item=>{
-          const active=sec===item.id;
-          return <button key={item.id} onClick={()=>setSec(item.id)} style={{ display:"flex",alignItems:"center",gap:9,width:"100%",padding:"8px 12px",background:active?C.jade+"14":"transparent",border:"none",borderLeft:`2px solid ${active?C.jade:"transparent"}`,borderRadius:"0 8px 8px 0",color:active?C.jade:C.textS,fontSize:12,fontWeight:active?600:400,cursor:"pointer",textAlign:"left",transition:"all 0.15s",fontFamily:F.sans,marginBottom:1 }}>
-            <span style={{ fontSize:13,opacity:active?1:0.5 }}>{item.icon}</span>{item.label}
-          </button>;
-        })}
-      </nav>
-
-      <div style={{ padding:"12px 16px",borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-        <div style={{ fontSize:9,color:C.textD,fontFamily:F.sans }}>NOA v2.0</div>
-        <button onClick={onLogout} style={{ fontSize:10,color:C.textD,background:"none",border:"none",cursor:"pointer",fontFamily:F.sans }}>Salir →</button>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }
 
@@ -1525,6 +1563,7 @@ export default function NOAApp() {
   const [appLoading,setAppLoading]=useState(true);
   const [sec,setSec]=useState("hoy");
   const [atletaVista,setAtletaVista]=useState(null);
+  const [sideOpen,setSideOpen]=useState(false);
 
   useEffect(()=>{
     getSB().then(()=>setAppLoading(false));
@@ -1541,7 +1580,7 @@ export default function NOAApp() {
   const GLOBAL_CSS=`
     @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap');
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    html,body{background:${C.bg};color:${C.text};font-family:${F.sans}}
+    html,body{background:${C.bg};color:${C.text};font-family:${F.sans};-webkit-tap-highlight-color:transparent;}
     ::-webkit-scrollbar{width:4px;height:4px}
     ::-webkit-scrollbar-track{background:transparent}
     ::-webkit-scrollbar-thumb{background:${C.border};border-radius:2px}
@@ -1549,6 +1588,13 @@ export default function NOAApp() {
     input::placeholder,textarea::placeholder{color:${C.textD}}
     select option{background:${C.card};color:${C.text}}
     @keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:640px){
+      h1{font-size:22px!important}
+      .grid-4{grid-template-columns:1fr 1fr!important}
+      .grid-2{grid-template-columns:1fr!important}
+      .hide-mobile{display:none!important}
+      input,select,textarea{font-size:16px!important}
+    }
   `;
 
   // Render de contenido — función para evitar instanciar todo a la vez
@@ -1591,9 +1637,52 @@ export default function NOAApp() {
   return (
     <>
       <style>{GLOBAL_CSS}</style>
-      <div style={{ display:"flex",minHeight:"100vh",background:C.bg }}>
-        <Sidebar sec={sec} setSec={setSec} rol={rol} perfil={perfil} onLogout={logout}/>
-        <main style={{ flex:1,overflowY:"auto",minHeight:"100vh" }}>
+      <div style={{ minHeight:"100vh",background:C.bg }}>
+        <Sidebar sec={sec} setSec={setSec} rol={rol} perfil={perfil} onLogout={logout} open={sideOpen} setOpen={setSideOpen}/>
+
+        {/* TOPBAR fija */}
+        <div style={{
+          position:"fixed",top:0,left:0,right:0,
+          height:52,
+          background:C.deep,
+          borderBottom:`1px solid ${C.border}`,
+          display:"flex",alignItems:"center",
+          padding:"0 16px",gap:12,
+          zIndex:80,
+        }}>
+          {/* Hamburguesa */}
+          <button onClick={()=>setSideOpen(o=>!o)} style={{
+            background:"none",border:`1px solid ${C.border}`,
+            borderRadius:8,color:C.text,
+            width:36,height:36,cursor:"pointer",
+            display:"flex",flexDirection:"column",
+            alignItems:"center",justifyContent:"center",gap:4,
+            flexShrink:0,
+          }}>
+            <div style={{ width:16,height:1.5,background:C.text,borderRadius:99 }}/>
+            <div style={{ width:16,height:1.5,background:C.text,borderRadius:99 }}/>
+            <div style={{ width:16,height:1.5,background:C.text,borderRadius:99 }}/>
+          </button>
+
+          {/* Logo */}
+          <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+            <div style={{ width:28,height:28,borderRadius:7,background:`linear-gradient(135deg,${C.jade3},${C.jade})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:C.deep,fontFamily:F.serif }}>N</div>
+            <span style={{ fontFamily:F.serif,fontSize:16,color:C.white }}>NOA</span>
+          </div>
+
+          {/* Sección actual */}
+          <div style={{ flex:1,fontSize:12,color:C.textS,fontFamily:F.sans,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+            {[...NAV_ATLETA,...NAV_COACH].find(n=>n.id===sec)?.label||""}
+          </div>
+
+          {/* Avatar */}
+          <div style={{ width:30,height:30,borderRadius:7,background:C.jade+"22",border:`1px solid ${C.jade}44`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F.serif,color:C.jade,fontSize:12,flexShrink:0 }}>
+            {(perfil?.nombre||perfil?.atleta_codigo||"?")[0].toUpperCase()}
+          </div>
+        </div>
+
+        {/* Contenido con padding top para la topbar */}
+        <main style={{ paddingTop:52,minHeight:"100vh",overflowY:"auto" }}>
           {renderContent()}
         </main>
       </div>
