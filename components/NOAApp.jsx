@@ -440,7 +440,7 @@ function SesionHoy({ user }) {
   if (loading) return <div style={{padding:32}}><Spinner/></div>;
 
   return (
-    <div style={{ padding:"28px 32px",maxWidth:960 }}>
+    <div style={{ padding:"16px",maxWidth:960 }}>
       <SectionHeader title="Sesión de hoy" sub={new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}
         tags={cicloInfo?[{label:cicloInfo.nombre,color:C.jade},{label:`Sem ${semActual} · ${DIAS[diaActual]}`,color:C.blue}]:[]}/>
 
@@ -448,45 +448,58 @@ function SesionHoy({ user }) {
         <EmptyState title="Sin sesión asignada hoy" sub="Tu coach no planificó entrenamiento para hoy. ¡Día de recuperación! 🌿"/>
       ):(
         <>
-          <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:24 }}>
+          <div style={{ display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:20 }}>
             <Stat label="Tonelaje" value={tonelaje>0?Math.round(tonelaje).toLocaleString("es"):"—"} unit="kg · en vivo" color={C.jade}/>
             <Stat label="Ejercicios" value={sesion.length} unit="en sesión" color={C.blue}/>
             <Stat label="Completados" value={`${done}/${sesion.length}`} color={done===sesion.length?C.jade:C.amber}/>
             <Stat label="Ciclo" value={CICLOS_TIPOS.find(t=>t.key===cicloInfo?.tipo)?.label||"—"} unit={`${CICLOS_TIPOS.find(t=>t.key===cicloInfo?.tipo)?.pct||""}%`} color={C.violet}/>
           </div>
 
-          <Card style={{ padding:0,overflow:"hidden",marginBottom:18 }}>
-            <div style={{ display:"grid",gridTemplateColumns:"24px 1fr 52px 56px 68px 68px 88px 58px",padding:"9px 18px",gap:8,fontSize:10,fontWeight:700,color:C.textD,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:`1px solid ${C.border}`,fontFamily:F.sans }}>
-              <div/><div>Ejercicio</div><div>Ser.</div><div>Reps</div><div>%RM</div><div>Plan kg</div><div style={{color:C.jade}}>Real kg</div><div>RPE</div>
-            </div>
+          <div style={{ display:"flex",flexDirection:"column",gap:10,marginBottom:18 }}>
             {sesion.map((ej,i)=>{
               const log=logs[ej.id]||{};
               const kgN=parseFloat(log.kg);
               const diff=kgN&&ej.carga_kg?((kgN-ej.carga_kg)/ej.carga_kg*100):null;
               return (
-                <div key={ej.id} style={{ display:"grid",gridTemplateColumns:"24px 1fr 52px 56px 68px 68px 88px 58px",padding:"11px 18px",gap:8,borderBottom:i<sesion.length-1?`1px solid ${C.border}`:"none",background:log.done?C.jade+"08":"transparent",alignItems:"center" }}>
-                  <div onClick={()=>upd(ej.id,"done",!log.done)} style={{ width:18,height:18,borderRadius:5,cursor:"pointer",border:`1.5px solid ${log.done?C.jade:C.borderH}`,background:log.done?C.jade:"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:C.deep,fontWeight:900 }}>{log.done?"✓":""}</div>
-                  <div>
-                    <div style={{ fontSize:13,fontWeight:600,color:C.text,fontFamily:F.sans }}>{ej.ejercicios?.nombre}</div>
-                    <div style={{ fontSize:10,color:C.textD }}>{ej.ejercicios?.patron_movimiento} · {ej.ejercicios?.grupo_muscular}</div>
-                    {ej.notas_coach&&<div style={{ fontSize:10,color:C.amber,marginTop:1 }}>📌 {ej.notas_coach}</div>}
+                <Card key={ej.id} style={{ padding:"14px 16px",background:log.done?C.jade+"0A":C.card,borderColor:log.done?C.jade+"44":C.border }}>
+                  {/* Fila 1: check + nombre */}
+                  <div style={{ display:"flex",alignItems:"flex-start",gap:10,marginBottom:10 }}>
+                    <div onClick={()=>upd(ej.id,"done",!log.done)} style={{ width:22,height:22,borderRadius:6,cursor:"pointer",border:`2px solid ${log.done?C.jade:C.borderH}`,background:log.done?C.jade:"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:C.deep,fontWeight:900,flexShrink:0,marginTop:1 }}>{log.done?"✓":""}</div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:14,fontWeight:700,color:C.text,fontFamily:F.sans }}>{ej.ejercicios?.nombre}</div>
+                      <div style={{ fontSize:11,color:C.textD,marginTop:1 }}>{ej.ejercicios?.patron_movimiento} · {ej.ejercicios?.grupo_muscular}</div>
+                      {ej.notas_coach&&<div style={{ fontSize:11,color:C.amber,marginTop:3 }}>📌 {ej.notas_coach}</div>}
+                    </div>
                   </div>
-                  <div style={{ fontSize:13,color:C.text }}>{ej.series}</div>
-                  <div style={{ fontSize:13,color:C.textS }}>{ej.reps}</div>
-                  <div style={{ fontSize:12,color:C.textS }}>{ej.intensidad_pct?`${ej.intensidad_pct}%`:"—"}</div>
-                  <div style={{ fontSize:13,color:C.textD }}>{ej.carga_kg||"—"}</div>
-                  <div style={{ display:"flex",alignItems:"center",gap:4 }}>
-                    <input value={log.kg||""} onChange={e=>upd(ej.id,"kg",e.target.value)} placeholder={ej.carga_kg||"kg"} style={{ width:52,padding:"5px 7px",background:C.surface,border:`1px solid ${kgN?C.jade+"AA":C.border}`,borderRadius:7,color:C.white,fontSize:13,fontWeight:700,outline:"none",fontFamily:F.serif }}/>
-                    {diff!==null&&<span style={{ fontSize:9,color:diff>=0?C.jade:C.red }}>{diff>=0?"+":""}{diff.toFixed(0)}%</span>}
+                  {/* Fila 2: datos del plan */}
+                  <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:10,paddingLeft:32 }}>
+                    <Tag color={C.jade} sm>{ej.series} series</Tag>
+                    <Tag color={C.blue} sm>{ej.reps} reps</Tag>
+                    {ej.intensidad_pct&&<Tag color={C.violet} sm>{ej.intensidad_pct}% 1RM</Tag>}
+                    {ej.carga_kg&&<Tag color={C.textS} sm>Plan: {ej.carga_kg}kg</Tag>}
+                    {ej.descanso_seg&&<Tag color={C.textD} sm>⏱{ej.descanso_seg}"</Tag>}
                   </div>
-                  <select value={log.rpe||""} onChange={e=>upd(ej.id,"rpe",e.target.value)} style={{ width:50,padding:"5px 3px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,color:C.textS,fontSize:12,outline:"none" }}>
-                    <option value="">—</option>
-                    {[6,6.5,7,7.5,8,8.5,9,9.5,10].map(v=><option key={v} value={v}>{v}</option>)}
-                  </select>
-                </div>
+                  {/* Fila 3: inputs real kg + RPE */}
+                  <div style={{ display:"flex",gap:10,alignItems:"center",paddingLeft:32 }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:10,color:C.textS,marginBottom:4,fontFamily:F.sans,letterSpacing:"0.06em",textTransform:"uppercase" }}>Kg real</div>
+                      <div style={{ display:"flex",alignItems:"center",gap:6 }}>
+                        <input value={log.kg||""} onChange={e=>upd(ej.id,"kg",e.target.value)} placeholder={ej.carga_kg||"0"} type="number" style={{ width:"100%",padding:"8px 10px",background:C.surface,border:`1.5px solid ${kgN?C.jade+"AA":C.border}`,borderRadius:8,color:C.white,fontSize:15,fontWeight:700,outline:"none",fontFamily:F.serif }}/>
+                        {diff!==null&&<span style={{ fontSize:10,color:diff>=0?C.jade:C.red,whiteSpace:"nowrap" }}>{diff>=0?"+":""}{diff.toFixed(0)}%</span>}
+                      </div>
+                    </div>
+                    <div style={{ minWidth:80 }}>
+                      <div style={{ fontSize:10,color:C.textS,marginBottom:4,fontFamily:F.sans,letterSpacing:"0.06em",textTransform:"uppercase" }}>RPE</div>
+                      <select value={log.rpe||""} onChange={e=>upd(ej.id,"rpe",e.target.value)} style={{ width:"100%",padding:"8px 6px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.textS,fontSize:13,outline:"none" }}>
+                        <option value="">—</option>
+                        {[6,6.5,7,7.5,8,8.5,9,9.5,10].map(v=><option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </Card>
               );
             })}
-          </Card>
+          </div>
 
           <Card style={{ marginBottom:18 }}>
             <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:8,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans }}>Nota de sesión</div>
@@ -675,34 +688,38 @@ function CoachAtletas({ onVerAtleta }) {
   if (loading) return <div style={{padding:32}}><Spinner/></div>;
 
   return (
-    <div style={{ padding:"28px 32px",maxWidth:900 }}>
+    <div style={{ padding:"16px",maxWidth:900 }}>
       <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24 }}>
         <SectionHeader title="Mis atletas" sub={`${atletas.length} atletas registrados`}/>
         <Btn onClick={()=>{setNuevoModal(true);setMsg({tipo:"",texto:""});}}>+ Nuevo atleta</Btn>
       </div>
 
-      <Card style={{ padding:0,overflow:"hidden" }}>
-        <div style={{ display:"grid",gridTemplateColumns:"80px 1fr 140px 100px 70px 120px",padding:"9px 18px",fontSize:10,fontWeight:700,color:C.textD,letterSpacing:"0.08em",textTransform:"uppercase",borderBottom:`1px solid ${C.border}`,fontFamily:F.sans }}>
-          <div>ID</div><div>Nombre</div><div>Perfil</div><div>Peso</div><div>Estado</div><div/>
+      {atletas.length===0?(
+        <EmptyState title="Sin atletas todavía" sub="Creá el primero con el botón de arriba"/>
+      ):(
+        <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+          {atletas.map(a=>(
+            <Card key={a.id}>
+              <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10 }}>
+                <div style={{ flex:1,minWidth:0 }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap" }}>
+                    <Tag color={C.jade} sm>{a.atleta_codigo||"—"}</Tag>
+                    <Tag color={a.activo!==false?C.jade:C.textD} sm>{a.activo!==false?"Activo":"Inactivo"}</Tag>
+                  </div>
+                  <div style={{ fontSize:14,fontWeight:700,color:a.nombre?C.text:C.textD,fontFamily:F.sans,marginBottom:2 }}>{a.nombre||"Sin nombre"}</div>
+                  <div style={{ fontSize:12,color:C.textS,fontFamily:F.sans }}>
+                    {a.perfil_deporte||"Sin perfil"}{a.peso_actual?` · ${a.peso_actual}kg`:""}
+                  </div>
+                </div>
+                <div style={{ display:"flex",gap:6,flexShrink:0 }}>
+                  <Btn sm onClick={()=>onVerAtleta&&onVerAtleta(a)} color={C.blue}>Ver</Btn>
+                  <Btn sm outline onClick={()=>{setEditando(a);setFormEdit({nombre:a.nombre||"",perfil_deporte:a.perfil_deporte||"",peso_actual:a.peso_actual||"",talla:a.talla||"",activo:a.activo!==false});}}>Editar</Btn>
+                </div>
+              </div>
+            </Card>
+          ))}
         </div>
-        {atletas.length===0?(
-          <div style={{ padding:"32px 18px",textAlign:"center",color:C.textD,fontFamily:F.sans,fontSize:13 }}>
-            No hay atletas todavía · creá el primero con el botón de arriba
-          </div>
-        ):atletas.map((a,i)=>(
-          <div key={a.id} style={{ display:"grid",gridTemplateColumns:"80px 1fr 140px 100px 70px 120px",padding:"11px 18px",alignItems:"center",borderBottom:i<atletas.length-1?`1px solid ${C.border}`:"none" }}>
-            <Tag color={C.jade} sm>{a.atleta_codigo||"—"}</Tag>
-            <div style={{ fontSize:13,fontWeight:600,color:a.nombre?C.text:C.textD,fontFamily:F.sans }}>{a.nombre||"Sin nombre"}</div>
-            <div style={{ fontSize:12,color:C.textS,fontFamily:F.sans }}>{a.perfil_deporte||"—"}</div>
-            <div style={{ fontSize:12,color:C.textS,fontFamily:F.sans }}>{a.peso_actual?`${a.peso_actual}kg`:"—"}</div>
-            <Tag color={a.activo!==false?C.jade:C.textD} sm>{a.activo!==false?"Activo":"Inactivo"}</Tag>
-            <div style={{display:"flex",gap:6}}>
-              <Btn sm onClick={()=>onVerAtleta&&onVerAtleta(a)} color={C.blue}>Ver</Btn>
-              <Btn sm outline onClick={()=>{setEditando(a);setFormEdit({nombre:a.nombre||"",perfil_deporte:a.perfil_deporte||"",peso_actual:a.peso_actual||"",talla:a.talla||"",activo:a.activo!==false});}}>Editar</Btn>
-            </div>
-          </div>
-        ))}
-      </Card>
+      )}
 
       {/* Modal editar */}
       <Modal open={!!editando} onClose={()=>setEditando(null)} title={`Editar ${editando?.atleta_codigo||"atleta"}`}>
