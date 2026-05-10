@@ -107,7 +107,38 @@ const USUARIOS = [
     rol: "atleta",
     atleta_codigo: "ATL-01",
   },
-  // Nuevos atletas se agregan acá automáticamente o manualmente
+  {
+    email: "Leobaena",
+    password: "123456",
+    id: "703fc4a2-dd61-4cec-ab08-46ecd007e221",
+    nombre: "Leobaena",
+    rol: "atleta",
+    atleta_codigo: "ATL-02",
+  },
+  {
+    email: "Facutarantino",
+    password: "123456",
+    id: "c83787ed-f8a6-4c37-a73b-702c070c378c",
+    nombre: "Facutarantino",
+    rol: "atleta",
+    atleta_codigo: "ATL-03",
+  },
+  {
+    email: "MarceL",
+    password: "120876",
+    id: "e7883999-573d-4473-8f36-54cb79ce2af5",
+    nombre: "MarceL",
+    rol: "atleta",
+    atleta_codigo: "ATL-04",
+  },
+  {
+    email: "Na",
+    password: "180180",
+    id: "4a18e027-9d6e-4908-bb00-8970cae1de09",
+    nombre: "Na",
+    rol: "atleta",
+    atleta_codigo: "ATL-05",
+  },
 ];
 
 // ─────────────────────────────────────────
