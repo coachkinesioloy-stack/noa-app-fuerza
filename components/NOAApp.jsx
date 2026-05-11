@@ -1277,7 +1277,6 @@ function CoachEjercicios({ user }) {
   const [filtro,setFiltro]=useState("");
   const [form,setForm]=useState({nombre:"",grupo_muscular:"",patron_movimiento:"",nivel:"intermedio",tipo:"principal"});
   const [saving,setSaving]=useState(false);
-  const [grupoSel,setGrupoSel]=useState("Todos");
 
   useEffect(()=>{cargar();},[]);
 
