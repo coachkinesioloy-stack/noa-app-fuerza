@@ -1277,6 +1277,7 @@ function CoachEjercicios({ user }) {
   const [filtro,setFiltro]=useState("");
   const [form,setForm]=useState({nombre:"",grupo_muscular:"",patron_movimiento:"",nivel:"intermedio",tipo:"principal"});
   const [saving,setSaving]=useState(false);
+  const [grupoSel,setGrupoSel]=useState("Todos");
 
   useEffect(()=>{cargar();},[]);
 
@@ -1296,19 +1297,34 @@ function CoachEjercicios({ user }) {
     setModal(false);setSaving(false);
   };
 
-  const filtrados=ejercicios.filter(e=>!filtro||e.nombre.toLowerCase().includes(filtro.toLowerCase())||(e.grupo_muscular||"").toLowerCase().includes(filtro.toLowerCase()));
+  const GRUPOS = ['Todos','Hombros','Espalda','Pecho','Pierna','Core','Bíceps','Tríceps','Olímpico','CrossFit'];
+  const grupoColor = {'Hombros':C.blue,'Espalda':C.jade,'Pecho':C.red,'Pierna':C.amber,'Core':C.violet,'Bíceps':'#4ade80','Tríceps':'#f97316','Olímpico':'#06b6d4','CrossFit':'#ec4899'};
+  const [grupoSel,setGrupoSel]=useState('Todos');
+  const filtrados=ejercicios.filter(e=>{
+    const matchQ=!filtro||e.nombre.toLowerCase().includes(filtro.toLowerCase());
+    const matchG=grupoSel==='Todos'||(e.grupo_muscular||'')=== grupoSel;
+    return matchQ&&matchG;
+  });
   const nC={avanzado:C.red,intermedio:C.amber,basico:C.jade};
   const tC={principal:C.blue,accesorio:C.violet,cardio:C.amber,movilidad:C.jade};
 
   if (loading) return <div style={{padding:32}}><Spinner/></div>;
 
   return (
-    <div style={{ padding:"28px 32px",maxWidth:920 }}>
-      <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24 }}>
-        <SectionHeader title="Ejercicios" sub={`${ejercicios.length} ejercicios en el banco`}/>
-        <Btn onClick={()=>setModal(true)}>+ Nuevo ejercicio</Btn>
+    <div style={{ padding:"16px",maxWidth:920 }}>
+      <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16,flexWrap:"wrap",gap:8 }}>
+        <SectionHeader title="Ejercicios" sub={`${filtrados.length} de ${ejercicios.length} ejercicios`}/>
+        <Btn onClick={()=>setModal(true)} sm>+ Nuevo</Btn>
       </div>
-      <input value={filtro} onChange={e=>setFiltro(e.target.value)} placeholder="Buscar por nombre o grupo muscular..." style={{ width:"100%",padding:"9px 13px",background:C.card,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,marginBottom:16,boxSizing:"border-box" }}/>
+      {/* Filtro por grupo */}
+      <div style={{ display:"flex",gap:6,flexWrap:"wrap",marginBottom:12 }}>
+        {GRUPOS.map(g=>(
+          <button key={g} onClick={()=>setGrupoSel(g)} style={{ padding:"5px 12px",borderRadius:99,border:`1.5px solid ${grupoSel===g?(grupoColor[g]||C.jade):C.border}`,background:grupoSel===g?(grupoColor[g]||C.jade)+"22":"transparent",color:grupoSel===g?(grupoColor[g]||C.jade):C.textS,fontSize:11,fontWeight:grupoSel===g?700:400,cursor:"pointer",fontFamily:F.sans }}>
+            {g}
+          </button>
+        ))}
+      </div>
+      <input value={filtro} onChange={e=>setFiltro(e.target.value)} placeholder="Buscar por nombre..." style={{ width:"100%",padding:"9px 13px",background:C.card,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,marginBottom:12,boxSizing:"border-box" }}/>
       <Card style={{ padding:0,overflow:"hidden" }}>
         <div style={{ display:"grid",gridTemplateColumns:"1fr 120px 130px 90px 90px",padding:"9px 18px",fontSize:10,fontWeight:700,color:C.textD,letterSpacing:"0.08em",textTransform:"uppercase",borderBottom:`1px solid ${C.border}`,fontFamily:F.sans }}>
           <div>Ejercicio</div><div>Patrón</div><div>Grupo</div><div>Nivel</div><div>Tipo</div>
@@ -1330,7 +1346,8 @@ function CoachEjercicios({ user }) {
       </Card>
       <Modal open={modal} onClose={()=>setModal(false)} title="Nuevo ejercicio">
         <FInput label="Nombre *" value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} placeholder="Ej: Zancada con mancuernas"/>
-        <FInput label="Grupo muscular" value={form.grupo_muscular} onChange={e=>setForm({...form,grupo_muscular:e.target.value})} placeholder="Pierna, Pecho, Espalda..."/>
+        <FSelect label="Grupo muscular" value={form.grupo_muscular} onChange={e=>setForm({...form,grupo_muscular:e.target.value})}
+          options={[{value:"",label:"— Elegir grupo —"},{value:"Hombros",label:"Hombros"},{value:"Espalda",label:"Espalda"},{value:"Pecho",label:"Pecho"},{value:"Pierna",label:"Pierna"},{value:"Core",label:"Core / Abdomen"},{value:"Bíceps",label:"Bíceps"},{value:"Tríceps",label:"Tríceps"},{value:"Olímpico",label:"Levantamiento Olímpico"},{value:"CrossFit",label:"CrossFit"},{value:"Full body",label:"Full body"}]}/>
         <FSelect label="Patrón de movimiento" value={form.patron_movimiento} onChange={e=>setForm({...form,patron_movimiento:e.target.value})}
           options={[{value:"",label:"— Elegir —"},...PATRONES.map(p=>({value:p,label:p}))]}/>
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
@@ -1537,7 +1554,13 @@ function NOACoach({ perfil, user }) {
         {msgs.map((m,i)=>(
           <div key={i} style={{ display:"flex",justifyContent:m.rol==="user"?"flex-end":"flex-start",gap:8,alignItems:"flex-start" }}>
             {m.rol==="noa"&&<div style={{ width:30,height:30,borderRadius:8,flexShrink:0,background:`linear-gradient(135deg,${C.jade3},${C.jade})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:C.deep,fontFamily:F.serif }}>N</div>}
-            <div style={{ maxWidth:"78%",background:m.rol==="user"?C.jade+"18":C.card,border:`1px solid ${m.rol==="user"?C.jade+"44":C.border}`,borderRadius:m.rol==="user"?"14px 4px 14px 14px":"4px 14px 14px 14px",padding:"10px 14px",fontSize:13,color:C.text,lineHeight:1.65,whiteSpace:"pre-wrap",fontFamily:F.sans }}>{m.texto}</div>
+            <div style={{ maxWidth:"78%",background:m.rol==="user"?C.jade+"18":C.card,border:`1px solid ${m.rol==="user"?C.jade+"44":C.border}`,borderRadius:m.rol==="user"?"14px 4px 14px 14px":"4px 14px 14px 14px",padding:"10px 14px",fontSize:13,color:C.text,lineHeight:1.65,fontFamily:F.sans }}>
+              {m.texto.split(/(https?:\/\/[^\s]+)/g).map((part,pi)=>
+                part.match(/^https?:\/\//)
+                  ? <a key={pi} href={part} target="_blank" rel="noopener noreferrer" style={{ color:C.jade,textDecoration:"underline",wordBreak:"break-all" }}>▶ Ver en YouTube</a>
+                  : <span key={pi} style={{ whiteSpace:"pre-wrap" }}>{part}</span>
+              )}
+            </div>
           </div>
         ))}
         {loading&&<div style={{ display:"flex",gap:8,alignItems:"center" }}><div style={{ width:30,height:30,borderRadius:8,background:`linear-gradient(135deg,${C.jade3},${C.jade})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:C.deep,fontFamily:F.serif }}>N</div><div style={{ color:C.textS,fontSize:13,fontFamily:F.sans }}>NOA está pensando…</div></div>}
