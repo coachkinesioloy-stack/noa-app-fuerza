@@ -1282,8 +1282,15 @@ function CoachEjercicios({ user }) {
 
   const cargar=async()=>{
     const sb=await getSB();if(!sb){setLoading(false);return;}
-    const {data}=await sb.from("ejercicios").select("*").order("nombre");
+    const {data}=await sb.from("ejercicios").select("*").order("grupo_muscular,nombre");
     setEjercicios(data||[]);setLoading(false);
+  };
+
+  const eliminarEjercicio=async(id,nombre)=>{
+    if (!confirm(`¿Eliminar "${nombre}"?`))return;
+    const sb=await getSB();
+    await sb.from("ejercicios").delete().eq("id",id);
+    cargar();
   };
 
   const guardar=async()=>{
@@ -1296,7 +1303,7 @@ function CoachEjercicios({ user }) {
     setModal(false);setSaving(false);
   };
 
-  const GRUPOS = ['Todos','Hombros','Espalda','Pecho','Pierna','Core','Bíceps','Tríceps','Olímpico','CrossFit'];
+  const GRUPOS = ['Todos','Hombros','Espalda','Pecho','Pierna','Core','Biceps','Triceps','Olimpico','CrossFit'];
   const grupoColor = {'Hombros':C.blue,'Espalda':C.jade,'Pecho':C.red,'Pierna':C.amber,'Core':C.violet,'Bíceps':'#4ade80','Tríceps':'#f97316','Olímpico':'#06b6d4','CrossFit':'#ec4899'};
   const [grupoSel,setGrupoSel]=useState('Todos');
   const filtrados=ejercicios.filter(e=>{
@@ -1325,21 +1332,24 @@ function CoachEjercicios({ user }) {
       </div>
       <input value={filtro} onChange={e=>setFiltro(e.target.value)} placeholder="Buscar por nombre..." style={{ width:"100%",padding:"9px 13px",background:C.card,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,marginBottom:12,boxSizing:"border-box" }}/>
       <Card style={{ padding:0,overflow:"hidden" }}>
-        <div style={{ display:"grid",gridTemplateColumns:"1fr 120px 130px 90px 90px",padding:"9px 18px",fontSize:10,fontWeight:700,color:C.textD,letterSpacing:"0.08em",textTransform:"uppercase",borderBottom:`1px solid ${C.border}`,fontFamily:F.sans }}>
-          <div>Ejercicio</div><div>Patrón</div><div>Grupo</div><div>Nivel</div><div>Tipo</div>
+        <div style={{ padding:"9px 18px",fontSize:10,fontWeight:700,color:C.textD,letterSpacing:"0.08em",textTransform:"uppercase",borderBottom:`1px solid ${C.border}`,fontFamily:F.sans }}>
+          {filtrados.length} ejercicio{filtrados.length!==1?"s":""}
         </div>
         {filtrados.map((e,i)=>(
-          <div key={e.id} style={{ display:"grid",gridTemplateColumns:"1fr 120px 130px 90px 90px",padding:"11px 18px",alignItems:"center",borderBottom:i<filtrados.length-1?`1px solid ${C.border}`:"none" }}
+          <div key={e.id} style={{ padding:"11px 18px",borderBottom:i<filtrados.length-1?`1px solid ${C.border}`:"none" }}
             onMouseEnter={ev=>ev.currentTarget.style.background=C.surface}
             onMouseLeave={ev=>ev.currentTarget.style.background="transparent"}>
-            <div>
-              <div style={{ fontSize:13,fontWeight:600,color:C.text,fontFamily:F.sans }}>{e.nombre}</div>
-              {e.creado_por&&<span style={{ fontSize:9,color:C.jade,fontFamily:F.sans }}>personalizado</span>}
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+              <div>
+                <div style={{ fontSize:13,fontWeight:600,color:C.text,fontFamily:F.sans }}>{e.nombre}</div>
+                <div style={{ display:"flex",gap:6,marginTop:2 }}>
+                  <Tag color={grupoColor[e.grupo_muscular]||C.textS} sm>{e.grupo_muscular||"—"}</Tag>
+                  <Tag color={nC[e.nivel]||C.jade} sm>{e.nivel||"—"}</Tag>
+                  <Tag color={tC[e.tipo]||C.jade} sm>{e.tipo||"—"}</Tag>
+                </div>
+              </div>
+              <button onClick={()=>eliminarEjercicio(e.id,e.nombre)} style={{ background:"none",border:"none",color:C.textD,cursor:"pointer",fontSize:16,padding:"4px 8px",flexShrink:0 }} title="Eliminar">✕</button>
             </div>
-            <div style={{ fontSize:12,color:C.textS,fontFamily:F.sans }}>{e.patron_movimiento||"—"}</div>
-            <div style={{ fontSize:12,color:C.textS,fontFamily:F.sans }}>{e.grupo_muscular||"—"}</div>
-            <Tag color={nC[e.nivel]||C.jade} sm>{e.nivel||"—"}</Tag>
-            <Tag color={tC[e.tipo]||C.jade} sm>{e.tipo||"—"}</Tag>
           </div>
         ))}
       </Card>
