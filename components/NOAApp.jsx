@@ -1377,13 +1377,120 @@ function CoachEjercicios({ user }) {
 }
 
 // ─────────────────────────────────────────
-// DASHBOARD ATLETA
+// SVG HELPERS — gráficos sin dependencias
+// ─────────────────────────────────────────
+function LineChart({ data, color=C.jade, height=80, label, unit="" }) {
+  if (!data||data.length<2) return <div style={{height,display:"flex",alignItems:"center",justifyContent:"center",color:C.textD,fontSize:11,fontFamily:F.sans}}>Sin datos suficientes</div>;
+  const W=320, H=height, pad=4;
+  const vals=data.map(d=>d.y);
+  const min=Math.min(...vals), max=Math.max(...vals);
+  const rng=max-min||1;
+  const pts=data.map((d,i)=>{
+    const x=pad+((W-pad*2)/(data.length-1))*i;
+    const y=H-pad-((d.y-min)/rng)*(H-pad*2);
+    return [x,y];
+  });
+  const path="M"+pts.map(p=>p.join(",")).join("L");
+  const area="M"+pts[0][0]+","+H+" L"+pts.map(p=>p.join(",")).join("L")+" L"+pts[pts.length-1][0]+","+H+" Z";
+  const last=pts[pts.length-1];
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height}} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={`lg${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.22"/>
+          <stop offset="100%" stopColor={color} stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#lg${color.replace("#","")})`}/>
+      <path d={path} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx={last[0]} cy={last[1]} r="3.5" fill={color}/>
+      <text x={last[0]+5} y={last[1]-4} fill={color} fontSize="9" fontFamily="sans-serif">{vals[vals.length-1]}{unit}</text>
+    </svg>
+  );
+}
+
+function BarChartV({ data, height=80 }) {
+  // data: [{label, value, color}]
+  if (!data||!data.length) return null;
+  const max=Math.max(...data.map(d=>d.value),1);
+  const W=320, H=height, barW=Math.max(8,Math.floor((W-data.length*4)/data.length)), pad=4;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height}} preserveAspectRatio="none">
+      {data.map((d,i)=>{
+        const x=pad+i*((W-pad*2)/data.length);
+        const bh=Math.max(2,((d.value/max)*(H-20)));
+        const y=H-bh-2;
+        return (
+          <g key={i}>
+            <rect x={x} y={y} width={barW} height={bh} rx="2" fill={d.color||C.jade} opacity="0.85"/>
+            <text x={x+barW/2} y={H} textAnchor="middle" fill={C.textD} fontSize="7" fontFamily="sans-serif">{d.label}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function Radar({ axes, data, color=C.jade, size=140 }) {
+  // axes: string[], data: number[] 0–10
+  const n=axes.length;
+  const cx=size/2, cy=size/2, r=(size/2)-24;
+  const angle=(i)=>((i/n)*2*Math.PI)-Math.PI/2;
+  const pt=(i,val)=>{
+    const a=angle(i), ratio=val/10;
+    return [cx+r*ratio*Math.cos(a), cy+r*ratio*Math.sin(a)];
+  };
+  const rings=[0.25,0.5,0.75,1];
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} style={{width:size,height:size}}>
+      {rings.map(rr=>(
+        <polygon key={rr} points={axes.map((_,i)=>{const a=angle(i);return `${cx+r*rr*Math.cos(a)},${cy+r*rr*Math.sin(a)}`;}).join(" ")} fill="none" stroke={C.border} strokeWidth="0.8"/>
+      ))}
+      {axes.map((_,i)=>{const [x,y]=pt(i,10);return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke={C.border} strokeWidth="0.8"/>;}) }
+      <polygon points={data.map((_,i)=>pt(i,data[i]).join(",")).join(" ")} fill={color+"33"} stroke={color} strokeWidth="1.5"/>
+      {data.map((v,i)=>{const [x,y]=pt(i,v);return <circle key={i} cx={x} cy={y} r="2.5" fill={color}/>;}) }
+      {axes.map((a,i)=>{
+        const [x,y]=pt(i,10);
+        const dx=Math.cos(angle(i)), dy=Math.sin(angle(i));
+        return <text key={i} x={x+dx*8} y={y+dy*8+3} textAnchor="middle" fill={C.textS} fontSize="7" fontFamily="sans-serif">{a}</text>;
+      })}
+    </svg>
+  );
+}
+
+function HeatMap({ semanas, dias, data, getCicloColor }) {
+  // data: {[sem_dia]: value 0-1}
+  const W=280, cellSize=24, gap=3;
+  return (
+    <svg viewBox={`0 0 ${W} ${(dias)*( cellSize+gap)+20}`} style={{width:"100%"}}>
+      {Array.from({length:semanas},(_,s)=>
+        Array.from({length:dias},(_,d)=>{
+          const v=data[`${s+1}_${d+1}`]||0;
+          const x=s*(cellSize+gap)+32;
+          const y=d*(cellSize+gap)+16;
+          const col=v===0?C.surface:v<0.5?C.amber:C.jade;
+          return (
+            <g key={`${s}_${d}`}>
+              <rect x={x} y={y} width={cellSize} height={cellSize} rx="4" fill={col} opacity={v===0?0.3:0.4+v*0.6}/>
+              {s===0&&<text x={22} y={y+cellSize/2+3} textAnchor="end" fill={C.textD} fontSize="7" fontFamily="sans-serif">{`D${d+1}`}</text>}
+              {d===0&&<text x={x+cellSize/2} y={12} textAnchor="middle" fill={C.textD} fontSize="7" fontFamily="sans-serif">{`S${s+1}`}</text>}
+            </g>
+          );
+        })
+      )}
+    </svg>
+  );
+}
+
+// ─────────────────────────────────────────
+// DASHBOARD ATLETA — VISUALIZACIÓN
 // ─────────────────────────────────────────
 function DashboardAtleta({ user, perfil }) {
   const [ciclo,setCiclo]=useState(null);
-  const [sesiones,setSesiones]=useState([]);
-  const [bio,setBio]=useState(null);
+  const [logs,setLogs]=useState([]);
+  const [bios,setBios]=useState([]);
   const [marcas,setMarcas]=useState([]);
+  const [heatData,setHeatData]=useState({});
   const [loading,setLoading]=useState(true);
 
   useEffect(()=>{cargar();},[]);
@@ -1391,144 +1498,162 @@ function DashboardAtleta({ user, perfil }) {
   const cargar=async()=>{
     const sb=await getSB();
     if(!sb){setLoading(false);return;}
-    const [rCiclo,rBio,rMarcas]=await Promise.all([
+    const [{data:cs},{data:lg},{data:bi},{data:mk}]=await Promise.all([
       sb.from("ciclos").select("*").eq("atleta_id",user.id).eq("activo",true).order("created_at",{ascending:false}).limit(1),
-      sb.from("biomarcadores").select("*").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(7),
-      sb.from("marcas").select("*,ejercicios(nombre)").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(5),
+      sb.from("logs_entrenamiento").select("*").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(84),
+      sb.from("biomarcadores").select("*").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(28),
+      sb.from("marcas").select("*,ejercicios(nombre)").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(10),
     ]);
-    const c=rCiclo.data?.[0]||null;
-    setCiclo(c);
-    setBio(rBio.data||[]);
-    setMarcas(rMarcas.data||[]);
-    if(c){
-      const hoy=new Date();
-      const inicio=new Date(c.fecha_inicio);
-      const semActual=Math.min(c.semanas,Math.floor(Math.max(0,hoy-inicio)/(1000*60*60*24*7))+1);
-      const diaActual=(hoy.getDay()===0?7:hoy.getDay());
-      const {data:sp}=await sb.from("sesiones_plan").select("*,ejercicios(nombre)").eq("ciclo_id",c.id).eq("semana",semActual).eq("dia",diaActual).order("orden");
-      setSesiones(sp||[]);
+    const c=cs?.[0]||null; setCiclo(c);
+    setLogs(lg||[]); setBios(bi||[]); setMarcas(mk||[]);
+    // Mapa de calor: sesiones completadas por semana/dia del ciclo
+    if(lg&&c){
+      const heat={};
+      lg.forEach(l=>{if(l.completado)heat[`${l.semana}_${l.dia}`]=(heat[`${l.semana}_${l.dia}`]||0)+0.5;});
+      Object.keys(heat).forEach(k=>{heat[k]=Math.min(1,heat[k]);});
+      setHeatData(heat);
     }
     setLoading(false);
   };
 
-  if(loading)return <div style={{padding:32}}><Spinner/></div>;
+  if(loading) return <div style={{padding:32}}><Spinner/></div>;
 
+  // Tonelaje por semana (últimas 8)
+  const tonPorSem=Object.entries(
+    logs.reduce((acc,l)=>{if(l.carga_kg&&l.series_realizadas&&l.reps_realizadas){const k=`S${l.semana||"?"}`;acc[k]=(acc[k]||0)+l.carga_kg*l.series_realizadas*l.reps_realizadas;}return acc;},{})
+  ).slice(-8).map(([k,v])=>({label:k,value:Math.round(v/1000*10)/10}));
+
+  // RPE promedio por semana
+  const rpePorSem=Object.entries(
+    logs.reduce((acc,l)=>{if(l.rpe){const k=`S${l.semana||"?"}`;if(!acc[k])acc[k]={sum:0,n:0};acc[k].sum+=l.rpe;acc[k].n++;}return acc;},{})
+  ).slice(-8).map(([k,v])=>({y:Math.round(v.sum/v.n*10)/10,label:k}));
+
+  // HRV últimos 14 días
+  const hrvLine=[...bios].reverse().slice(0,14).map((b,i)=>({y:b.hrv||0,label:`d${i+1}`})).filter(d=>d.y>0);
+
+  // Readiness últimos 14 días
+  const readLine=[...bios].reverse().slice(0,14).map((b,i)=>{
+    const r=Math.round((b.calidad_sueno/10*25)+(b.motivacion/10*25)+((10-(b.estres||5))/10*25)+((10-(b.dolor_muscular||3))/10*25));
+    return {y:r,label:`d${i+1}`};
+  });
+
+  // Radar capacidades (a partir de biomarcadores promedio y datos del ciclo)
+  const bioAvg=bios.length?{
+    sueno:bios.reduce((a,b)=>a+(b.calidad_sueno||0),0)/bios.length,
+    hrv:bios.reduce((a,b)=>a+(b.hrv||0),0)/bios.length,
+    motiv:bios.reduce((a,b)=>a+(b.motivacion||0),0)/bios.length,
+    estres:bios.reduce((a,b)=>a+(b.estres||0),0)/bios.length,
+    doms:bios.reduce((a,b)=>a+(b.dolor_muscular||0),0)/bios.length,
+  }:null;
+  const radarData=bioAvg?[
+    Math.round(bioAvg.sueno),
+    Math.round(Math.min(10,(bioAvg.hrv/120)*10)),
+    Math.round(bioAvg.motiv),
+    Math.round(10-bioAvg.estres),
+    Math.round(10-bioAvg.doms),
+    Math.min(10,Math.round(logs.length/4)),
+  ]:[5,5,5,5,5,5];
+  const radarAxes=["Sueño","HRV","Motivación","Bajo estrés","Recuperado","Adherencia"];
+
+  // Evolución 1RM top marca
+  const topMarca=marcas[0];
+  const marcaEvol=marcas.filter(m=>m.ejercicio_id===topMarca?.ejercicio_id).reverse().map((m,i)=>({y:m.rm1_estimado||0,label:`R${i+1}`}));
+
+  const tipoC=CICLOS_TIPOS.find(t=>t.key===ciclo?.tipo);
   const hoy=new Date();
   const inicio=ciclo?new Date(ciclo.fecha_inicio):null;
   const semActual=ciclo?Math.min(ciclo.semanas,Math.floor(Math.max(0,hoy-inicio)/(1000*60*60*24*7))+1):0;
-  const pctCiclo=ciclo?Math.round((semActual/ciclo.semanas)*100):0;
-  const tipoC=CICLOS_TIPOS.find(t=>t.key===ciclo?.tipo);
 
-  // Readiness de hoy (último bio)
-  const bioHoy=bio?.[0];
-  const readiness=bioHoy?Math.round((bioHoy.calidad_sueno/10*25)+(bioHoy.motivacion/10*25)+((10-(bioHoy.estres||5))/10*25)+((10-(bioHoy.dolor_muscular||3))/10*25)):null;
-  const rC=readiness!=null?(readiness>=75?C.jade:readiness>=50?C.amber:C.red):C.textD;
-
-  // Sparkline HRV (últimos 7 días)
-  const hrvData=bio?[...bio].reverse().map(b=>b.hrv).filter(Boolean):[];
-  const hrvMax=hrvData.length?Math.max(...hrvData):1;
-  const hrvMin=hrvData.length?Math.min(...hrvData):0;
-
-  return(
-    <div style={{padding:"28px 32px",maxWidth:960}}>
+  return (
+    <div style={{padding:"24px 20px",maxWidth:920}}>
       <SectionHeader
-        title={`Hola, ${perfil?.nombre?.split(" ")[0]||"atleta"} 👋`}
-        sub={hoy.toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}
+        title={`Dashboard · ${perfil?.nombre?.split(" ")[0]||"Atleta"}`}
+        sub="Evolución, readiness y carga de entrenamiento"
         tags={ciclo?[{label:ciclo.nombre||ciclo.tipo,color:tipoC?.color||C.jade},{label:`Sem ${semActual}/${ciclo.semanas}`,color:C.blue}]:[]}
       />
 
-      {/* Fila top */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:20}}>
-        <Stat label="Readiness hoy" value={readiness!=null?readiness:"—"} unit="sobre 100" color={rC}/>
-        <Stat label="Ciclo actual" value={ciclo?`${pctCiclo}%`:"—"} unit={ciclo?`${semActual} de ${ciclo.semanas} sem`:"sin ciclo"} color={tipoC?.color||C.textD}/>
-        <Stat label="Sesión hoy" value={sesiones.length||"—"} unit={sesiones.length?"ejercicios planificados":"sin sesión hoy"} color={sesiones.length?C.blue:C.textD}/>
-      </div>
-
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
-        {/* Progreso ciclo */}
-        {ciclo&&(
-          <Card>
-            <div style={{fontSize:11,fontWeight:700,color:C.textS,marginBottom:10,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans}}>Progreso del ciclo</div>
-            <div style={{marginBottom:8}}>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.text,marginBottom:6,fontFamily:F.sans}}>
-                <span>{ciclo.nombre||ciclo.tipo}</span>
-                <span style={{color:tipoC?.color||C.jade,fontWeight:700}}>{pctCiclo}%</span>
-              </div>
-              <Bar value={pctCiclo} max={100} color={tipoC?.color||C.jade} h={8}/>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:14}}>
-              <div style={{textAlign:"center"}}>
-                <div style={{fontSize:18,fontWeight:400,color:C.white,fontFamily:F.serif}}>{semActual}</div>
-                <div style={{fontSize:10,color:C.textD,fontFamily:F.sans}}>Semana actual</div>
-              </div>
-              <div style={{textAlign:"center"}}>
-                <div style={{fontSize:18,fontWeight:400,color:C.white,fontFamily:F.serif}}>{ciclo.semanas-semActual}</div>
-                <div style={{fontSize:10,color:C.textD,fontFamily:F.sans}}>Semanas rest.</div>
-              </div>
-              <div style={{textAlign:"center"}}>
-                <div style={{fontSize:18,fontWeight:400,color:tipoC?.color||C.jade,fontFamily:F.serif}}>{tipoC?.pct||"—"}%</div>
-                <div style={{fontSize:10,color:C.textD,fontFamily:F.sans}}>Zona 1RM</div>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* HRV sparkline */}
+      {/* Fila 1: curvas tonelaje + RPE */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
         <Card>
-          <div style={{fontSize:11,fontWeight:700,color:C.textS,marginBottom:10,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans}}>HRV — últimos 7 días</div>
-          {hrvData.length===0?(
-            <div style={{textAlign:"center",padding:"24px 0",color:C.textD,fontSize:12,fontFamily:F.sans}}>Sin datos de biomarcadores aún</div>
-          ):(
-            <>
-              <div style={{display:"flex",alignItems:"flex-end",gap:4,height:56,marginBottom:8}}>
-                {hrvData.map((v,i)=>{
-                  const h=hrvMax===hrvMin?28:Math.max(6,((v-hrvMin)/(hrvMax-hrvMin))*52);
-                  return <div key={i} style={{flex:1,height:h,borderRadius:"3px 3px 0 0",background:i===hrvData.length-1?C.jade:C.jade+"55",transition:"height 0.4s"}}/>;
-                })}
-              </div>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:C.textD,fontFamily:F.sans}}>
-                <span>hace 7d</span>
-                <span style={{color:C.jade,fontWeight:700}}>hoy: {hrvData[hrvData.length-1]} ms</span>
-              </div>
-            </>
-          )}
+          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>Tonelaje semanal (t)</div>
+          {tonPorSem.length>1
+            ?<LineChart data={tonPorSem.map(d=>({y:d.value,label:d.label}))} color={C.jade} height={72} unit="t"/>
+            :<div style={{height:72,display:"flex",alignItems:"center",color:C.textD,fontSize:12,fontFamily:F.sans}}>Guardá sesiones para ver la curva</div>
+          }
+          {tonPorSem.length>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:C.textD,fontFamily:F.sans,marginTop:4}}>
+            <span>{tonPorSem[0]?.label}</span>
+            <span style={{color:C.jade,fontWeight:700}}>{tonPorSem[tonPorSem.length-1]?.value}t esta semana</span>
+          </div>}
+        </Card>
+        <Card>
+          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>RPE promedio semanal</div>
+          {rpePorSem.length>1
+            ?<LineChart data={rpePorSem} color={C.amber} height={72} unit=""/>
+            :<div style={{height:72,display:"flex",alignItems:"center",color:C.textD,fontSize:12,fontFamily:F.sans}}>Sin datos de RPE aún</div>
+          }
+          <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap"}}>
+            {[{v:"<6",l:"Muy fácil",c:C.jade},{v:"7",l:"Moderado",c:C.amber},{v:"8-9",l:"Duro",c:C.red},{v:"10",l:"Máximo",c:"#FF00AA"}].map(r=>(
+              <span key={r.v} style={{fontSize:9,color:r.c,fontFamily:F.sans}}>{r.v} {r.l}</span>
+            ))}
+          </div>
         </Card>
       </div>
 
-      {/* Sesión de hoy */}
-      <Card style={{marginBottom:16}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.textS,marginBottom:12,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans}}>Sesión de hoy</div>
-        {sesiones.length===0?(
-          <div style={{color:C.textD,fontSize:13,fontFamily:F.sans,padding:"8px 0"}}>No hay sesión planificada para hoy 🌿</div>
-        ):(
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {sesiones.map(ej=>(
-              <div key={ej.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",background:C.surface,borderRadius:9,border:`1px solid ${C.border}`}}>
-                <div>
-                  <div style={{fontSize:13,fontWeight:700,color:C.text,fontFamily:F.sans}}>{ej.ejercicios?.nombre}</div>
-                  <div style={{fontSize:11,color:C.textD,marginTop:1,fontFamily:F.sans}}>{ej.series} series · {ej.reps} reps{ej.carga_kg?` · ${ej.carga_kg}kg`:""}</div>
-                </div>
-                {ej.intensidad_pct&&<Tag color={C.violet} sm>{ej.intensidad_pct}% 1RM</Tag>}
-              </div>
+      {/* Fila 2: HRV + Readiness */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+        <Card>
+          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>HRV — últimas 2 semanas</div>
+          <LineChart data={hrvLine} color={C.blue} height={68}/>
+          {bios[0]?.hrv&&<div style={{display:"flex",gap:16,marginTop:4}}>
+            <span style={{fontSize:10,color:C.textD,fontFamily:F.sans}}>Hoy: <span style={{color:C.blue,fontWeight:700}}>{bios[0].hrv} ms</span></span>
+            {bios.length>7&&<span style={{fontSize:10,color:C.textD,fontFamily:F.sans}}>Prom 7d: <span style={{color:C.blue}}>{Math.round(bios.slice(0,7).reduce((a,b)=>a+(b.hrv||0),0)/7)} ms</span></span>}
+          </div>}
+        </Card>
+        <Card>
+          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>Readiness — últimas 2 semanas</div>
+          <LineChart data={readLine} color={C.violet} height={68}/>
+          <div style={{display:"flex",gap:10,marginTop:4}}>
+            {readLine.length>0&&[{t:"≥75 Óptimo",c:C.jade},{t:"50–74 Ok",c:C.amber},{t:"<50 Bajo",c:C.red}].map(r=>(
+              <span key={r.t} style={{fontSize:9,color:r.c,fontFamily:F.sans}}>{r.t}</span>
             ))}
           </div>
-        )}
-      </Card>
+        </Card>
+      </div>
 
-      {/* Últimas marcas */}
-      {marcas.length>0&&(
+      {/* Fila 3: Radar + Mapa de calor */}
+      <div style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:14,marginBottom:14,alignItems:"start"}}>
+        <Card style={{minWidth:200,display:"flex",flexDirection:"column",alignItems:"center",padding:"16px"}}>
+          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:8,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans,alignSelf:"flex-start"}}>Perfil del atleta</div>
+          <Radar axes={radarAxes} data={radarData} color={C.jade} size={160}/>
+          <div style={{fontSize:9,color:C.textD,marginTop:6,fontFamily:F.sans,textAlign:"center"}}>Promedio últimos 28 días</div>
+        </Card>
         <Card>
-          <div style={{fontSize:11,fontWeight:700,color:C.textS,marginBottom:12,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans}}>Últimas marcas</div>
-          <div style={{display:"flex",flexDirection:"column",gap:6}}>
-            {marcas.map(m=>(
-              <div key={m.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",background:C.surface,borderRadius:8,border:`1px solid ${C.border}`}}>
-                <div style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:F.sans}}>{m.ejercicios?.nombre}</div>
-                <div style={{display:"flex",gap:12,alignItems:"center"}}>
-                  {m.rm1_real&&<span style={{fontSize:15,fontWeight:400,color:C.jade,fontFamily:F.serif}}>{m.rm1_real}kg <span style={{fontSize:10,color:C.textD}}>real</span></span>}
-                  <span style={{fontSize:15,fontWeight:400,color:C.blue,fontFamily:F.serif}}>~{m.rm1_estimado}kg <span style={{fontSize:10,color:C.textD}}>est.</span></span>
-                </div>
-              </div>
-            ))}
+          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:8,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>Mapa de calor — sesiones completadas</div>
+          {ciclo
+            ?<HeatMap semanas={ciclo.semanas} dias={ciclo.sesiones_semana} data={heatData}/>
+            :<div style={{color:C.textD,fontSize:12,fontFamily:F.sans,padding:"12px 0"}}>Sin ciclo activo</div>
+          }
+          <div style={{display:"flex",gap:12,marginTop:6}}>
+            <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:10,height:10,borderRadius:2,background:C.surface,border:`1px solid ${C.border}`}}/><span style={{fontSize:9,color:C.textD,fontFamily:F.sans}}>Sin sesión</span></div>
+            <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:10,height:10,borderRadius:2,background:C.amber}}/><span style={{fontSize:9,color:C.textD,fontFamily:F.sans}}>Parcial</span></div>
+            <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:10,height:10,borderRadius:2,background:C.jade}}/><span style={{fontSize:9,color:C.textD,fontFamily:F.sans}}>Completa</span></div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Fila 4: Evolución 1RM */}
+      {marcaEvol.length>1&&(
+        <Card>
+          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>
+            Evolución 1RM estimado — {topMarca?.ejercicios?.nombre||"ejercicio principal"}
+          </div>
+          <LineChart data={marcaEvol} color={C.amber} height={68} unit="kg"/>
+          <div style={{display:"flex",gap:16,marginTop:4}}>
+            <span style={{fontSize:10,color:C.textD,fontFamily:F.sans}}>Inicio: <span style={{color:C.amber}}>{marcaEvol[0]?.y}kg</span></span>
+            <span style={{fontSize:10,color:C.textD,fontFamily:F.sans}}>Actual: <span style={{color:C.amber,fontWeight:700}}>{marcaEvol[marcaEvol.length-1]?.y}kg</span></span>
+            {marcaEvol.length>1&&<span style={{fontSize:10,color:marcaEvol[marcaEvol.length-1]?.y>=marcaEvol[0]?.y?C.jade:C.red,fontFamily:F.sans,fontWeight:700}}>
+              {marcaEvol[marcaEvol.length-1]?.y>=marcaEvol[0]?.y?"▲":"▼"} {Math.abs(marcaEvol[marcaEvol.length-1]?.y-marcaEvol[0]?.y)}kg
+            </span>}
           </div>
         </Card>
       )}
@@ -1537,128 +1662,206 @@ function DashboardAtleta({ user, perfil }) {
 }
 
 // ─────────────────────────────────────────
-// DASHBOARD COACH
+// DASHBOARD COACH — VISUALIZACIÓN
 // ─────────────────────────────────────────
 function DashboardCoach({ user }) {
   const [atletas,setAtletas]=useState([]);
   const [ciclos,setCiclos]=useState([]);
+  const [logsAll,setLogsAll]=useState([]);
+  const [biosHoy,setBiosHoy]=useState({});
   const [loading,setLoading]=useState(true);
-  const [bioResumen,setBioResumen]=useState({});
 
   useEffect(()=>{cargar();},[]);
 
   const cargar=async()=>{
     const sb=await getSB();
     if(!sb){setLoading(false);return;}
-    const [{data:ats},{data:cics}]=await Promise.all([
+    const today=new Date().toISOString().split("T")[0];
+    const [{data:ats},{data:cics},{data:lg}]=await Promise.all([
       sb.from("profiles").select("*").eq("rol","atleta").order("atleta_codigo"),
       sb.from("ciclos").select("*").eq("activo",true),
+      sb.from("logs_entrenamiento").select("*").order("fecha",{ascending:false}).limit(500),
     ]);
     const atletasList=ats||[];
-    const ciclosList=cics||[];
-    setAtletas(atletasList);
-    setCiclos(ciclosList);
-
-    // Bio de hoy para cada atleta
-    const today=new Date().toISOString().split("T")[0];
+    setAtletas(atletasList); setCiclos(cics||[]); setLogsAll(lg||[]);
     const bios={};
     await Promise.all(atletasList.map(async a=>{
-      const {data}=await sb.from("biomarcadores").select("*").eq("atleta_id",a.id).eq("fecha",today).single();
-      if(data) bios[a.id]=data;
+      const {data}=await sb.from("biomarcadores").select("*").eq("atleta_id",a.id).order("fecha",{ascending:false}).limit(14);
+      if(data?.length) bios[a.id]=data;
     }));
-    setBioResumen(bios);
+    setBiosHoy(bios);
     setLoading(false);
   };
 
-  if(loading)return <div style={{padding:32}}><Spinner/></div>;
+  if(loading) return <div style={{padding:32}}><Spinner/></div>;
 
-  const hoy=new Date();
-  const atletasConCiclo=atletas.filter(a=>ciclos.some(c=>c.atleta_id===a.id));
-  const atletasSinCiclo=atletas.filter(a=>!ciclos.some(c=>c.atleta_id===a.id));
-  const registraronHoy=atletas.filter(a=>bioResumen[a.id]);
+  // ── Calcular ATL / CTL / TSB por atleta (modelo Banister adaptado a tonelaje)
+  // CTL ≈ media móvil 42 días del TSS (acá usamos tonelaje×RPE como proxy)
+  // ATL ≈ media móvil 7 días del TSS
+  // TSB = CTL - ATL  (forma positiva = fresco, negativo = fatigado)
+  const calcTSB=(logs)=>{
+    const sorted=[...logs].sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+    const tssArr=sorted.map(l=>(l.carga_kg||0)*(l.reps_realizadas||0)*(l.series_realizadas||0)*(l.rpe||7)/700);
+    const ctl42=(arr,i)=>i<0?0:arr.slice(Math.max(0,i-41),i+1).reduce((a,b)=>a+b,0)/Math.min(42,i+1);
+    const atl7=(arr,i)=>i<0?0:arr.slice(Math.max(0,i-6),i+1).reduce((a,b)=>a+b,0)/Math.min(7,i+1);
+    const last=tssArr.length-1;
+    if(last<0)return {ctl:0,atl:0,tsb:0};
+    const ctl=Math.round(ctl42(tssArr,last)*100)/100;
+    const atl=Math.round(atl7(tssArr,last)*100)/100;
+    return {ctl:Math.round(ctl*10),atl:Math.round(atl*10),tsb:Math.round((ctl-atl)*10)};
+  };
 
-  return(
-    <div style={{padding:"28px 32px",maxWidth:960}}>
-      <SectionHeader
-        title="Dashboard Coach"
-        sub={hoy.toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}
-      />
+  const atletaStats=atletas.map(a=>{
+    const aLogs=logsAll.filter(l=>l.atleta_id===a.id);
+    const {ctl,atl,tsb}=calcTSB(aLogs);
+    const ciclo=ciclos.find(c=>c.atleta_id===a.id);
+    const bio=biosHoy[a.id];
+    const readToday=bio?.[0]?Math.round((bio[0].calidad_sueno/10*25)+(bio[0].motivacion/10*25)+((10-(bio[0].estres||5))/10*25)+((10-(bio[0].dolor_muscular||3))/10*25)):null;
+    const ton7=aLogs.slice(0,7).reduce((s,l)=>s+(l.carga_kg||0)*(l.reps_realizadas||0)*(l.series_realizadas||0),0);
+    return {...a, ctl, atl, tsb, ciclo, readToday, ton7:Math.round(ton7/1000*10)/10};
+  });
 
-      {/* KPIs */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:24}}>
-        <Stat label="Total atletas" value={atletas.length} color={C.jade}/>
-        <Stat label="Con ciclo activo" value={atletasConCiclo.length} unit={`${atletas.length-atletasConCiclo.length} sin ciclo`} color={C.blue}/>
-        <Stat label="Bio hoy" value={registraronHoy.length} unit={`de ${atletas.length} atletas`} color={registraronHoy.length===atletas.length?C.jade:C.amber}/>
-        <Stat label="Ciclos activos" value={ciclos.length} color={C.violet}/>
-      </div>
+  // Curva TSB colectiva (semanas)
+  const tsbPorSem=Object.entries(
+    logsAll.reduce((acc,l)=>{
+      const k=`S${l.semana||"?"}`;
+      if(!acc[k])acc[k]={ton:0,rpe:[],n:0};
+      acc[k].ton+=(l.carga_kg||0)*(l.reps_realizadas||0)*(l.series_realizadas||0);
+      if(l.rpe)acc[k].rpe.push(l.rpe);
+      acc[k].n++;
+      return acc;
+    },{})
+  ).slice(-10).map(([k,v])=>({label:k,ton:Math.round(v.ton/1000),rpe:v.rpe.length?Math.round(v.rpe.reduce((a,b)=>a+b,0)/v.rpe.length*10)/10:0}));
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
-        {/* Resumen por tipo de ciclo */}
-        <Card>
-          <div style={{fontSize:11,fontWeight:700,color:C.textS,marginBottom:14,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans}}>Distribución de ciclos activos</div>
-          {ciclos.length===0?(
-            <div style={{color:C.textD,fontSize:13,fontFamily:F.sans}}>Sin ciclos activos</div>
-          ):(
-            CICLOS_TIPOS.map(tipo=>{
-              const count=ciclos.filter(c=>c.tipo===tipo.key).length;
-              if(!count)return null;
-              return(
-                <div key={tipo.key} style={{marginBottom:10}}>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.text,marginBottom:4,fontFamily:F.sans}}>
-                    <span>{tipo.label}</span>
-                    <span style={{color:tipo.color,fontWeight:700}}>{count} atleta{count>1?"s":""}</span>
-                  </div>
-                  <Bar value={count} max={atletas.length||1} color={tipo.color} h={6}/>
-                </div>
-              );
-            })
-          )}
-        </Card>
+  // Distribución de carga por patrón de movimiento
+  const patronDist=logsAll.reduce((acc,l)=>{
+    const p=l.patron_movimiento||"Otros";
+    acc[p]=(acc[p]||0)+(l.carga_kg||0)*(l.reps_realizadas||0)*(l.series_realizadas||0);
+    return acc;
+  },{});
+  const patronBars=Object.entries(patronDist).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,v],i)=>({
+    label:k.length>7?k.slice(0,7)+"…":k,
+    value:Math.round(v/1000),
+    color:[C.jade,C.blue,C.amber,C.violet,C.red,"#4ECDC4"][i]||C.jade,
+  }));
 
-        {/* Biomarcadores hoy */}
-        <Card>
-          <div style={{fontSize:11,fontWeight:700,color:C.textS,marginBottom:14,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans}}>Readiness atletas — hoy</div>
-          {atletas.length===0?(
-            <div style={{color:C.textD,fontSize:13,fontFamily:F.sans}}>Sin atletas</div>
-          ):(
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {atletas.map(a=>{
-                const b=bioResumen[a.id];
-                const r=b?Math.round((b.calidad_sueno/10*25)+(b.motivacion/10*25)+((10-(b.estres||5))/10*25)+((10-(b.dolor_muscular||3))/10*25)):null;
-                const rc=r!=null?(r>=75?C.jade:r>=50?C.amber:C.red):C.textD;
-                return(
-                  <div key={a.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",background:C.surface,borderRadius:8,border:`1px solid ${C.border}`}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <Tag color={C.jade} sm>{a.atleta_codigo||"—"}</Tag>
-                      <span style={{fontSize:12,color:C.text,fontFamily:F.sans}}>{a.nombre||"Sin nombre"}</span>
-                    </div>
-                    {r!=null?(
-                      <div style={{textAlign:"right"}}>
-                        <span style={{fontSize:18,fontWeight:400,color:rc,fontFamily:F.serif}}>{r}</span>
-                        <span style={{fontSize:10,color:C.textD,marginLeft:4,fontFamily:F.sans}}>readiness</span>
-                      </div>
-                    ):(
-                      <span style={{fontSize:11,color:C.textD,fontFamily:F.sans}}>sin registro hoy</span>
-                    )}
-                  </div>
-                );
-              })}
+  const maxTSB=Math.max(...atletaStats.map(a=>Math.abs(a.tsb)),1);
+
+  return (
+    <div style={{padding:"24px 20px",maxWidth:960}}>
+      <SectionHeader title="Dashboard Coach" sub="Carga, fatiga y readiness de todos los atletas"/>
+
+      {/* Cuadrante Fatiga × Readiness */}
+      <Card style={{marginBottom:14}}>
+        <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:4,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>
+          Cuadrante Carga Crónica (CTL) × Readiness — posición de cada atleta
+        </div>
+        <div style={{fontSize:9,color:C.textD,marginBottom:10,fontFamily:F.sans}}>
+          Arriba-derecha = alto fitness + recuperado (ideal). Abajo-izquierda = poco entrenado + fatigado (riesgo).
+        </div>
+        {(() => {
+          const W=320, H=180, padL=28, padB=20, padT=10, padR=10;
+          const maxCtl=Math.max(...atletaStats.map(a=>a.ctl),10);
+          const pts=atletaStats.map(a=>({
+            ...a,
+            px:padL+((a.ctl/maxCtl)*(W-padL-padR)),
+            py:padT+((1-((a.readToday||50)/100))*(H-padT-padB)),
+          }));
+          return (
+            <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",maxWidth:480}}>
+              {/* cuadrantes */}
+              <rect x={padL} y={padT} width={(W-padL-padR)/2} height={(H-padT-padB)/2} fill={C.amber+"08"}/>
+              <rect x={padL+(W-padL-padR)/2} y={padT} width={(W-padL-padR)/2} height={(H-padT-padB)/2} fill={C.jade+"08"}/>
+              <rect x={padL} y={padT+(H-padT-padB)/2} width={(W-padL-padR)/2} height={(H-padT-padB)/2} fill={C.red+"08"}/>
+              <rect x={padL+(W-padL-padR)/2} y={padT+(H-padT-padB)/2} width={(W-padL-padR)/2} height={(H-padT-padB)/2} fill={C.blue+"08"}/>
+              {/* ejes */}
+              <line x1={padL} y1={padT} x2={padL} y2={H-padB} stroke={C.border} strokeWidth="1"/>
+              <line x1={padL} y1={H-padB} x2={W-padR} y2={H-padB} stroke={C.border} strokeWidth="1"/>
+              {/* labels ejes */}
+              <text x={padL+(W-padL-padR)/2} y={H-3} textAnchor="middle" fill={C.textD} fontSize="7" fontFamily="sans-serif">CTL bajo → alto</text>
+              <text x={6} y={padT+(H-padT-padB)/2} textAnchor="middle" fill={C.textD} fontSize="7" fontFamily="sans-serif" transform={`rotate(-90,6,${padT+(H-padT-padB)/2})`}>Readiness</text>
+              {/* labels cuadrantes */}
+              <text x={padL+4} y={padT+10} fill={C.amber+"AA"} fontSize="6" fontFamily="sans-serif">Descansado/bajo vol.</text>
+              <text x={padL+(W-padL-padR)/2+4} y={padT+10} fill={C.jade+"AA"} fontSize="6" fontFamily="sans-serif">✓ Pico rendimiento</text>
+              <text x={padL+4} y={H-padB-4} fill={C.red+"AA"} fontSize="6" fontFamily="sans-serif">⚠ Sobreentrenado</text>
+              <text x={padL+(W-padL-padR)/2+4} y={H-padB-4} fill={C.blue+"AA"} fontSize="6" fontFamily="sans-serif">Alta carga / fatiga</text>
+              {/* puntos */}
+              {pts.map(a=>(
+                <g key={a.id}>
+                  <circle cx={a.px} cy={a.py} r="7" fill={a.ciclo?CICLOS_TIPOS.find(t=>t.key===a.ciclo.tipo)?.color||C.jade:C.textD} opacity="0.7"/>
+                  <text x={a.px} y={a.py+3} textAnchor="middle" fill={C.deep} fontSize="6" fontWeight="bold" fontFamily="sans-serif">{(a.atleta_codigo||"?").replace("ATL-","")}</text>
+                </g>
+              ))}
+            </svg>
+          );
+        })()}
+        <div style={{display:"flex",gap:8,marginTop:8,flexWrap:"wrap"}}>
+          {atletaStats.map(a=>(
+            <div key={a.id} style={{display:"flex",alignItems:"center",gap:4}}>
+              <div style={{width:10,height:10,borderRadius:"50%",background:a.ciclo?CICLOS_TIPOS.find(t=>t.key===a.ciclo?.tipo)?.color||C.jade:C.textD}}/>
+              <span style={{fontSize:9,color:C.textS,fontFamily:F.sans}}>{a.atleta_codigo} {a.nombre?.split(" ")[0]}</span>
             </div>
-          )}
+          ))}
+        </div>
+      </Card>
+
+      {/* Fila 2: Tonelaje colectivo + distribución patrón */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+        <Card>
+          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>Tonelaje total equipo por semana (t)</div>
+          {tsbPorSem.length>1
+            ?<LineChart data={tsbPorSem.map(d=>({y:d.ton,label:d.label}))} color={C.blue} height={72}/>
+            :<div style={{height:72,display:"flex",alignItems:"center",color:C.textD,fontSize:12,fontFamily:F.sans}}>Sin logs registrados aún</div>
+          }
+        </Card>
+        <Card>
+          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>Carga por patrón de movimiento (t)</div>
+          {patronBars.length>0
+            ?<><BarChartV data={patronBars} height={72}/><div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:4}}>{patronBars.map(b=><span key={b.label} style={{fontSize:9,color:b.color,fontFamily:F.sans}}>{b.label}: {b.value}t</span>)}</div></>
+            :<div style={{height:72,display:"flex",alignItems:"center",color:C.textD,fontSize:12,fontFamily:F.sans}}>Sin datos de patrón</div>
+          }
         </Card>
       </div>
 
-      {/* Atletas sin ciclo */}
-      {atletasSinCiclo.length>0&&(
-        <Card style={{borderColor:C.amber+"44",background:C.amber+"08"}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.amber,marginBottom:12,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans}}>⚠ Atletas sin ciclo activo ({atletasSinCiclo.length})</div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {atletasSinCiclo.map(a=>(
-              <Tag key={a.id} color={C.amber}>{a.atleta_codigo} · {a.nombre||"sin nombre"}</Tag>
-            ))}
-          </div>
-        </Card>
-      )}
+      {/* Fila 3: tabla ATL/CTL/TSB + readiness por atleta */}
+      <Card>
+        <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:12,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>
+          ATL · CTL · TSB — estado de carga individual
+        </div>
+        <div style={{fontSize:9,color:C.textD,marginBottom:10,fontFamily:F.sans}}>
+          CTL = fitness crónico (42d) · ATL = carga aguda (7d) · TSB = CTL−ATL (positivo=fresco, negativo=fatigado)
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"auto 1fr 60px 60px 60px 60px 80px",gap:"6px 10px",alignItems:"center"}}>
+          {["","ATLETA","CTL","ATL","TSB","Ton.7d","Readiness"].map((h,i)=>(
+            <div key={i} style={{fontSize:9,fontWeight:700,color:C.textD,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans,borderBottom:`1px solid ${C.border}`,paddingBottom:4}}>{h}</div>
+          ))}
+          {atletaStats.map(a=>{
+            const tsbColor=a.tsb>5?C.jade:a.tsb<-5?C.red:C.amber;
+            const rc=a.readToday!=null?(a.readToday>=75?C.jade:a.readToday>=50?C.amber:C.red):C.textD;
+            const barW=Math.min(100,Math.abs(a.tsb)/maxTSB*100);
+            return [
+              <div key={a.id+"dot"} style={{width:8,height:8,borderRadius:"50%",background:a.ciclo?CICLOS_TIPOS.find(t=>t.key===a.ciclo?.tipo)?.color||C.jade:C.textD}}/>,
+              <div key={a.id+"nom"} style={{fontSize:12,color:C.text,fontFamily:F.sans}}>{a.nombre?.split(" ")[0]||a.atleta_codigo}</div>,
+              <div key={a.id+"ctl"} style={{fontSize:13,color:C.blue,fontFamily:F.serif,textAlign:"center"}}>{a.ctl}</div>,
+              <div key={a.id+"atl"} style={{fontSize:13,color:C.amber,fontFamily:F.serif,textAlign:"center"}}>{a.atl}</div>,
+              <div key={a.id+"tsb"}>
+                <div style={{fontSize:13,color:tsbColor,fontFamily:F.serif,textAlign:"center"}}>{a.tsb>0?"+":""}{a.tsb}</div>
+                <div style={{height:3,borderRadius:99,background:C.border,marginTop:2}}><div style={{width:`${barW}%`,height:"100%",borderRadius:99,background:tsbColor}}/></div>
+              </div>,
+              <div key={a.id+"ton"} style={{fontSize:12,color:C.textS,fontFamily:F.sans,textAlign:"center"}}>{a.ton7}t</div>,
+              <div key={a.id+"read"}>
+                {a.readToday!=null
+                  ?<div style={{display:"flex",alignItems:"center",gap:4}}>
+                    <div style={{width:28,height:28,borderRadius:6,background:rc+"22",border:`1px solid ${rc}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:rc,fontFamily:F.serif}}>{a.readToday}</div>
+                    <span style={{fontSize:9,color:rc,fontFamily:F.sans}}>{a.readToday>=75?"✓ ok":a.readToday>=50?"~":"⚠"}</span>
+                  </div>
+                  :<span style={{fontSize:9,color:C.textD,fontFamily:F.sans}}>sin dato</span>
+                }
+              </div>,
+            ];
+          })}
+        </div>
+      </Card>
     </div>
   );
 }
@@ -1976,7 +2179,7 @@ export default function NOAApp() {
       case "biomarcadores": return <Biomarcadores user={user}/>;
       case "marcas":        return <Marcas user={user}/>;
       case "noa_coach":     return <NOACoach perfil={perfil} user={user}/>;
-      case "c_dashboard":   return <DashboardCoach user={user}/>;
+      case "c_dashboard":   return <DashboardCoach user={user} atletas={[]}/>;
       case "c_atletas":     return <CoachAtletas user={user} onVerAtleta={(a)=>{setAtletaVista(a);setSec("c_vista");}}/>;
       case "c_ciclos":      return <CoachCiclos user={user}/>;
       case "c_planificar":  return <CoachPlanificar user={user}/>;
