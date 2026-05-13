@@ -1689,7 +1689,7 @@ export default function NOAApp() {
       case "biomarcadores": return <Biomarcadores user={user}/>;
       case "marcas":        return <Marcas user={user}/>;
       case "noa_coach":     return <NOACoach perfil={perfil} user={user}/>;
-      case "c_dashboard":   return <DashboardCoach user={user}/>;
+      case "c_dashboard":   return <CoachAtletas user={user} onVerAtleta={(a)=>{setAtletaVista(a);setSec("c_vista");}}/>;
       case "c_atletas":     return <CoachAtletas user={user} onVerAtleta={(a)=>{setAtletaVista(a);setSec("c_vista");}}/>;
       case "c_ciclos":      return <CoachCiclos user={user}/>;
       case "c_planificar":  return <CoachPlanificar user={user}/>;
