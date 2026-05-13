@@ -322,12 +322,14 @@ function Login({ onLogin }) {
 // ─────────────────────────────────────────
 const NAV_ATLETA = [
   {id:"hoy",         icon:"⚡",label:"Sesión de hoy"},
+  {id:"dashboard",   icon:"📊",label:"Mi dashboard"},
   {id:"calendario",  icon:"◈", label:"Mi calendario"},
   {id:"biomarcadores",icon:"◆",label:"Biomarcadores"},
   {id:"marcas",      icon:"◎", label:"Mis marcas"},
   {id:"noa_coach",   icon:"✦", label:"NOA Coach IA"},
 ];
 const NAV_COACH = [
+  {id:"c_dashboard", icon:"📊", label:"Dashboard"},
   {id:"c_atletas",   icon:"◈", label:"Mis atletas"},
   {id:"c_ciclos",    icon:"◉", label:"Ciclos"},
   {id:"c_planificar",icon:"◆", label:"Planificar"},
@@ -1682,10 +1684,12 @@ export default function NOAApp() {
     if (!user) return null;
     switch(sec) {
       case "hoy":           return <SesionHoy user={user}/>;
+      case "dashboard":     return <DashboardAtleta user={user} perfil={perfil}/>;
       case "calendario":    return <CalendarioAtleta user={user}/>;
       case "biomarcadores": return <Biomarcadores user={user}/>;
       case "marcas":        return <Marcas user={user}/>;
       case "noa_coach":     return <NOACoach perfil={perfil} user={user}/>;
+      case "c_dashboard":   return <DashboardCoach user={user}/>;
       case "c_atletas":     return <CoachAtletas user={user} onVerAtleta={(a)=>{setAtletaVista(a);setSec("c_vista");}}/>;
       case "c_ciclos":      return <CoachCiclos user={user}/>;
       case "c_planificar":  return <CoachPlanificar user={user}/>;
