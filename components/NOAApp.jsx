@@ -1377,6 +1377,293 @@ function CoachEjercicios({ user }) {
 }
 
 // ─────────────────────────────────────────
+// DASHBOARD ATLETA
+// ─────────────────────────────────────────
+function DashboardAtleta({ user, perfil }) {
+  const [ciclo,setCiclo]=useState(null);
+  const [sesiones,setSesiones]=useState([]);
+  const [bio,setBio]=useState(null);
+  const [marcas,setMarcas]=useState([]);
+  const [loading,setLoading]=useState(true);
+
+  useEffect(()=>{cargar();},[]);
+
+  const cargar=async()=>{
+    const sb=await getSB();
+    if(!sb){setLoading(false);return;}
+    const [rCiclo,rBio,rMarcas]=await Promise.all([
+      sb.from("ciclos").select("*").eq("atleta_id",user.id).eq("activo",true).order("created_at",{ascending:false}).limit(1),
+      sb.from("biomarcadores").select("*").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(7),
+      sb.from("marcas").select("*,ejercicios(nombre)").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(5),
+    ]);
+    const c=rCiclo.data?.[0]||null;
+    setCiclo(c);
+    setBio(rBio.data||[]);
+    setMarcas(rMarcas.data||[]);
+    if(c){
+      const hoy=new Date();
+      const inicio=new Date(c.fecha_inicio);
+      const semActual=Math.min(c.semanas,Math.floor(Math.max(0,hoy-inicio)/(1000*60*60*24*7))+1);
+      const diaActual=(hoy.getDay()===0?7:hoy.getDay());
+      const {data:sp}=await sb.from("sesiones_plan").select("*,ejercicios(nombre)").eq("ciclo_id",c.id).eq("semana",semActual).eq("dia",diaActual).order("orden");
+      setSesiones(sp||[]);
+    }
+    setLoading(false);
+  };
+
+  if(loading)return <div style={{padding:32}}><Spinner/></div>;
+
+  const hoy=new Date();
+  const inicio=ciclo?new Date(ciclo.fecha_inicio):null;
+  const semActual=ciclo?Math.min(ciclo.semanas,Math.floor(Math.max(0,hoy-inicio)/(1000*60*60*24*7))+1):0;
+  const pctCiclo=ciclo?Math.round((semActual/ciclo.semanas)*100):0;
+  const tipoC=CICLOS_TIPOS.find(t=>t.key===ciclo?.tipo);
+
+  // Readiness de hoy (último bio)
+  const bioHoy=bio?.[0];
+  const readiness=bioHoy?Math.round((bioHoy.calidad_sueno/10*25)+(bioHoy.motivacion/10*25)+((10-(bioHoy.estres||5))/10*25)+((10-(bioHoy.dolor_muscular||3))/10*25)):null;
+  const rC=readiness!=null?(readiness>=75?C.jade:readiness>=50?C.amber:C.red):C.textD;
+
+  // Sparkline HRV (últimos 7 días)
+  const hrvData=bio?[...bio].reverse().map(b=>b.hrv).filter(Boolean):[];
+  const hrvMax=hrvData.length?Math.max(...hrvData):1;
+  const hrvMin=hrvData.length?Math.min(...hrvData):0;
+
+  return(
+    <div style={{padding:"28px 32px",maxWidth:960}}>
+      <SectionHeader
+        title={`Hola, ${perfil?.nombre?.split(" ")[0]||"atleta"} 👋`}
+        sub={hoy.toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}
+        tags={ciclo?[{label:ciclo.nombre||ciclo.tipo,color:tipoC?.color||C.jade},{label:`Sem ${semActual}/${ciclo.semanas}`,color:C.blue}]:[]}
+      />
+
+      {/* Fila top */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:20}}>
+        <Stat label="Readiness hoy" value={readiness!=null?readiness:"—"} unit="sobre 100" color={rC}/>
+        <Stat label="Ciclo actual" value={ciclo?`${pctCiclo}%`:"—"} unit={ciclo?`${semActual} de ${ciclo.semanas} sem`:"sin ciclo"} color={tipoC?.color||C.textD}/>
+        <Stat label="Sesión hoy" value={sesiones.length||"—"} unit={sesiones.length?"ejercicios planificados":"sin sesión hoy"} color={sesiones.length?C.blue:C.textD}/>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+        {/* Progreso ciclo */}
+        {ciclo&&(
+          <Card>
+            <div style={{fontSize:11,fontWeight:700,color:C.textS,marginBottom:10,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans}}>Progreso del ciclo</div>
+            <div style={{marginBottom:8}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.text,marginBottom:6,fontFamily:F.sans}}>
+                <span>{ciclo.nombre||ciclo.tipo}</span>
+                <span style={{color:tipoC?.color||C.jade,fontWeight:700}}>{pctCiclo}%</span>
+              </div>
+              <Bar value={pctCiclo} max={100} color={tipoC?.color||C.jade} h={8}/>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:14}}>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:18,fontWeight:400,color:C.white,fontFamily:F.serif}}>{semActual}</div>
+                <div style={{fontSize:10,color:C.textD,fontFamily:F.sans}}>Semana actual</div>
+              </div>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:18,fontWeight:400,color:C.white,fontFamily:F.serif}}>{ciclo.semanas-semActual}</div>
+                <div style={{fontSize:10,color:C.textD,fontFamily:F.sans}}>Semanas rest.</div>
+              </div>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:18,fontWeight:400,color:tipoC?.color||C.jade,fontFamily:F.serif}}>{tipoC?.pct||"—"}%</div>
+                <div style={{fontSize:10,color:C.textD,fontFamily:F.sans}}>Zona 1RM</div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* HRV sparkline */}
+        <Card>
+          <div style={{fontSize:11,fontWeight:700,color:C.textS,marginBottom:10,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans}}>HRV — últimos 7 días</div>
+          {hrvData.length===0?(
+            <div style={{textAlign:"center",padding:"24px 0",color:C.textD,fontSize:12,fontFamily:F.sans}}>Sin datos de biomarcadores aún</div>
+          ):(
+            <>
+              <div style={{display:"flex",alignItems:"flex-end",gap:4,height:56,marginBottom:8}}>
+                {hrvData.map((v,i)=>{
+                  const h=hrvMax===hrvMin?28:Math.max(6,((v-hrvMin)/(hrvMax-hrvMin))*52);
+                  return <div key={i} style={{flex:1,height:h,borderRadius:"3px 3px 0 0",background:i===hrvData.length-1?C.jade:C.jade+"55",transition:"height 0.4s"}}/>;
+                })}
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:C.textD,fontFamily:F.sans}}>
+                <span>hace 7d</span>
+                <span style={{color:C.jade,fontWeight:700}}>hoy: {hrvData[hrvData.length-1]} ms</span>
+              </div>
+            </>
+          )}
+        </Card>
+      </div>
+
+      {/* Sesión de hoy */}
+      <Card style={{marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.textS,marginBottom:12,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans}}>Sesión de hoy</div>
+        {sesiones.length===0?(
+          <div style={{color:C.textD,fontSize:13,fontFamily:F.sans,padding:"8px 0"}}>No hay sesión planificada para hoy 🌿</div>
+        ):(
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {sesiones.map(ej=>(
+              <div key={ej.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",background:C.surface,borderRadius:9,border:`1px solid ${C.border}`}}>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:C.text,fontFamily:F.sans}}>{ej.ejercicios?.nombre}</div>
+                  <div style={{fontSize:11,color:C.textD,marginTop:1,fontFamily:F.sans}}>{ej.series} series · {ej.reps} reps{ej.carga_kg?` · ${ej.carga_kg}kg`:""}</div>
+                </div>
+                {ej.intensidad_pct&&<Tag color={C.violet} sm>{ej.intensidad_pct}% 1RM</Tag>}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Últimas marcas */}
+      {marcas.length>0&&(
+        <Card>
+          <div style={{fontSize:11,fontWeight:700,color:C.textS,marginBottom:12,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans}}>Últimas marcas</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {marcas.map(m=>(
+              <div key={m.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",background:C.surface,borderRadius:8,border:`1px solid ${C.border}`}}>
+                <div style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:F.sans}}>{m.ejercicios?.nombre}</div>
+                <div style={{display:"flex",gap:12,alignItems:"center"}}>
+                  {m.rm1_real&&<span style={{fontSize:15,fontWeight:400,color:C.jade,fontFamily:F.serif}}>{m.rm1_real}kg <span style={{fontSize:10,color:C.textD}}>real</span></span>}
+                  <span style={{fontSize:15,fontWeight:400,color:C.blue,fontFamily:F.serif}}>~{m.rm1_estimado}kg <span style={{fontSize:10,color:C.textD}}>est.</span></span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// DASHBOARD COACH
+// ─────────────────────────────────────────
+function DashboardCoach({ user }) {
+  const [atletas,setAtletas]=useState([]);
+  const [ciclos,setCiclos]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [bioResumen,setBioResumen]=useState({});
+
+  useEffect(()=>{cargar();},[]);
+
+  const cargar=async()=>{
+    const sb=await getSB();
+    if(!sb){setLoading(false);return;}
+    const [{data:ats},{data:cics}]=await Promise.all([
+      sb.from("profiles").select("*").eq("rol","atleta").order("atleta_codigo"),
+      sb.from("ciclos").select("*").eq("activo",true),
+    ]);
+    const atletasList=ats||[];
+    const ciclosList=cics||[];
+    setAtletas(atletasList);
+    setCiclos(ciclosList);
+
+    // Bio de hoy para cada atleta
+    const today=new Date().toISOString().split("T")[0];
+    const bios={};
+    await Promise.all(atletasList.map(async a=>{
+      const {data}=await sb.from("biomarcadores").select("*").eq("atleta_id",a.id).eq("fecha",today).single();
+      if(data) bios[a.id]=data;
+    }));
+    setBioResumen(bios);
+    setLoading(false);
+  };
+
+  if(loading)return <div style={{padding:32}}><Spinner/></div>;
+
+  const hoy=new Date();
+  const atletasConCiclo=atletas.filter(a=>ciclos.some(c=>c.atleta_id===a.id));
+  const atletasSinCiclo=atletas.filter(a=>!ciclos.some(c=>c.atleta_id===a.id));
+  const registraronHoy=atletas.filter(a=>bioResumen[a.id]);
+
+  return(
+    <div style={{padding:"28px 32px",maxWidth:960}}>
+      <SectionHeader
+        title="Dashboard Coach"
+        sub={hoy.toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}
+      />
+
+      {/* KPIs */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:24}}>
+        <Stat label="Total atletas" value={atletas.length} color={C.jade}/>
+        <Stat label="Con ciclo activo" value={atletasConCiclo.length} unit={`${atletas.length-atletasConCiclo.length} sin ciclo`} color={C.blue}/>
+        <Stat label="Bio hoy" value={registraronHoy.length} unit={`de ${atletas.length} atletas`} color={registraronHoy.length===atletas.length?C.jade:C.amber}/>
+        <Stat label="Ciclos activos" value={ciclos.length} color={C.violet}/>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+        {/* Resumen por tipo de ciclo */}
+        <Card>
+          <div style={{fontSize:11,fontWeight:700,color:C.textS,marginBottom:14,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans}}>Distribución de ciclos activos</div>
+          {ciclos.length===0?(
+            <div style={{color:C.textD,fontSize:13,fontFamily:F.sans}}>Sin ciclos activos</div>
+          ):(
+            CICLOS_TIPOS.map(tipo=>{
+              const count=ciclos.filter(c=>c.tipo===tipo.key).length;
+              if(!count)return null;
+              return(
+                <div key={tipo.key} style={{marginBottom:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.text,marginBottom:4,fontFamily:F.sans}}>
+                    <span>{tipo.label}</span>
+                    <span style={{color:tipo.color,fontWeight:700}}>{count} atleta{count>1?"s":""}</span>
+                  </div>
+                  <Bar value={count} max={atletas.length||1} color={tipo.color} h={6}/>
+                </div>
+              );
+            })
+          )}
+        </Card>
+
+        {/* Biomarcadores hoy */}
+        <Card>
+          <div style={{fontSize:11,fontWeight:700,color:C.textS,marginBottom:14,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans}}>Readiness atletas — hoy</div>
+          {atletas.length===0?(
+            <div style={{color:C.textD,fontSize:13,fontFamily:F.sans}}>Sin atletas</div>
+          ):(
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {atletas.map(a=>{
+                const b=bioResumen[a.id];
+                const r=b?Math.round((b.calidad_sueno/10*25)+(b.motivacion/10*25)+((10-(b.estres||5))/10*25)+((10-(b.dolor_muscular||3))/10*25)):null;
+                const rc=r!=null?(r>=75?C.jade:r>=50?C.amber:C.red):C.textD;
+                return(
+                  <div key={a.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",background:C.surface,borderRadius:8,border:`1px solid ${C.border}`}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <Tag color={C.jade} sm>{a.atleta_codigo||"—"}</Tag>
+                      <span style={{fontSize:12,color:C.text,fontFamily:F.sans}}>{a.nombre||"Sin nombre"}</span>
+                    </div>
+                    {r!=null?(
+                      <div style={{textAlign:"right"}}>
+                        <span style={{fontSize:18,fontWeight:400,color:rc,fontFamily:F.serif}}>{r}</span>
+                        <span style={{fontSize:10,color:C.textD,marginLeft:4,fontFamily:F.sans}}>readiness</span>
+                      </div>
+                    ):(
+                      <span style={{fontSize:11,color:C.textD,fontFamily:F.sans}}>sin registro hoy</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {/* Atletas sin ciclo */}
+      {atletasSinCiclo.length>0&&(
+        <Card style={{borderColor:C.amber+"44",background:C.amber+"08"}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.amber,marginBottom:12,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans}}>⚠ Atletas sin ciclo activo ({atletasSinCiclo.length})</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {atletasSinCiclo.map(a=>(
+              <Tag key={a.id} color={C.amber}>{a.atleta_codigo} · {a.nombre||"sin nombre"}</Tag>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
 // BIOMARCADORES
 // ─────────────────────────────────────────
 function Biomarcadores({ user }) {
@@ -1689,7 +1976,7 @@ export default function NOAApp() {
       case "biomarcadores": return <Biomarcadores user={user}/>;
       case "marcas":        return <Marcas user={user}/>;
       case "noa_coach":     return <NOACoach perfil={perfil} user={user}/>;
-      case "c_dashboard":   return <CoachAtletas user={user} onVerAtleta={(a)=>{setAtletaVista(a);setSec("c_vista");}}/>;
+      case "c_dashboard":   return <DashboardCoach user={user}/>;
       case "c_atletas":     return <CoachAtletas user={user} onVerAtleta={(a)=>{setAtletaVista(a);setSec("c_vista");}}/>;
       case "c_ciclos":      return <CoachCiclos user={user}/>;
       case "c_planificar":  return <CoachPlanificar user={user}/>;
