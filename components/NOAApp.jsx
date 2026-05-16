@@ -247,6 +247,161 @@ function EmptyState({ title, sub }) {
 }
 
 // ─────────────────────────────────────────
+// GRÁFICAS SVG (sin dependencias externas)
+// ─────────────────────────────────────────
+function LineChart({ data, color, height, showDots }) {
+  color=color||"#00E5A0"; height=height||140; showDots=showDots!==false;
+  if (!data||data.length<2) return <div style={{ height,display:"flex",alignItems:"center",justifyContent:"center",color:"#3A4F6A",fontSize:12,fontFamily:"'DM Sans',sans-serif" }}>Sin datos suficientes</div>;
+  const W=400,H=height,pl=48,pr=16,pt=16,pb=28;
+  const vals=data.map(d=>d.y);
+  const minV=Math.min(...vals),maxV=Math.max(...vals),range=maxV-minV||1;
+  const toX=i=>pl+(i/(data.length-1))*(W-pl-pr);
+  const toY=v=>pt+(1-(v-minV)/range)*(H-pt-pb);
+  const pts=data.map((d,i)=>toX(i)+","+toY(d.y)).join(" ");
+  const fill=data.map((d,i)=>toX(i)+","+toY(d.y)).join(" ")+" "+toX(data.length-1)+","+(H-pb)+" "+toX(0)+","+(H-pb);
+  const gid="g"+color.replace("#","");
+  return (
+    <svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height}} preserveAspectRatio="none">
+      <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.25"/><stop offset="100%" stopColor={color} stopOpacity="0.02"/></linearGradient></defs>
+      {[0,0.25,0.5,0.75,1].map((t,i)=>{const y=pt+t*(H-pt-pb);const val=maxV-t*range;return(<g key={i}><line x1={pl} y1={y} x2={W-pr} y2={y} stroke="#1E2D45" strokeWidth="1"/><text x={pl-4} y={y+4} textAnchor="end" fontSize="9" fill="#3A4F6A" fontFamily="DM Sans">{Math.round(val).toLocaleString("es")}</text></g>);})}
+      <polygon points={fill} fill={"url(#"+gid+")"}/>
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
+      {data.map((d,i)=>(<g key={i}>{showDots&&<circle cx={toX(i)} cy={toY(d.y)} r="3.5" fill={color} stroke="#101828" strokeWidth="2"/>}<text x={toX(i)} y={H-pb+12} textAnchor="middle" fontSize="9" fill="#3A4F6A" fontFamily="DM Sans">{d.x}</text></g>))}
+    </svg>
+  );
+}
+
+function BarChart({ data, color, height }) {
+  color=color||"#A78BFA"; height=height||120;
+  if (!data||!data.length) return null;
+  const W=400,H=height,pl=40,pr=10,pt=10,pb=24;
+  const maxV=Math.max(...data.map(d=>d.y),1);
+  const gap=(W-pl-pr)/data.length;
+  const barW=gap*0.6;
+  return (
+    <svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height}} preserveAspectRatio="none">
+      {data.map((d,i)=>{const x=pl+i*gap+gap*0.2;const barH=(d.y/maxV)*(H-pt-pb);const y=H-pb-barH;return(<g key={i}><rect x={x} y={y} width={barW} height={barH} rx="3" fill={color} opacity="0.85"/><text x={x+barW/2} y={H-pb+12} textAnchor="middle" fontSize="9" fill="#3A4F6A" fontFamily="DM Sans">{d.x}</text><text x={x+barW/2} y={y-4} textAnchor="middle" fontSize="8" fill={color} fontFamily="DM Sans">{d.y}</text></g>);})}
+    </svg>
+  );
+}
+
+// ─────────────────────────────────────────
+// DASHBOARD ATLETA
+// ─────────────────────────────────────────
+function DashboardAtleta({ user, perfil }) {
+  const [loading,setLoading]=useState(true);
+  const [ciclo,setCiclo]=useState(null);
+  const [tonelaje,setTonelaje]=useState([]);
+  const [bio,setBio]=useState([]);
+  const [marcas,setMarcas]=useState([]);
+  const [adherencia,setAdherencia]=useState(0);
+
+  useEffect(()=>{ cargarDash(); },[]);
+
+  const cargarDash=async()=>{
+    const sb=await getSB(); if(!sb){setLoading(false);return;}
+    const {data:ciclos}=await sb.from("ciclos").select("*").eq("atleta_id",user.id).eq("activo",true).limit(1);
+    const c=ciclos?.[0]; setCiclo(c);
+    const {data:logs}=await sb.from("logs_entrenamiento").select("semana,tonelaje,completado").eq("atleta_id",user.id).order("semana");
+    const tonMap={}; let comp=0,tot=0;
+    logs?.forEach(l=>{if(l.semana){tonMap[l.semana]=(tonMap[l.semana]||0)+(l.tonelaje||0);}if(l.completado)comp++;tot++;});
+    setTonelaje(Object.entries(tonMap).map(([k,v])=>({x:"S"+k,y:Math.round(v)})));
+    setAdherencia(tot>0?Math.round(comp/tot*100):0);
+    const {data:bioData}=await sb.from("biomarcadores").select("fecha,hrv,readiness_score").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(7);
+    setBio((bioData||[]).reverse());
+    const {data:mData}=await sb.from("marcas").select("*,ejercicios(nombre)").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(5);
+    setMarcas(mData||[]);
+    setLoading(false);
+  };
+
+  if(loading) return <div style={{padding:32}}><Spinner/></div>;
+  const readinessHoy=bio.length?bio[bio.length-1]?.readiness_score:null;
+  const rC=readinessHoy>=75?"#00E5A0":readinessHoy>=50?"#FFB84D":readinessHoy?"#FF5C5C":"#3A4F6A";
+  const tipoColor=CICLOS_TIPOS.find(t=>t.key===ciclo?.tipo)?.color||"#00E5A0";
+
+  return (
+    <div style={{padding:"16px",maxWidth:960}}>
+      <SectionHeader title={"Hola, "+(perfil?.nombre||"atleta")+" 👋"} sub={ciclo?ciclo.nombre+" · "+ciclo.semanas+" semanas":"Sin ciclo activo"} tags={ciclo?[{label:(ciclo.tipo||"ciclo").replace(/_/g," "),color:tipoColor}]:[]}/>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:20}}>
+        <Stat label="Adherencia" value={adherencia+"%"} color={adherencia>=80?"#00E5A0":"#FFB84D"} unit="sesiones completadas"/>
+        <Stat label="Readiness hoy" value={readinessHoy||"—"} color={rC} unit="sobre 100"/>
+        <Stat label="Semanas con datos" value={tonelaje.filter(t=>t.y>0).length} color="#4D9FFF" unit={"de "+(ciclo?.semanas||"—")}/>
+        <Stat label="Tonelaje total" value={tonelaje.reduce((a,t)=>a+t.y,0).toLocaleString("es")} color="#A78BFA" unit="kg acumulado"/>
+      </div>
+      {tonelaje.length>=2&&<Card style={{marginBottom:16}}><div style={{fontSize:11,fontWeight:700,color:"#8899BB",marginBottom:8,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif"}}>Tonelaje semanal (kg)</div><LineChart data={tonelaje} color="#00E5A0"/></Card>}
+      {bio.length>=2&&<Card style={{marginBottom:16}}><div style={{fontSize:11,fontWeight:700,color:"#8899BB",marginBottom:8,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif"}}>HRV — últimos días (ms)</div><LineChart data={bio.map(b=>({x:(b.fecha||"").slice(5),y:b.hrv||0}))} color="#4D9FFF" height={120}/></Card>}
+      {bio.length>=2&&<Card style={{marginBottom:16}}><div style={{fontSize:11,fontWeight:700,color:"#8899BB",marginBottom:8,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif"}}>Readiness score</div><BarChart data={bio.map(b=>({x:(b.fecha||"").slice(5),y:b.readiness_score||0}))} color="#A78BFA" height={100}/></Card>}
+      {marcas.length>0&&<Card><div style={{fontSize:11,fontWeight:700,color:"#8899BB",marginBottom:12,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif"}}>Marcas personales</div>{marcas.map(m=>(<div key={m.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E2D45"}}><div style={{fontSize:13,color:"#E8F0FE",fontFamily:"'DM Sans',sans-serif"}}>{m.ejercicios?.nombre}</div><div style={{display:"flex",gap:12}}>{m.rm1_real&&<span style={{fontFamily:"'DM Serif Display',serif",fontSize:18,color:"#00E5A0"}}>{m.rm1_real}kg</span>}{m.rm1_estimado&&<span style={{fontFamily:"'DM Serif Display',serif",fontSize:16,color:"#4D9FFF"}}>~{m.rm1_estimado}kg</span>}</div></div>))}</Card>}
+      {!tonelaje.length&&!bio.length&&!marcas.length&&<EmptyState title="Sin datos todavía" sub="Completá sesiones y registrá biomarcadores para ver tus gráficas"/>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// DASHBOARD COACH
+// ─────────────────────────────────────────
+function DashboardCoach({ user }) {
+  const [loading,setLoading]=useState(true);
+  const [atletas,setAtletas]=useState([]);
+  const [tonGrupal,setTonGrupal]=useState([]);
+
+  useEffect(()=>{ cargarCoach(); },[]);
+
+  const cargarCoach=async()=>{
+    const sb=await getSB(); if(!sb){setLoading(false);return;}
+    const {data:profs}=await sb.from("profiles").select("*").eq("rol","atleta").eq("activo",true).order("atleta_codigo");
+    const today=new Date().toISOString().split("T")[0];
+    const resumen=await Promise.all((profs||[]).map(async(p)=>{
+      const {data:logs}=await sb.from("logs_entrenamiento").select("semana,tonelaje,completado").eq("atleta_id",p.id).order("fecha",{ascending:false}).limit(30);
+      const tonMap={}; let comp=0,tot=0;
+      logs?.forEach(l=>{if(l.semana)tonMap[l.semana]=(tonMap[l.semana]||0)+(l.tonelaje||0);if(l.completado)comp++;tot++;});
+      const semanas=Object.keys(tonMap).sort((a,b)=>Number(b)-Number(a));
+      const {data:bio}=await sb.from("biomarcadores").select("readiness_score,hrv").eq("atleta_id",p.id).eq("fecha",today).single().catch(()=>({data:null}));
+      const {data:ciclo}=await sb.from("ciclos").select("nombre,tipo").eq("atleta_id",p.id).eq("activo",true).limit(1);
+      return {...p,tonSemActual:semanas.length?Math.round(tonMap[semanas[0]]):0,adherencia:tot>0?Math.round(comp/tot*100):0,readiness:bio?.readiness_score||null,hrv:bio?.hrv||null,ciclo:ciclo?.[0]||null,tonHistorial:semanas.slice(0,6).reverse().map(s=>({x:"S"+s,y:Math.round(tonMap[s])}))};
+    }));
+    setAtletas(resumen);
+    const tonGMap={};
+    resumen.forEach(a=>a.tonHistorial?.forEach(t=>{if(!tonGMap[t.x])tonGMap[t.x]=[];tonGMap[t.x].push(t.y);}));
+    setTonGrupal(Object.entries(tonGMap).map(([k,v])=>({x:k,y:Math.round(v.reduce((a,b)=>a+b,0)/v.length)})));
+    setLoading(false);
+  };
+
+  if(loading) return <div style={{padding:32}}><Spinner/></div>;
+
+  return (
+    <div style={{padding:"16px",maxWidth:980}}>
+      <SectionHeader title="Dashboard coach" sub={atletas.length+" atletas activos"}/>
+      {tonGrupal.length>=2&&<Card style={{marginBottom:16}}><div style={{fontSize:11,fontWeight:700,color:"#8899BB",marginBottom:8,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif"}}>Tonelaje promedio grupal (kg)</div><LineChart data={tonGrupal} color="#00E5A0"/></Card>}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
+        {atletas.map(a=>{
+          const rC=a.readiness>=75?"#00E5A0":a.readiness>=50?"#FFB84D":a.readiness?"#FF5C5C":"#3A4F6A";
+          const tipo=CICLOS_TIPOS.find(t=>t.key===a.ciclo?.tipo);
+          return (
+            <Card key={a.id} glow={a.readiness>=75}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:32,height:32,borderRadius:8,background:"#00E5A022",border:"1px solid #00E5A044",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Serif Display',serif",color:"#00E5A0",fontSize:14}}>{(a.nombre||a.atleta_codigo||"?")[0].toUpperCase()}</div>
+                  <div><div style={{fontSize:13,fontWeight:700,color:"#E8F0FE",fontFamily:"'DM Sans',sans-serif"}}>{a.nombre||a.atleta_codigo}</div>{a.ciclo&&<Tag color={tipo?.color||"#00E5A0"} sm>{(a.ciclo.tipo||"ciclo").replace(/_/g," ")}</Tag>}</div>
+                </div>
+                {a.readiness&&<div style={{textAlign:"center"}}><div style={{fontSize:22,color:rC,fontFamily:"'DM Serif Display',serif",lineHeight:1}}>{a.readiness}</div><div style={{fontSize:8,color:rC,fontFamily:"'DM Sans',sans-serif",letterSpacing:"0.08em"}}>READINESS</div></div>}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
+                <div style={{textAlign:"center",padding:"6px",background:"#0D1425",borderRadius:8}}><div style={{fontFamily:"'DM Serif Display',serif",fontSize:16,color:"#00E5A0"}}>{a.tonSemActual>0?a.tonSemActual.toLocaleString("es"):"—"}</div><div style={{fontSize:9,color:"#3A4F6A",fontFamily:"'DM Sans',sans-serif"}}>kg sem.</div></div>
+                <div style={{textAlign:"center",padding:"6px",background:"#0D1425",borderRadius:8}}><div style={{fontFamily:"'DM Serif Display',serif",fontSize:16,color:"#4D9FFF"}}>{a.adherencia}%</div><div style={{fontSize:9,color:"#3A4F6A",fontFamily:"'DM Sans',sans-serif"}}>adherencia</div></div>
+                <div style={{textAlign:"center",padding:"6px",background:"#0D1425",borderRadius:8}}><div style={{fontFamily:"'DM Serif Display',serif",fontSize:16,color:"#A78BFA"}}>{a.hrv||"—"}</div><div style={{fontSize:9,color:"#3A4F6A",fontFamily:"'DM Sans',sans-serif"}}>HRV ms</div></div>
+              </div>
+              {a.tonHistorial?.length>=2&&<LineChart data={a.tonHistorial} color={tipo?.color||"#00E5A0"} height={70} showDots={false}/>}
+            </Card>
+          );
+        })}
+      </div>
+      {!atletas.length&&<EmptyState title="Sin atletas activos" sub="Creá atletas desde Mis atletas"/>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
 // LOGIN — usa tabla USUARIOS local
 // ─────────────────────────────────────────
 function Login({ onLogin }) {
@@ -422,80 +577,218 @@ function Sidebar({ sec, setSec, rol, perfil, onLogout, open, setOpen }) {
 // SESIÓN DE HOY (atleta)
 // ─────────────────────────────────────────
 function SesionHoy({ user }) {
-  const [sesion,setSesion]=useState([]);
-  const [logs,setLogs]=useState({});
-  const [nota,setNota]=useState("");
   const [loading,setLoading]=useState(true);
-  const [saved,setSaved]=useState(false);
   const [cicloInfo,setCicloInfo]=useState(null);
-  const [semActual,setSemActual]=useState(1);
-  const [diaActual,setDiaActual]=useState(1);
+  const [plan,setPlan]=useState({});        // {sem:{dia:[ejercicios]}}
+  const [logsDB,setLogsDB]=useState({});    // {sesion_plan_id: log}
+  const [semSel,setSemSel]=useState(1);
+  const [diaSel,setDiaSel]=useState(1);
+  const [logs,setLogs]=useState({});        // inputs actuales
+  const [nota,setNota]=useState("");
+  const [saved,setSaved]=useState(false);
+  const [sesionCumplida,setSesionCumplida]=useState(false);
 
-  useEffect(()=>{cargar();},[]);
+  useEffect(()=>{ cargar(); },[]);
 
-  const cargar = async () => {
+  // Calcular semana y día "natural" según fecha inicio
+  const calcSemDia=(ciclo)=>{
+    const inicio=new Date(ciclo.fecha_inicio);
+    const hoy=new Date();
+    const diff=Math.max(0,Math.floor((hoy-inicio)/(1000*60*60*24)));
+    const sem=Math.min(ciclo.semanas,Math.floor(diff/7)+1);
+    // Buscar el primer día planificado de esa semana
+    return {sem, dia:1};
+  };
+
+  const cargar=async()=>{
     setLoading(true);
     const sb=await getSB();
     if (!sb||!user){setLoading(false);return;}
+    // Ciclo activo
     const {data:ciclos}=await sb.from("ciclos").select("*").eq("atleta_id",user.id).eq("activo",true).order("created_at",{ascending:false}).limit(1);
     if (!ciclos?.length){setLoading(false);return;}
-    const c=ciclos[0];setCicloInfo(c);
-    const inicio=new Date(c.fecha_inicio);
-    const hoy=new Date();
-    const diffDias=Math.max(0,Math.floor((hoy-inicio)/(1000*60*60*24)));
-    const sem=Math.min(c.semanas,Math.floor(diffDias/7)+1);
-    const dia=(diffDias%7)+1;
-    setSemActual(sem);setDiaActual(dia);
-    const {data:ejs}=await sb.from("sesiones_plan").select("*,ejercicios(nombre,grupo_muscular,patron_movimiento)").eq("ciclo_id",c.id).eq("semana",sem).eq("dia",dia).order("orden");
-    setSesion(ejs||[]);
-    setLogs((ejs||[]).reduce((a,e)=>({...a,[e.id]:{kg:"",rpe:"",done:false}}),{}));
+    const c=ciclos[0]; setCicloInfo(c);
+    // Plan completo
+    const {data:sps}=await sb.from("sesiones_plan").select("*,ejercicios(nombre,grupo_muscular,patron_movimiento)").eq("ciclo_id",c.id).order("semana").order("dia").order("orden");
+    const org={};
+    sps?.forEach(s=>{
+      if(!org[s.semana])org[s.semana]={};
+      if(!org[s.semana][s.dia])org[s.semana][s.dia]=[];
+      org[s.semana][s.dia].push(s);
+    });
+    setPlan(org);
+    // Logs ya guardados
+    const {data:lgs}=await sb.from("logs_entrenamiento").select("*").eq("atleta_id",user.id).eq("ciclo_id",c.id);
+    const lMap={};
+    lgs?.forEach(l=>{ if(l.sesion_plan_id) lMap[l.sesion_plan_id]=l; });
+    setLogsDB(lMap);
+    // Seleccionar semana/día actual
+    const {sem,dia}=calcSemDia(c);
+    // Buscar primer día con ejercicios en la semana actual
+    const diasSem=Object.keys(org[sem]||{}).map(Number).sort((a,b)=>a-b);
+    const diaInicial=diasSem[0]||1;
+    setSemSel(sem); setDiaSel(diaInicial);
+    // Init logs inputs para ese día
+    initLogsInputs(org[sem]?.[diaInicial]||[], lMap);
     setLoading(false);
   };
 
-  const upd=(id,f,v)=>setLogs(p=>({...p,[id]:{...p[id],[f]:v}}));
-  const tonelaje=sesion.reduce((acc,e)=>acc+(e.series*(parseInt(e.reps)||0)*(parseFloat(logs[e.id]?.kg)||0)),0);
-  const done=Object.values(logs).filter(l=>l.done).length;
+  const initLogsInputs=(ejerciciosDia, lMap)=>{
+    const init={};
+    ejerciciosDia.forEach(e=>{
+      const prevLog=lMap[e.id];
+      init[e.id]={
+        kg: prevLog?.carga_kg||"",
+        rpe: prevLog?.rpe||"",
+        done: prevLog?.completado||false,
+      };
+    });
+    setLogs(init);
+    // Verificar si la sesión ya está cumplida (todos marcados)
+    const allDone=ejerciciosDia.length>0&&ejerciciosDia.every(e=>lMap[e.id]?.completado);
+    setSesionCumplida(allDone);
+  };
 
-  const guardar=async()=>{
+  // Cambiar semana o día seleccionado
+  const seleccionarDia=(sem,dia)=>{
+    setSemSel(sem); setDiaSel(dia);
+    const ejsDia=plan[sem]?.[dia]||[];
+    initLogsInputs(ejsDia, logsDB);
+    setNota("");setSaved(false);
+  };
+
+  const upd=(id,f,v)=>setLogs(p=>({...p,[id]:{...p[id],[f]:v}}));
+
+  const sesionActual=plan[semSel]?.[diaSel]||[];
+  const tonelaje=sesionActual.reduce((acc,e)=>acc+(e.series*(parseInt(e.reps)||0)*(parseFloat(logs[e.id]?.kg)||0)),0);
+  const done=Object.values(logs).filter(l=>l.done).length;
+  const todosHechos=sesionActual.length>0&&done===sesionActual.length;
+
+  // Determinar estado de cada día (para el calendario de selección)
+  const estadoDia=(sem,dia)=>{
+    const ejs=plan[sem]?.[dia]||[];
+    if (!ejs.length) return "vacio";
+    const todos=ejs.every(e=>logsDB[e.id]?.completado);
+    const alguno=ejs.some(e=>logsDB[e.id]);
+    // Verificar si el día ya pasó
+    const inicio=new Date(cicloInfo.fecha_inicio);
+    const diasDesdeInicio=(sem-1)*7+(dia-1);
+    const fechaDia=new Date(inicio.getTime()+diasDesdeInicio*86400000);
+    const hoy=new Date(); hoy.setHours(0,0,0,0);
+    const pasado=fechaDia<hoy;
+    if (todos) return "cumplido";
+    if (pasado&&!alguno) return "perdido";
+    if (sem===semSel&&dia===diaSel) return "hoy";
+    return "pendiente";
+  };
+
+  const guardar=async(marcarCumplida=false)=>{
     const sb=await getSB();
     if (!sb||!cicloInfo)return;
-    const rows=sesion.filter(e=>logs[e.id]?.kg).map(e=>({
-      atleta_id:user.id,ciclo_id:cicloInfo.id,sesion_plan_id:e.id,
-      ejercicio_id:e.ejercicio_id,semana:semActual,dia:diaActual,
-      carga_kg:parseFloat(logs[e.id].kg)||null,rpe:parseFloat(logs[e.id].rpe)||null,
-      series_realizadas:e.series,reps_realizadas:parseInt(e.reps)||null,
-      completado:logs[e.id].done,notas:nota||null,
+    // Borrar logs previos de este día/semana para reemplazar
+    const idsEjs=sesionActual.map(e=>e.id);
+    if (idsEjs.length){
+      await sb.from("logs_entrenamiento").delete()
+        .eq("atleta_id",user.id).eq("ciclo_id",cicloInfo.id)
+        .eq("semana",semSel).eq("dia",diaSel);
+    }
+    const rows=sesionActual.map(e=>({
+      atleta_id:user.id, ciclo_id:cicloInfo.id, sesion_plan_id:e.id,
+      ejercicio_id:e.ejercicio_id, semana:semSel, dia:diaSel,
+      carga_kg:parseFloat(logs[e.id]?.kg)||null,
+      rpe:parseFloat(logs[e.id]?.rpe)||null,
+      series_realizadas:e.series,
+      reps_realizadas:parseInt(e.reps)||null,
+      completado:marcarCumplida?true:(logs[e.id]?.done||false),
+      notas:nota||null,
     }));
-    if (rows.length) await sb.from("logs_entrenamiento").insert(rows);
-    setSaved(true);setTimeout(()=>setSaved(false),3000);
+    if (rows.length){
+      await sb.from("logs_entrenamiento").insert(rows);
+      // Actualizar logsDB local
+      const newLMap={...logsDB};
+      rows.forEach((r,i)=>{ newLMap[sesionActual[i].id]=r; });
+      setLogsDB(newLMap);
+      if(marcarCumplida){
+        setSesionCumplida(true);
+        setLogs(p=>{const n={...p};Object.keys(n).forEach(k=>n[k]={...n[k],done:true});return n;});
+      }
+    }
+    setSaved(true); setTimeout(()=>setSaved(false),3000);
   };
 
   if (loading) return <div style={{padding:32}}><Spinner/></div>;
+  if (!cicloInfo) return <div style={{padding:"16px"}}><EmptyState title="Sin ciclo activo" sub="Tu coach todavía no te asignó un ciclo de entrenamiento"/></div>;
+
+  const semsArr=Object.keys(plan).map(Number).sort((a,b)=>a-b);
+  const tipoColor=CICLOS_TIPOS.find(t=>t.key===cicloInfo.tipo)?.color||C.jade;
 
   return (
     <div style={{ padding:"16px",maxWidth:960 }}>
-      <SectionHeader title="Sesión de hoy" sub={new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}
-        tags={cicloInfo?[{label:cicloInfo.nombre,color:C.jade},{label:`Sem ${semActual} · ${DIAS[diaActual]}`,color:C.blue}]:[]}/>
+      <SectionHeader title="Mis sesiones" sub={cicloInfo.nombre} tags={[{label:(cicloInfo.tipo||"").replace(/_/g," "),color:tipoColor}]}/>
 
-      {sesion.length===0?(
-        <EmptyState title="Sin sesión asignada hoy" sub="Tu coach no planificó entrenamiento para hoy. ¡Día de recuperación! 🌿"/>
+      {/* Selector semana */}
+      <div style={{ display:"flex",gap:6,flexWrap:"wrap",marginBottom:10 }}>
+        {semsArr.map(s=>(
+          <button key={s} onClick={()=>{setSemSel(s);const dias=Object.keys(plan[s]||{}).map(Number).sort((a,b)=>a-b);if(dias.length)seleccionarDia(s,dias[0]);}} style={{ padding:"5px 12px",borderRadius:8,border:`1.5px solid ${semSel===s?tipoColor:C.border}`,background:semSel===s?tipoColor+"22":"transparent",color:semSel===s?tipoColor:C.textS,fontSize:12,fontWeight:semSel===s?700:400,cursor:"pointer",fontFamily:F.sans }}>
+            Sem {s}
+          </button>
+        ))}
+      </div>
+
+      {/* Selector día con estado visual */}
+      {plan[semSel]&&(
+        <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:20 }}>
+          {Object.keys(plan[semSel]).map(Number).sort((a,b)=>a-b).map(d=>{
+            const estado=estadoDia(semSel,d);
+            const colores={
+              cumplido:{bg:C.jade+"22",border:C.jade,color:C.jade,icon:"✓"},
+              perdido: {bg:C.red+"22", border:C.red, color:C.red, icon:"✗"},
+              hoy:     {bg:tipoColor+"22",border:tipoColor,color:tipoColor,icon:"▶"},
+              pendiente:{bg:"transparent",border:C.border,color:C.textS,icon:""},
+              vacio:   {bg:"transparent",border:C.borderH,color:C.textD,icon:""},
+            }[estado]||{bg:"transparent",border:C.border,color:C.textS,icon:""};
+            const activo=diaSel===d&&semSel===semSel;
+            return (
+              <button key={d} onClick={()=>seleccionarDia(semSel,d)} style={{ padding:"8px 16px",borderRadius:9,border:`2px solid ${activo?colores.border:colores.border+"88"}`,background:activo?colores.bg:"transparent",color:colores.color,fontSize:12,fontWeight:activo?700:400,cursor:"pointer",fontFamily:F.sans,display:"flex",alignItems:"center",gap:6,transition:"all 0.15s" }}>
+                {colores.icon&&<span style={{fontSize:11}}>{colores.icon}</span>}
+                {DIAS[d]}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Contenido de la sesión seleccionada */}
+      {sesionActual.length===0?(
+        <EmptyState title="Sin ejercicios este día" sub="Tu coach no planificó ejercicios para este día"/>
       ):(
         <>
-          <div style={{ display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:20 }}>
+          {/* Estado banner */}
+          {sesionCumplida&&(
+            <div style={{ padding:"10px 16px",background:C.jade+"18",border:`1px solid ${C.jade}44`,borderRadius:10,marginBottom:16,display:"flex",alignItems:"center",gap:10 }}>
+              <span style={{fontSize:18}}>✅</span>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:C.jade,fontFamily:F.sans}}>Sesión cumplida</div>
+                <div style={{fontSize:11,color:C.textS,fontFamily:F.sans}}>Podés seguir viendo tus registros o editarlos</div>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:16 }}>
             <Stat label="Tonelaje" value={tonelaje>0?Math.round(tonelaje).toLocaleString("es"):"—"} unit="kg · en vivo" color={C.jade}/>
-            <Stat label="Ejercicios" value={sesion.length} unit="en sesión" color={C.blue}/>
-            <Stat label="Completados" value={`${done}/${sesion.length}`} color={done===sesion.length?C.jade:C.amber}/>
-            <Stat label="Ciclo" value={CICLOS_TIPOS.find(t=>t.key===cicloInfo?.tipo)?.label||"—"} unit={`${CICLOS_TIPOS.find(t=>t.key===cicloInfo?.tipo)?.pct||""}%`} color={C.violet}/>
+            <Stat label="Completados" value={`${done}/${sesionActual.length}`} color={done===sesionActual.length?C.jade:C.amber}/>
           </div>
 
           <div style={{ display:"flex",flexDirection:"column",gap:10,marginBottom:18 }}>
-            {sesion.map((ej,i)=>{
+            {sesionActual.map((ej)=>{
               const log=logs[ej.id]||{};
               const kgN=parseFloat(log.kg);
               const diff=kgN&&ej.carga_kg?((kgN-ej.carga_kg)/ej.carga_kg*100):null;
+              const yaGuardado=!!logsDB[ej.id];
+              const bgColor=log.done?C.jade+"0A":yaGuardado?C.amber+"08":C.card;
+              const borderColor=log.done?C.jade+"55":yaGuardado?C.amber+"44":C.border;
               return (
-                <Card key={ej.id} style={{ padding:"14px 16px",background:log.done?C.jade+"0A":C.card,borderColor:log.done?C.jade+"44":C.border }}>
-                  {/* Fila 1: check + nombre */}
+                <Card key={ej.id} style={{ padding:"14px 16px",background:bgColor,borderColor }}>
                   <div style={{ display:"flex",alignItems:"flex-start",gap:10,marginBottom:10 }}>
                     <div onClick={()=>upd(ej.id,"done",!log.done)} style={{ width:22,height:22,borderRadius:6,cursor:"pointer",border:`2px solid ${log.done?C.jade:C.borderH}`,background:log.done?C.jade:"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:C.deep,fontWeight:900,flexShrink:0,marginTop:1 }}>{log.done?"✓":""}</div>
                     <div style={{ flex:1 }}>
@@ -503,16 +796,16 @@ function SesionHoy({ user }) {
                       <div style={{ fontSize:11,color:C.textD,marginTop:1 }}>{ej.ejercicios?.patron_movimiento} · {ej.ejercicios?.grupo_muscular}</div>
                       {ej.notas_coach&&<div style={{ fontSize:11,color:C.amber,marginTop:3 }}>📌 {ej.notas_coach}</div>}
                     </div>
+                    {yaGuardado&&!log.done&&<span style={{fontSize:10,color:C.amber,fontFamily:F.sans}}>editado</span>}
                   </div>
-                  {/* Fila 2: datos del plan */}
                   <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:10,paddingLeft:32 }}>
                     <Tag color={C.jade} sm>{ej.series} series</Tag>
                     <Tag color={C.blue} sm>{ej.reps} reps</Tag>
                     {ej.intensidad_pct&&<Tag color={C.violet} sm>{ej.intensidad_pct}% 1RM</Tag>}
                     {ej.carga_kg&&<Tag color={C.textS} sm>Plan: {ej.carga_kg}kg</Tag>}
                     {ej.descanso_seg&&<Tag color={C.textD} sm>⏱{ej.descanso_seg}"</Tag>}
+                    {ej.rir!=null&&ej.rir!==""&&<Tag color={C.amber} sm>RIR {ej.rir}</Tag>}
                   </div>
-                  {/* Fila 3: inputs real kg + RPE */}
                   <div style={{ display:"flex",gap:10,alignItems:"center",paddingLeft:32 }}>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:10,color:C.textS,marginBottom:4,fontFamily:F.sans,letterSpacing:"0.06em",textTransform:"uppercase" }}>Kg real</div>
@@ -534,14 +827,16 @@ function SesionHoy({ user }) {
             })}
           </div>
 
-          <Card style={{ marginBottom:18 }}>
+          <Card style={{ marginBottom:14 }}>
             <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:8,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans }}>Nota de sesión</div>
             <textarea value={nota} onChange={e=>setNota(e.target.value)} placeholder="¿Cómo te sentiste? ¿Algo a ajustar?" rows={2} style={{ width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,fontSize:13,padding:"10px 13px",resize:"vertical",outline:"none",boxSizing:"border-box",fontFamily:F.sans }}/>
           </Card>
 
-          <div style={{ display:"flex",gap:12,alignItems:"center" }}>
-            <Btn onClick={guardar}>{saved?"✓ Guardado":"Guardar sesión"}</Btn>
-            <div style={{ fontSize:12,color:C.textS,fontFamily:F.sans }}>{done}/{sesion.length} completados</div>
+          <div style={{ display:"flex",gap:10,flexWrap:"wrap" }}>
+            <Btn onClick={()=>guardar(false)} color={C.blue} outline>{saved?"✓ Guardado":"Guardar registros"}</Btn>
+            {!sesionCumplida&&<Btn onClick={()=>guardar(true)} color={C.jade}>✓ Marcar sesión cumplida</Btn>}
+            {sesionCumplida&&<Btn onClick={()=>setSesionCumplida(false)} color={C.amber} outline>Desmarcar cumplida</Btn>}
+            <div style={{ fontSize:12,color:C.textS,fontFamily:F.sans,alignSelf:"center" }}>{done}/{sesionActual.length} ejercicios ✓</div>
           </div>
         </>
       )}
@@ -1377,496 +1672,6 @@ function CoachEjercicios({ user }) {
 }
 
 // ─────────────────────────────────────────
-// SVG HELPERS — gráficos sin dependencias
-// ─────────────────────────────────────────
-function LineChart({ data, color=C.jade, height=80, label, unit="" }) {
-  if (!data||data.length<2) return <div style={{height,display:"flex",alignItems:"center",justifyContent:"center",color:C.textD,fontSize:11,fontFamily:F.sans}}>Sin datos suficientes</div>;
-  const W=320, H=height, pad=4;
-  const vals=data.map(d=>d.y);
-  const min=Math.min(...vals), max=Math.max(...vals);
-  const rng=max-min||1;
-  const pts=data.map((d,i)=>{
-    const x=pad+((W-pad*2)/(data.length-1))*i;
-    const y=H-pad-((d.y-min)/rng)*(H-pad*2);
-    return [x,y];
-  });
-  const path="M"+pts.map(p=>p.join(",")).join("L");
-  const area="M"+pts[0][0]+","+H+" L"+pts.map(p=>p.join(",")).join("L")+" L"+pts[pts.length-1][0]+","+H+" Z";
-  const last=pts[pts.length-1];
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height}} preserveAspectRatio="none">
-      <defs>
-        <linearGradient id={`lg${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.22"/>
-          <stop offset="100%" stopColor={color} stopOpacity="0"/>
-        </linearGradient>
-      </defs>
-      <path d={area} fill={`url(#lg${color.replace("#","")})`}/>
-      <path d={path} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-      <circle cx={last[0]} cy={last[1]} r="3.5" fill={color}/>
-      <text x={last[0]+5} y={last[1]-4} fill={color} fontSize="9" fontFamily="sans-serif">{vals[vals.length-1]}{unit}</text>
-    </svg>
-  );
-}
-
-function BarChartV({ data, height=80 }) {
-  // data: [{label, value, color}]
-  if (!data||!data.length) return null;
-  const max=Math.max(...data.map(d=>d.value),1);
-  const W=320, H=height, barW=Math.max(8,Math.floor((W-data.length*4)/data.length)), pad=4;
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height}} preserveAspectRatio="none">
-      {data.map((d,i)=>{
-        const x=pad+i*((W-pad*2)/data.length);
-        const bh=Math.max(2,((d.value/max)*(H-20)));
-        const y=H-bh-2;
-        return (
-          <g key={i}>
-            <rect x={x} y={y} width={barW} height={bh} rx="2" fill={d.color||C.jade} opacity="0.85"/>
-            <text x={x+barW/2} y={H} textAnchor="middle" fill={C.textD} fontSize="7" fontFamily="sans-serif">{d.label}</text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-function Radar({ axes, data, color=C.jade, size=140 }) {
-  // axes: string[], data: number[] 0–10
-  const n=axes.length;
-  const cx=size/2, cy=size/2, r=(size/2)-24;
-  const angle=(i)=>((i/n)*2*Math.PI)-Math.PI/2;
-  const pt=(i,val)=>{
-    const a=angle(i), ratio=val/10;
-    return [cx+r*ratio*Math.cos(a), cy+r*ratio*Math.sin(a)];
-  };
-  const rings=[0.25,0.5,0.75,1];
-  return (
-    <svg viewBox={`0 0 ${size} ${size}`} style={{width:size,height:size}}>
-      {rings.map(rr=>(
-        <polygon key={rr} points={axes.map((_,i)=>{const a=angle(i);return `${cx+r*rr*Math.cos(a)},${cy+r*rr*Math.sin(a)}`;}).join(" ")} fill="none" stroke={C.border} strokeWidth="0.8"/>
-      ))}
-      {axes.map((_,i)=>{const [x,y]=pt(i,10);return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke={C.border} strokeWidth="0.8"/>;}) }
-      <polygon points={data.map((_,i)=>pt(i,data[i]).join(",")).join(" ")} fill={color+"33"} stroke={color} strokeWidth="1.5"/>
-      {data.map((v,i)=>{const [x,y]=pt(i,v);return <circle key={i} cx={x} cy={y} r="2.5" fill={color}/>;}) }
-      {axes.map((a,i)=>{
-        const [x,y]=pt(i,10);
-        const dx=Math.cos(angle(i)), dy=Math.sin(angle(i));
-        return <text key={i} x={x+dx*8} y={y+dy*8+3} textAnchor="middle" fill={C.textS} fontSize="7" fontFamily="sans-serif">{a}</text>;
-      })}
-    </svg>
-  );
-}
-
-function HeatMap({ semanas, dias, data, getCicloColor }) {
-  // data: {[sem_dia]: value 0-1}
-  const W=280, cellSize=24, gap=3;
-  return (
-    <svg viewBox={`0 0 ${W} ${(dias)*( cellSize+gap)+20}`} style={{width:"100%"}}>
-      {Array.from({length:semanas},(_,s)=>
-        Array.from({length:dias},(_,d)=>{
-          const v=data[`${s+1}_${d+1}`]||0;
-          const x=s*(cellSize+gap)+32;
-          const y=d*(cellSize+gap)+16;
-          const col=v===0?C.surface:v<0.5?C.amber:C.jade;
-          return (
-            <g key={`${s}_${d}`}>
-              <rect x={x} y={y} width={cellSize} height={cellSize} rx="4" fill={col} opacity={v===0?0.3:0.4+v*0.6}/>
-              {s===0&&<text x={22} y={y+cellSize/2+3} textAnchor="end" fill={C.textD} fontSize="7" fontFamily="sans-serif">{`D${d+1}`}</text>}
-              {d===0&&<text x={x+cellSize/2} y={12} textAnchor="middle" fill={C.textD} fontSize="7" fontFamily="sans-serif">{`S${s+1}`}</text>}
-            </g>
-          );
-        })
-      )}
-    </svg>
-  );
-}
-
-// ─────────────────────────────────────────
-// DASHBOARD ATLETA — VISUALIZACIÓN
-// ─────────────────────────────────────────
-function DashboardAtleta({ user, perfil }) {
-  const [ciclo,setCiclo]=useState(null);
-  const [logs,setLogs]=useState([]);
-  const [bios,setBios]=useState([]);
-  const [marcas,setMarcas]=useState([]);
-  const [heatData,setHeatData]=useState({});
-  const [loading,setLoading]=useState(true);
-
-  useEffect(()=>{cargar();},[]);
-
-  const cargar=async()=>{
-    const sb=await getSB();
-    if(!sb){setLoading(false);return;}
-    const [{data:cs},{data:lg},{data:bi},{data:mk}]=await Promise.all([
-      sb.from("ciclos").select("*").eq("atleta_id",user.id).eq("activo",true).order("created_at",{ascending:false}).limit(1),
-      sb.from("logs_entrenamiento").select("*").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(84),
-      sb.from("biomarcadores").select("*").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(28),
-      sb.from("marcas").select("*,ejercicios(nombre)").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(10),
-    ]);
-    const c=cs?.[0]||null; setCiclo(c);
-    setLogs(lg||[]); setBios(bi||[]); setMarcas(mk||[]);
-    // Mapa de calor: sesiones completadas por semana/dia del ciclo
-    if(lg&&c){
-      const heat={};
-      lg.forEach(l=>{if(l.completado)heat[`${l.semana}_${l.dia}`]=(heat[`${l.semana}_${l.dia}`]||0)+0.5;});
-      Object.keys(heat).forEach(k=>{heat[k]=Math.min(1,heat[k]);});
-      setHeatData(heat);
-    }
-    setLoading(false);
-  };
-
-  if(loading) return <div style={{padding:32}}><Spinner/></div>;
-
-  // Tonelaje por semana (últimas 8)
-  const tonPorSem=Object.entries(
-    logs.reduce((acc,l)=>{if(l.carga_kg&&l.series_realizadas&&l.reps_realizadas){const k=`S${l.semana||"?"}`;acc[k]=(acc[k]||0)+l.carga_kg*l.series_realizadas*l.reps_realizadas;}return acc;},{})
-  ).slice(-8).map(([k,v])=>({label:k,value:Math.round(v/1000*10)/10}));
-
-  // RPE promedio por semana
-  const rpePorSem=Object.entries(
-    logs.reduce((acc,l)=>{if(l.rpe){const k=`S${l.semana||"?"}`;if(!acc[k])acc[k]={sum:0,n:0};acc[k].sum+=l.rpe;acc[k].n++;}return acc;},{})
-  ).slice(-8).map(([k,v])=>({y:Math.round(v.sum/v.n*10)/10,label:k}));
-
-  // HRV últimos 14 días
-  const hrvLine=[...bios].reverse().slice(0,14).map((b,i)=>({y:b.hrv||0,label:`d${i+1}`})).filter(d=>d.y>0);
-
-  // Readiness últimos 14 días
-  const readLine=[...bios].reverse().slice(0,14).map((b,i)=>{
-    const r=Math.round((b.calidad_sueno/10*25)+(b.motivacion/10*25)+((10-(b.estres||5))/10*25)+((10-(b.dolor_muscular||3))/10*25));
-    return {y:r,label:`d${i+1}`};
-  });
-
-  // Radar capacidades (a partir de biomarcadores promedio y datos del ciclo)
-  const bioAvg=bios.length?{
-    sueno:bios.reduce((a,b)=>a+(b.calidad_sueno||0),0)/bios.length,
-    hrv:bios.reduce((a,b)=>a+(b.hrv||0),0)/bios.length,
-    motiv:bios.reduce((a,b)=>a+(b.motivacion||0),0)/bios.length,
-    estres:bios.reduce((a,b)=>a+(b.estres||0),0)/bios.length,
-    doms:bios.reduce((a,b)=>a+(b.dolor_muscular||0),0)/bios.length,
-  }:null;
-  const radarData=bioAvg?[
-    Math.round(bioAvg.sueno),
-    Math.round(Math.min(10,(bioAvg.hrv/120)*10)),
-    Math.round(bioAvg.motiv),
-    Math.round(10-bioAvg.estres),
-    Math.round(10-bioAvg.doms),
-    Math.min(10,Math.round(logs.length/4)),
-  ]:[5,5,5,5,5,5];
-  const radarAxes=["Sueño","HRV","Motivación","Bajo estrés","Recuperado","Adherencia"];
-
-  // Evolución 1RM top marca
-  const topMarca=marcas[0];
-  const marcaEvol=marcas.filter(m=>m.ejercicio_id===topMarca?.ejercicio_id).reverse().map((m,i)=>({y:m.rm1_estimado||0,label:`R${i+1}`}));
-
-  const tipoC=CICLOS_TIPOS.find(t=>t.key===ciclo?.tipo);
-  const hoy=new Date();
-  const inicio=ciclo?new Date(ciclo.fecha_inicio):null;
-  const semActual=ciclo?Math.min(ciclo.semanas,Math.floor(Math.max(0,hoy-inicio)/(1000*60*60*24*7))+1):0;
-
-  return (
-    <div style={{padding:"24px 20px",maxWidth:920}}>
-      <SectionHeader
-        title={`Dashboard · ${perfil?.nombre?.split(" ")[0]||"Atleta"}`}
-        sub="Evolución, readiness y carga de entrenamiento"
-        tags={ciclo?[{label:ciclo.nombre||ciclo.tipo,color:tipoC?.color||C.jade},{label:`Sem ${semActual}/${ciclo.semanas}`,color:C.blue}]:[]}
-      />
-
-      {/* Fila 1: curvas tonelaje + RPE */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
-        <Card>
-          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>Tonelaje semanal (t)</div>
-          {tonPorSem.length>1
-            ?<LineChart data={tonPorSem.map(d=>({y:d.value,label:d.label}))} color={C.jade} height={72} unit="t"/>
-            :<div style={{height:72,display:"flex",alignItems:"center",color:C.textD,fontSize:12,fontFamily:F.sans}}>Guardá sesiones para ver la curva</div>
-          }
-          {tonPorSem.length>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:C.textD,fontFamily:F.sans,marginTop:4}}>
-            <span>{tonPorSem[0]?.label}</span>
-            <span style={{color:C.jade,fontWeight:700}}>{tonPorSem[tonPorSem.length-1]?.value}t esta semana</span>
-          </div>}
-        </Card>
-        <Card>
-          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>RPE promedio semanal</div>
-          {rpePorSem.length>1
-            ?<LineChart data={rpePorSem} color={C.amber} height={72} unit=""/>
-            :<div style={{height:72,display:"flex",alignItems:"center",color:C.textD,fontSize:12,fontFamily:F.sans}}>Sin datos de RPE aún</div>
-          }
-          <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap"}}>
-            {[{v:"<6",l:"Muy fácil",c:C.jade},{v:"7",l:"Moderado",c:C.amber},{v:"8-9",l:"Duro",c:C.red},{v:"10",l:"Máximo",c:"#FF00AA"}].map(r=>(
-              <span key={r.v} style={{fontSize:9,color:r.c,fontFamily:F.sans}}>{r.v} {r.l}</span>
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      {/* Fila 2: HRV + Readiness */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
-        <Card>
-          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>HRV — últimas 2 semanas</div>
-          <LineChart data={hrvLine} color={C.blue} height={68}/>
-          {bios[0]?.hrv&&<div style={{display:"flex",gap:16,marginTop:4}}>
-            <span style={{fontSize:10,color:C.textD,fontFamily:F.sans}}>Hoy: <span style={{color:C.blue,fontWeight:700}}>{bios[0].hrv} ms</span></span>
-            {bios.length>7&&<span style={{fontSize:10,color:C.textD,fontFamily:F.sans}}>Prom 7d: <span style={{color:C.blue}}>{Math.round(bios.slice(0,7).reduce((a,b)=>a+(b.hrv||0),0)/7)} ms</span></span>}
-          </div>}
-        </Card>
-        <Card>
-          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>Readiness — últimas 2 semanas</div>
-          <LineChart data={readLine} color={C.violet} height={68}/>
-          <div style={{display:"flex",gap:10,marginTop:4}}>
-            {readLine.length>0&&[{t:"≥75 Óptimo",c:C.jade},{t:"50–74 Ok",c:C.amber},{t:"<50 Bajo",c:C.red}].map(r=>(
-              <span key={r.t} style={{fontSize:9,color:r.c,fontFamily:F.sans}}>{r.t}</span>
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      {/* Fila 3: Radar + Mapa de calor */}
-      <div style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:14,marginBottom:14,alignItems:"start"}}>
-        <Card style={{minWidth:200,display:"flex",flexDirection:"column",alignItems:"center",padding:"16px"}}>
-          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:8,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans,alignSelf:"flex-start"}}>Perfil del atleta</div>
-          <Radar axes={radarAxes} data={radarData} color={C.jade} size={160}/>
-          <div style={{fontSize:9,color:C.textD,marginTop:6,fontFamily:F.sans,textAlign:"center"}}>Promedio últimos 28 días</div>
-        </Card>
-        <Card>
-          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:8,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>Mapa de calor — sesiones completadas</div>
-          {ciclo
-            ?<HeatMap semanas={ciclo.semanas} dias={ciclo.sesiones_semana} data={heatData}/>
-            :<div style={{color:C.textD,fontSize:12,fontFamily:F.sans,padding:"12px 0"}}>Sin ciclo activo</div>
-          }
-          <div style={{display:"flex",gap:12,marginTop:6}}>
-            <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:10,height:10,borderRadius:2,background:C.surface,border:`1px solid ${C.border}`}}/><span style={{fontSize:9,color:C.textD,fontFamily:F.sans}}>Sin sesión</span></div>
-            <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:10,height:10,borderRadius:2,background:C.amber}}/><span style={{fontSize:9,color:C.textD,fontFamily:F.sans}}>Parcial</span></div>
-            <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:10,height:10,borderRadius:2,background:C.jade}}/><span style={{fontSize:9,color:C.textD,fontFamily:F.sans}}>Completa</span></div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Fila 4: Evolución 1RM */}
-      {marcaEvol.length>1&&(
-        <Card>
-          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>
-            Evolución 1RM estimado — {topMarca?.ejercicios?.nombre||"ejercicio principal"}
-          </div>
-          <LineChart data={marcaEvol} color={C.amber} height={68} unit="kg"/>
-          <div style={{display:"flex",gap:16,marginTop:4}}>
-            <span style={{fontSize:10,color:C.textD,fontFamily:F.sans}}>Inicio: <span style={{color:C.amber}}>{marcaEvol[0]?.y}kg</span></span>
-            <span style={{fontSize:10,color:C.textD,fontFamily:F.sans}}>Actual: <span style={{color:C.amber,fontWeight:700}}>{marcaEvol[marcaEvol.length-1]?.y}kg</span></span>
-            {marcaEvol.length>1&&<span style={{fontSize:10,color:marcaEvol[marcaEvol.length-1]?.y>=marcaEvol[0]?.y?C.jade:C.red,fontFamily:F.sans,fontWeight:700}}>
-              {marcaEvol[marcaEvol.length-1]?.y>=marcaEvol[0]?.y?"▲":"▼"} {Math.abs(marcaEvol[marcaEvol.length-1]?.y-marcaEvol[0]?.y)}kg
-            </span>}
-          </div>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────
-// DASHBOARD COACH — VISUALIZACIÓN
-// ─────────────────────────────────────────
-function DashboardCoach({ user }) {
-  const [atletas,setAtletas]=useState([]);
-  const [ciclos,setCiclos]=useState([]);
-  const [logsAll,setLogsAll]=useState([]);
-  const [biosHoy,setBiosHoy]=useState({});
-  const [loading,setLoading]=useState(true);
-
-  useEffect(()=>{cargar();},[]);
-
-  const cargar=async()=>{
-    const sb=await getSB();
-    if(!sb){setLoading(false);return;}
-    const today=new Date().toISOString().split("T")[0];
-    const [{data:ats},{data:cics},{data:lg}]=await Promise.all([
-      sb.from("profiles").select("*").eq("rol","atleta").order("atleta_codigo"),
-      sb.from("ciclos").select("*").eq("activo",true),
-      sb.from("logs_entrenamiento").select("*").order("fecha",{ascending:false}).limit(500),
-    ]);
-    const atletasList=ats||[];
-    setAtletas(atletasList); setCiclos(cics||[]); setLogsAll(lg||[]);
-    const bios={};
-    await Promise.all(atletasList.map(async a=>{
-      const {data}=await sb.from("biomarcadores").select("*").eq("atleta_id",a.id).order("fecha",{ascending:false}).limit(14);
-      if(data?.length) bios[a.id]=data;
-    }));
-    setBiosHoy(bios);
-    setLoading(false);
-  };
-
-  if(loading) return <div style={{padding:32}}><Spinner/></div>;
-
-  // ── Calcular ATL / CTL / TSB por atleta (modelo Banister adaptado a tonelaje)
-  // CTL ≈ media móvil 42 días del TSS (acá usamos tonelaje×RPE como proxy)
-  // ATL ≈ media móvil 7 días del TSS
-  // TSB = CTL - ATL  (forma positiva = fresco, negativo = fatigado)
-  const calcTSB=(logs)=>{
-    const sorted=[...logs].sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
-    const tssArr=sorted.map(l=>(l.carga_kg||0)*(l.reps_realizadas||0)*(l.series_realizadas||0)*(l.rpe||7)/700);
-    const ctl42=(arr,i)=>i<0?0:arr.slice(Math.max(0,i-41),i+1).reduce((a,b)=>a+b,0)/Math.min(42,i+1);
-    const atl7=(arr,i)=>i<0?0:arr.slice(Math.max(0,i-6),i+1).reduce((a,b)=>a+b,0)/Math.min(7,i+1);
-    const last=tssArr.length-1;
-    if(last<0)return {ctl:0,atl:0,tsb:0};
-    const ctl=Math.round(ctl42(tssArr,last)*100)/100;
-    const atl=Math.round(atl7(tssArr,last)*100)/100;
-    return {ctl:Math.round(ctl*10),atl:Math.round(atl*10),tsb:Math.round((ctl-atl)*10)};
-  };
-
-  const atletaStats=atletas.map(a=>{
-    const aLogs=logsAll.filter(l=>l.atleta_id===a.id);
-    const {ctl,atl,tsb}=calcTSB(aLogs);
-    const ciclo=ciclos.find(c=>c.atleta_id===a.id);
-    const bio=biosHoy[a.id];
-    const readToday=bio?.[0]?Math.round((bio[0].calidad_sueno/10*25)+(bio[0].motivacion/10*25)+((10-(bio[0].estres||5))/10*25)+((10-(bio[0].dolor_muscular||3))/10*25)):null;
-    const ton7=aLogs.slice(0,7).reduce((s,l)=>s+(l.carga_kg||0)*(l.reps_realizadas||0)*(l.series_realizadas||0),0);
-    return {...a, ctl, atl, tsb, ciclo, readToday, ton7:Math.round(ton7/1000*10)/10};
-  });
-
-  // Curva TSB colectiva (semanas)
-  const tsbPorSem=Object.entries(
-    logsAll.reduce((acc,l)=>{
-      const k=`S${l.semana||"?"}`;
-      if(!acc[k])acc[k]={ton:0,rpe:[],n:0};
-      acc[k].ton+=(l.carga_kg||0)*(l.reps_realizadas||0)*(l.series_realizadas||0);
-      if(l.rpe)acc[k].rpe.push(l.rpe);
-      acc[k].n++;
-      return acc;
-    },{})
-  ).slice(-10).map(([k,v])=>({label:k,ton:Math.round(v.ton/1000),rpe:v.rpe.length?Math.round(v.rpe.reduce((a,b)=>a+b,0)/v.rpe.length*10)/10:0}));
-
-  // Distribución de carga por patrón de movimiento
-  const patronDist=logsAll.reduce((acc,l)=>{
-    const p=l.patron_movimiento||"Otros";
-    acc[p]=(acc[p]||0)+(l.carga_kg||0)*(l.reps_realizadas||0)*(l.series_realizadas||0);
-    return acc;
-  },{});
-  const patronBars=Object.entries(patronDist).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,v],i)=>({
-    label:k.length>7?k.slice(0,7)+"…":k,
-    value:Math.round(v/1000),
-    color:[C.jade,C.blue,C.amber,C.violet,C.red,"#4ECDC4"][i]||C.jade,
-  }));
-
-  const maxTSB=Math.max(...atletaStats.map(a=>Math.abs(a.tsb)),1);
-
-  return (
-    <div style={{padding:"24px 20px",maxWidth:960}}>
-      <SectionHeader title="Dashboard Coach" sub="Carga, fatiga y readiness de todos los atletas"/>
-
-      {/* Cuadrante Fatiga × Readiness */}
-      <Card style={{marginBottom:14}}>
-        <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:4,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>
-          Cuadrante Carga Crónica (CTL) × Readiness — posición de cada atleta
-        </div>
-        <div style={{fontSize:9,color:C.textD,marginBottom:10,fontFamily:F.sans}}>
-          Arriba-derecha = alto fitness + recuperado (ideal). Abajo-izquierda = poco entrenado + fatigado (riesgo).
-        </div>
-        {(() => {
-          const W=320, H=180, padL=28, padB=20, padT=10, padR=10;
-          const maxCtl=Math.max(...atletaStats.map(a=>a.ctl),10);
-          const pts=atletaStats.map(a=>({
-            ...a,
-            px:padL+((a.ctl/maxCtl)*(W-padL-padR)),
-            py:padT+((1-((a.readToday||50)/100))*(H-padT-padB)),
-          }));
-          return (
-            <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",maxWidth:480}}>
-              {/* cuadrantes */}
-              <rect x={padL} y={padT} width={(W-padL-padR)/2} height={(H-padT-padB)/2} fill={C.amber+"08"}/>
-              <rect x={padL+(W-padL-padR)/2} y={padT} width={(W-padL-padR)/2} height={(H-padT-padB)/2} fill={C.jade+"08"}/>
-              <rect x={padL} y={padT+(H-padT-padB)/2} width={(W-padL-padR)/2} height={(H-padT-padB)/2} fill={C.red+"08"}/>
-              <rect x={padL+(W-padL-padR)/2} y={padT+(H-padT-padB)/2} width={(W-padL-padR)/2} height={(H-padT-padB)/2} fill={C.blue+"08"}/>
-              {/* ejes */}
-              <line x1={padL} y1={padT} x2={padL} y2={H-padB} stroke={C.border} strokeWidth="1"/>
-              <line x1={padL} y1={H-padB} x2={W-padR} y2={H-padB} stroke={C.border} strokeWidth="1"/>
-              {/* labels ejes */}
-              <text x={padL+(W-padL-padR)/2} y={H-3} textAnchor="middle" fill={C.textD} fontSize="7" fontFamily="sans-serif">CTL bajo → alto</text>
-              <text x={6} y={padT+(H-padT-padB)/2} textAnchor="middle" fill={C.textD} fontSize="7" fontFamily="sans-serif" transform={`rotate(-90,6,${padT+(H-padT-padB)/2})`}>Readiness</text>
-              {/* labels cuadrantes */}
-              <text x={padL+4} y={padT+10} fill={C.amber+"AA"} fontSize="6" fontFamily="sans-serif">Descansado/bajo vol.</text>
-              <text x={padL+(W-padL-padR)/2+4} y={padT+10} fill={C.jade+"AA"} fontSize="6" fontFamily="sans-serif">✓ Pico rendimiento</text>
-              <text x={padL+4} y={H-padB-4} fill={C.red+"AA"} fontSize="6" fontFamily="sans-serif">⚠ Sobreentrenado</text>
-              <text x={padL+(W-padL-padR)/2+4} y={H-padB-4} fill={C.blue+"AA"} fontSize="6" fontFamily="sans-serif">Alta carga / fatiga</text>
-              {/* puntos */}
-              {pts.map(a=>(
-                <g key={a.id}>
-                  <circle cx={a.px} cy={a.py} r="7" fill={a.ciclo?CICLOS_TIPOS.find(t=>t.key===a.ciclo.tipo)?.color||C.jade:C.textD} opacity="0.7"/>
-                  <text x={a.px} y={a.py+3} textAnchor="middle" fill={C.deep} fontSize="6" fontWeight="bold" fontFamily="sans-serif">{(a.atleta_codigo||"?").replace("ATL-","")}</text>
-                </g>
-              ))}
-            </svg>
-          );
-        })()}
-        <div style={{display:"flex",gap:8,marginTop:8,flexWrap:"wrap"}}>
-          {atletaStats.map(a=>(
-            <div key={a.id} style={{display:"flex",alignItems:"center",gap:4}}>
-              <div style={{width:10,height:10,borderRadius:"50%",background:a.ciclo?CICLOS_TIPOS.find(t=>t.key===a.ciclo?.tipo)?.color||C.jade:C.textD}}/>
-              <span style={{fontSize:9,color:C.textS,fontFamily:F.sans}}>{a.atleta_codigo} {a.nombre?.split(" ")[0]}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Fila 2: Tonelaje colectivo + distribución patrón */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
-        <Card>
-          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>Tonelaje total equipo por semana (t)</div>
-          {tsbPorSem.length>1
-            ?<LineChart data={tsbPorSem.map(d=>({y:d.ton,label:d.label}))} color={C.blue} height={72}/>
-            :<div style={{height:72,display:"flex",alignItems:"center",color:C.textD,fontSize:12,fontFamily:F.sans}}>Sin logs registrados aún</div>
-          }
-        </Card>
-        <Card>
-          <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>Carga por patrón de movimiento (t)</div>
-          {patronBars.length>0
-            ?<><BarChartV data={patronBars} height={72}/><div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:4}}>{patronBars.map(b=><span key={b.label} style={{fontSize:9,color:b.color,fontFamily:F.sans}}>{b.label}: {b.value}t</span>)}</div></>
-            :<div style={{height:72,display:"flex",alignItems:"center",color:C.textD,fontSize:12,fontFamily:F.sans}}>Sin datos de patrón</div>
-          }
-        </Card>
-      </div>
-
-      {/* Fila 3: tabla ATL/CTL/TSB + readiness por atleta */}
-      <Card>
-        <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:12,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>
-          ATL · CTL · TSB — estado de carga individual
-        </div>
-        <div style={{fontSize:9,color:C.textD,marginBottom:10,fontFamily:F.sans}}>
-          CTL = fitness crónico (42d) · ATL = carga aguda (7d) · TSB = CTL−ATL (positivo=fresco, negativo=fatigado)
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"auto 1fr 60px 60px 60px 60px 80px",gap:"6px 10px",alignItems:"center"}}>
-          {["","ATLETA","CTL","ATL","TSB","Ton.7d","Readiness"].map((h,i)=>(
-            <div key={i} style={{fontSize:9,fontWeight:700,color:C.textD,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans,borderBottom:`1px solid ${C.border}`,paddingBottom:4}}>{h}</div>
-          ))}
-          {atletaStats.map(a=>{
-            const tsbColor=a.tsb>5?C.jade:a.tsb<-5?C.red:C.amber;
-            const rc=a.readToday!=null?(a.readToday>=75?C.jade:a.readToday>=50?C.amber:C.red):C.textD;
-            const barW=Math.min(100,Math.abs(a.tsb)/maxTSB*100);
-            return [
-              <div key={a.id+"dot"} style={{width:8,height:8,borderRadius:"50%",background:a.ciclo?CICLOS_TIPOS.find(t=>t.key===a.ciclo?.tipo)?.color||C.jade:C.textD}}/>,
-              <div key={a.id+"nom"} style={{fontSize:12,color:C.text,fontFamily:F.sans}}>{a.nombre?.split(" ")[0]||a.atleta_codigo}</div>,
-              <div key={a.id+"ctl"} style={{fontSize:13,color:C.blue,fontFamily:F.serif,textAlign:"center"}}>{a.ctl}</div>,
-              <div key={a.id+"atl"} style={{fontSize:13,color:C.amber,fontFamily:F.serif,textAlign:"center"}}>{a.atl}</div>,
-              <div key={a.id+"tsb"}>
-                <div style={{fontSize:13,color:tsbColor,fontFamily:F.serif,textAlign:"center"}}>{a.tsb>0?"+":""}{a.tsb}</div>
-                <div style={{height:3,borderRadius:99,background:C.border,marginTop:2}}><div style={{width:`${barW}%`,height:"100%",borderRadius:99,background:tsbColor}}/></div>
-              </div>,
-              <div key={a.id+"ton"} style={{fontSize:12,color:C.textS,fontFamily:F.sans,textAlign:"center"}}>{a.ton7}t</div>,
-              <div key={a.id+"read"}>
-                {a.readToday!=null
-                  ?<div style={{display:"flex",alignItems:"center",gap:4}}>
-                    <div style={{width:28,height:28,borderRadius:6,background:rc+"22",border:`1px solid ${rc}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:rc,fontFamily:F.serif}}>{a.readToday}</div>
-                    <span style={{fontSize:9,color:rc,fontFamily:F.sans}}>{a.readToday>=75?"✓ ok":a.readToday>=50?"~":"⚠"}</span>
-                  </div>
-                  :<span style={{fontSize:9,color:C.textD,fontFamily:F.sans}}>sin dato</span>
-                }
-              </div>,
-            ];
-          })}
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────
 // BIOMARCADORES
 // ─────────────────────────────────────────
 function Biomarcadores({ user }) {
@@ -2179,7 +1984,7 @@ export default function NOAApp() {
       case "biomarcadores": return <Biomarcadores user={user}/>;
       case "marcas":        return <Marcas user={user}/>;
       case "noa_coach":     return <NOACoach perfil={perfil} user={user}/>;
-      case "c_dashboard":   return <DashboardCoach user={user} atletas={[]}/>;
+      case "c_dashboard":   return <DashboardCoach user={user}/>;
       case "c_atletas":     return <CoachAtletas user={user} onVerAtleta={(a)=>{setAtletaVista(a);setSec("c_vista");}}/>;
       case "c_ciclos":      return <CoachCiclos user={user}/>;
       case "c_planificar":  return <CoachPlanificar user={user}/>;
