@@ -302,9 +302,16 @@ function DashboardAtleta({ user, perfil }) {
     const sb=await getSB(); if(!sb){setLoading(false);return;}
     const {data:ciclos}=await sb.from("ciclos").select("*").eq("atleta_id",user.id).eq("activo",true).limit(1);
     const c=ciclos?.[0]; setCiclo(c);
-    const {data:logs}=await sb.from("logs_entrenamiento").select("semana,tonelaje,completado").eq("atleta_id",user.id).order("semana");
+    const {data:logs}=await sb.from("logs_entrenamiento").select("semana,carga_kg,reps_realizadas,series_realizadas,completado,e1rm").eq("atleta_id",user.id).order("semana");
     const tonMap={}; let comp=0,tot=0;
-    logs?.forEach(l=>{if(l.semana){tonMap[l.semana]=(tonMap[l.semana]||0)+(l.tonelaje||0);}if(l.completado)comp++;tot++;});
+    logs?.forEach(l=>{
+      if(l.semana){
+        // Calcular tonelaje si no está guardado
+        const ton=(l.carga_kg||0)*(l.reps_realizadas||0)*(l.series_realizadas||0);
+        tonMap[l.semana]=(tonMap[l.semana]||0)+ton;
+      }
+      if(l.completado)comp++;tot++;
+    });
     setTonelaje(Object.entries(tonMap).map(([k,v])=>({x:"S"+k,y:Math.round(v)})));
     setAdherencia(tot>0?Math.round(comp/tot*100):0);
     const {data:bioData}=await sb.from("biomarcadores").select("fecha,hrv,readiness_score").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(7);
@@ -352,9 +359,12 @@ function DashboardCoach({ user }) {
     const {data:profs}=await sb.from("profiles").select("*").eq("rol","atleta").eq("activo",true).order("atleta_codigo");
     const today=new Date().toISOString().split("T")[0];
     const resumen=await Promise.all((profs||[]).map(async(p)=>{
-      const {data:logs}=await sb.from("logs_entrenamiento").select("semana,tonelaje,completado").eq("atleta_id",p.id).order("fecha",{ascending:false}).limit(30);
+      const {data:logs}=await sb.from("logs_entrenamiento").select("semana,carga_kg,reps_realizadas,series_realizadas,completado").eq("atleta_id",p.id).order("semana").limit(50);
       const tonMap={}; let comp=0,tot=0;
-      logs?.forEach(l=>{if(l.semana)tonMap[l.semana]=(tonMap[l.semana]||0)+(l.tonelaje||0);if(l.completado)comp++;tot++;});
+      logs?.forEach(l=>{
+        if(l.semana){const ton=(l.carga_kg||0)*(l.reps_realizadas||0)*(l.series_realizadas||0);tonMap[l.semana]=(tonMap[l.semana]||0)+ton;}
+        if(l.completado)comp++;tot++;
+      });
       const semanas=Object.keys(tonMap).sort((a,b)=>Number(b)-Number(a));
       const {data:bio}=await sb.from("biomarcadores").select("readiness_score,hrv").eq("atleta_id",p.id).eq("fecha",today).single().catch(()=>({data:null}));
       const {data:ciclo}=await sb.from("ciclos").select("nombre,tipo").eq("atleta_id",p.id).eq("activo",true).limit(1);
@@ -685,33 +695,38 @@ function SesionHoy({ user }) {
   const guardar=async(marcarCumplida=false)=>{
     const sb=await getSB();
     if (!sb||!cicloInfo)return;
-    // Borrar logs previos de este día/semana para reemplazar
-    const idsEjs=sesionActual.map(e=>e.id);
-    if (idsEjs.length){
-      await sb.from("logs_entrenamiento").delete()
-        .eq("atleta_id",user.id).eq("ciclo_id",cicloInfo.id)
-        .eq("semana",semSel).eq("dia",diaSel);
-    }
-    const rows=sesionActual.map(e=>({
-      atleta_id:user.id, ciclo_id:cicloInfo.id, sesion_plan_id:e.id,
-      ejercicio_id:e.ejercicio_id, semana:semSel, dia:diaSel,
-      carga_kg:parseFloat(logs[e.id]?.kg)||null,
-      rpe:parseFloat(logs[e.id]?.rpe)||null,
-      series_realizadas:e.series,
-      reps_realizadas:parseInt(e.reps)||null,
-      completado:marcarCumplida?true:(logs[e.id]?.done||false),
-      notas:nota||null,
-    }));
-    if (rows.length){
-      await sb.from("logs_entrenamiento").insert(rows);
-      // Actualizar logsDB local
-      const newLMap={...logsDB};
-      rows.forEach((r,i)=>{ newLMap[sesionActual[i].id]=r; });
-      setLogsDB(newLMap);
-      if(marcarCumplida){
-        setSesionCumplida(true);
-        setLogs(p=>{const n={...p};Object.keys(n).forEach(k=>n[k]={...n[k],done:true});return n;});
+    setSaved(false);
+    const newLMap={...logsDB};
+    for (const e of sesionActual) {
+      const completado=marcarCumplida?true:(logs[e.id]?.done||false);
+      const row={
+        atleta_id:user.id, ciclo_id:cicloInfo.id, sesion_plan_id:e.id,
+        ejercicio_id:e.ejercicio_id, semana:semSel, dia:diaSel,
+        carga_kg:parseFloat(logs[e.id]?.kg)||null,
+        rpe:parseFloat(logs[e.id]?.rpe)||null,
+        series_realizadas:e.series,
+        reps_realizadas:parseInt(e.reps)||null,
+        completado,
+        notas:nota||null,
+        // 1RM estimado (Epley) para progresión inteligente
+        e1rm: (logs[e.id]?.kg && e.reps)
+          ? Math.round(parseFloat(logs[e.id].kg)*(1+parseInt(e.reps)/30)*10)/10
+          : null,
+      };
+      // Si ya existe un log para este sesion_plan_id, actualizarlo
+      const existente=logsDB[e.id];
+      if (existente?.id) {
+        await sb.from("logs_entrenamiento").update(row).eq("id",existente.id);
+        newLMap[e.id]={...existente,...row};
+      } else {
+        const {data:inserted}=await sb.from("logs_entrenamiento").insert(row).select().single();
+        if(inserted) newLMap[e.id]=inserted;
       }
+    }
+    setLogsDB(newLMap);
+    if(marcarCumplida){
+      setSesionCumplida(true);
+      setLogs(p=>{const n={...p};Object.keys(n).forEach(k=>n[k]={...n[k],done:true});return n;});
     }
     setSaved(true); setTimeout(()=>setSaved(false),3000);
   };
