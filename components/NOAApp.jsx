@@ -302,15 +302,14 @@ function DashboardAtleta({ user, perfil }) {
     const sb=await getSB(); if(!sb){setLoading(false);return;}
     const {data:ciclos}=await sb.from("ciclos").select("*").eq("atleta_id",user.id).eq("activo",true).limit(1);
     const c=ciclos?.[0]; setCiclo(c);
-    const {data:logs}=await sb.from("logs_entrenamiento").select("semana,carga_kg,reps_realizadas,series_realizadas,completado,e1rm").eq("atleta_id",user.id).order("semana");
+    const {data:logs}=await sb.from("logs_entrenamiento").select("semana,carga_kg,reps_realizadas,series_realizadas,completado").eq("atleta_id",user.id).order("semana");
     const tonMap={}; let comp=0,tot=0;
     logs?.forEach(l=>{
       if(l.semana){
-        // Calcular tonelaje si no está guardado
-        const ton=(l.carga_kg||0)*(l.reps_realizadas||0)*(l.series_realizadas||0);
+        const ton=(parseFloat(l.carga_kg)||0)*(parseInt(l.reps_realizadas)||0)*(parseInt(l.series_realizadas)||0);
         tonMap[l.semana]=(tonMap[l.semana]||0)+ton;
       }
-      if(l.completado)comp++;tot++;
+      if(l.completado===true)comp++;tot++;
     });
     setTonelaje(Object.entries(tonMap).map(([k,v])=>({x:"S"+k,y:Math.round(v)})));
     setAdherencia(tot>0?Math.round(comp/tot*100):0);
@@ -362,8 +361,8 @@ function DashboardCoach({ user }) {
       const {data:logs}=await sb.from("logs_entrenamiento").select("semana,carga_kg,reps_realizadas,series_realizadas,completado").eq("atleta_id",p.id).order("semana").limit(50);
       const tonMap={}; let comp=0,tot=0;
       logs?.forEach(l=>{
-        if(l.semana){const ton=(l.carga_kg||0)*(l.reps_realizadas||0)*(l.series_realizadas||0);tonMap[l.semana]=(tonMap[l.semana]||0)+ton;}
-        if(l.completado)comp++;tot++;
+        if(l.semana){const ton=(parseFloat(l.carga_kg)||0)*(parseInt(l.reps_realizadas)||0)*(parseInt(l.series_realizadas)||0);tonMap[l.semana]=(tonMap[l.semana]||0)+ton;}
+        if(l.completado===true)comp++;tot++;
       });
       const semanas=Object.keys(tonMap).sort((a,b)=>Number(b)-Number(a));
       const {data:bio}=await sb.from("biomarcadores").select("readiness_score,hrv").eq("atleta_id",p.id).eq("fecha",today).single().catch(()=>({data:null}));
@@ -600,14 +599,13 @@ function SesionHoy({ user }) {
 
   useEffect(()=>{ cargar(); },[]);
 
-  // Calcular semana y día "natural" según fecha inicio
-  const calcSemDia=(ciclo)=>{
+  // Semana activa: usa semana_activa del ciclo (controlada por coach) o calcula por fecha
+  const getSemActiva=(ciclo)=>{
+    if (ciclo.semana_activa) return Math.min(ciclo.semanas, ciclo.semana_activa);
     const inicio=new Date(ciclo.fecha_inicio);
     const hoy=new Date();
     const diff=Math.max(0,Math.floor((hoy-inicio)/(1000*60*60*24)));
-    const sem=Math.min(ciclo.semanas,Math.floor(diff/7)+1);
-    // Buscar el primer día planificado de esa semana
-    return {sem, dia:1};
+    return Math.min(ciclo.semanas,Math.floor(diff/7)+1);
   };
 
   const cargar=async()=>{
@@ -633,7 +631,7 @@ function SesionHoy({ user }) {
     lgs?.forEach(l=>{ if(l.sesion_plan_id) lMap[l.sesion_plan_id]=l; });
     setLogsDB(lMap);
     // Seleccionar semana/día actual
-    const {sem,dia}=calcSemDia(c);
+    const sem=getSemActiva(c);
     // Buscar primer día con ejercicios en la semana actual
     const diasSem=Object.keys(org[sem]||{}).map(Number).sort((a,b)=>a-b);
     const diaInicial=diasSem[0]||1;
@@ -648,14 +646,14 @@ function SesionHoy({ user }) {
     ejerciciosDia.forEach(e=>{
       const prevLog=lMap[e.id];
       init[e.id]={
-        kg: prevLog?.carga_kg||"",
-        rpe: prevLog?.rpe||"",
-        done: prevLog?.completado||false,
+        kg: prevLog?.carga_kg!=null ? String(prevLog.carga_kg) : "",
+        rpe: prevLog?.rpe!=null ? String(prevLog.rpe) : "",
+        done: prevLog?.completado===true,
       };
     });
     setLogs(init);
-    // Verificar si la sesión ya está cumplida (todos marcados)
-    const allDone=ejerciciosDia.length>0&&ejerciciosDia.every(e=>lMap[e.id]?.completado);
+    // Sesión cumplida = todos tienen completado=true en BD
+    const allDone=ejerciciosDia.length>0&&ejerciciosDia.every(e=>lMap[e.id]?.completado===true);
     setSesionCumplida(allDone);
   };
 
@@ -674,21 +672,17 @@ function SesionHoy({ user }) {
   const done=Object.values(logs).filter(l=>l.done).length;
   const todosHechos=sesionActual.length>0&&done===sesionActual.length;
 
-  // Determinar estado de cada día (para el calendario de selección)
+  // Determinar estado de cada día
   const estadoDia=(sem,dia)=>{
     const ejs=plan[sem]?.[dia]||[];
     if (!ejs.length) return "vacio";
-    const todos=ejs.every(e=>logsDB[e.id]?.completado);
-    const alguno=ejs.some(e=>logsDB[e.id]);
-    // Verificar si el día ya pasó
-    const inicio=new Date(cicloInfo.fecha_inicio);
-    const diasDesdeInicio=(sem-1)*7+(dia-1);
-    const fechaDia=new Date(inicio.getTime()+diasDesdeInicio*86400000);
-    const hoy=new Date(); hoy.setHours(0,0,0,0);
-    const pasado=fechaDia<hoy;
+    const todos=ejs.every(e=>logsDB[e.id]?.completado===true);
+    const alguno=ejs.some(e=>logsDB[e.id]!=null);
+    const semActiva=getSemActiva(cicloInfo);
+    const pasado=sem<semActiva||(sem===semActiva&&dia<diaSel);
     if (todos) return "cumplido";
     if (pasado&&!alguno) return "perdido";
-    if (sem===semSel&&dia===diaSel) return "hoy";
+    if (sem===semSel&&dia===diaSel) return "activo";
     return "pendiente";
   };
 
@@ -1168,6 +1162,12 @@ function CoachCiclos({ user }) {
     cargar();
   };
 
+  const cambiarSemana=async(id,sem)=>{
+    const sb=await getSB();
+    await sb.from("ciclos").update({semana_activa:sem}).eq("id",id);
+    cargar();
+  };
+
   if (loading) return <div style={{padding:32}}><Spinner/></div>;
 
   return (
@@ -1192,6 +1192,16 @@ function CoachCiclos({ user }) {
                     <div style={{ fontSize:12,color:C.textS,fontFamily:F.sans }}>
                       {c.profiles?.atleta_codigo} — {c.profiles?.nombre||"Sin nombre"} · {c.semanas} sem · {c.sesiones_semana} días/sem · Inicio: {c.fecha_inicio}
                     </div>
+                    {c.activo&&(
+                      <div style={{ display:"flex",alignItems:"center",gap:8,marginTop:8,flexWrap:"wrap" }}>
+                        <span style={{ fontSize:11,color:C.textS,fontFamily:F.sans }}>Semana activa:</span>
+                        {Array.from({length:c.semanas},(_,i)=>i+1).map(s=>(
+                          <button key={s} onClick={()=>cambiarSemana(c.id,s)} style={{ width:28,height:28,borderRadius:6,border:`1.5px solid ${(c.semana_activa||1)===s?C.jade:C.border}`,background:(c.semana_activa||1)===s?C.jade+"22":"transparent",color:(c.semana_activa||1)===s?C.jade:C.textS,fontSize:11,fontWeight:(c.semana_activa||1)===s?700:400,cursor:"pointer",fontFamily:F.sans }}>
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <Btn sm outline onClick={()=>toggleActivo(c.id,c.activo)} color={c.activo?C.red:C.jade}>
                     {c.activo?"Desactivar":"Activar"}
