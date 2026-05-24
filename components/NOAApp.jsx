@@ -1,6 +1,6 @@
 'use client'
 // ═══════════════════════════════════════════════════
-// NOA v2.0 — Never Over, Always
+// NOAH v2.0 — Never Over, Always Higher
 // Auth real · Panel Coach · Planificador · Calendario
 // ═══════════════════════════════════════════════════
 
@@ -30,7 +30,7 @@ async function askNOA(q, ctx = {}) {
   const key = process.env.NEXT_PUBLIC_GROQ_KEY;
   if (!key || key === "gsk_..." || !key.startsWith("gsk_")) return demoMsg(q);
   try {
-    const sistema = `Sos NOA Coach, el asistente de entrenamiento de la app NOA (Never Over, Always), creada por el Prof. Rodrigo Fernández.
+    const sistema = `Sos NOAH Coach, el asistente de entrenamiento de la app NOAH (Never Over, Always Higher), creada por el Prof. Rodrigo Fernández.
 
 SOBRE EL COACH:
 El Prof. Rodrigo Fernández es quien diseña y supervisa todos los planes de entrenamiento. Es Profesor de Educación Física, Licenciado en Alto Rendimiento Deportivo, Preparador Físico (CENARD), Kinesiólogo, Osteópata, Especialista en Deportes y Científico de Datos. Toda planificación que el atleta tiene fue diseñada por él con criterio profesional y científico.
@@ -84,7 +84,7 @@ function demoMsg(p) {
   if (q.includes("rir")) return "**RIR (Reps en Reserva):** Cuántas reps te quedan antes del fallo. RIR 2 = podías hacer 2 más. Más preciso que RPE para periodizar.\n\nEn bloques de potencia: RIR 2–3. En hipertrofia: RIR 1–2.";
   if (q.includes("neural")) return "**Ciclo Neural:** 90–100% del 1RM, 1–3 reps, 1–2 semanas. Adaptación puramente neuromuscular. Descansos 4–6 min. Máxima intención de velocidad en cada rep.";
   if (q.includes("hrv")) return "**HRV:** Si cae >15% respecto a tu baseline, reducí la carga un 10–15% o hacé sesión de recuperación activa. No canceles, adaptá.";
-  return "**NOA Coach (demo):** Configurá `NEXT_PUBLIC_GROQ_KEY` en Vercel con tu API key de Groq (gratis en console.groq.com) para respuestas en tiempo real.";
+  return "**NOAH Coach (demo):** Configurá `NEXT_PUBLIC_GROQ_KEY` en Vercel con tu API key de Groq (gratis en console.groq.com) para respuestas en tiempo real.";
 }
 
 // ─────────────────────────────────────────
@@ -327,7 +327,7 @@ function DashboardAtleta({ user, perfil }) {
 
   return (
     <div style={{padding:"16px",maxWidth:960}}>
-      <SectionHeader title={"Hola, "+(perfil?.nombre||"atleta")+" 👋"} sub={ciclo?ciclo.nombre+" · "+ciclo.semanas+" semanas":"Sin ciclo activo"} tags={ciclo?[{label:(ciclo.tipo||"ciclo").replace(/_/g," "),color:tipoColor}]:[]}/>
+      <SectionHeader title="Progresión y métricas" sub={ciclo?ciclo.nombre+" · "+ciclo.semanas+" semanas":"Sin ciclo activo"} tags={ciclo?[{label:(ciclo.tipo||"ciclo").replace(/_/g," "),color:tipoColor}]:[]}/>
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:20}}>
         <Stat label="Adherencia" value={adherencia+"%"} color={adherencia>=80?"#00E5A0":"#FFB84D"} unit="sesiones completadas"/>
         <Stat label="Readiness hoy" value={readinessHoy||"—"} color={rC} unit="sobre 100"/>
@@ -338,6 +338,29 @@ function DashboardAtleta({ user, perfil }) {
       {bio.length>=2&&<Card style={{marginBottom:16}}><div style={{fontSize:11,fontWeight:700,color:"#8899BB",marginBottom:8,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif"}}>HRV — últimos días (ms)</div><LineChart data={bio.map(b=>({x:(b.fecha||"").slice(5),y:b.hrv||0}))} color="#4D9FFF" height={120}/></Card>}
       {bio.length>=2&&<Card style={{marginBottom:16}}><div style={{fontSize:11,fontWeight:700,color:"#8899BB",marginBottom:8,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif"}}>Readiness score</div><BarChart data={bio.map(b=>({x:(b.fecha||"").slice(5),y:b.readiness_score||0}))} color="#A78BFA" height={100}/></Card>}
       {marcas.length>0&&<Card><div style={{fontSize:11,fontWeight:700,color:"#8899BB",marginBottom:12,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif"}}>Marcas personales</div>{marcas.map(m=>(<div key={m.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E2D45"}}><div style={{fontSize:13,color:"#E8F0FE",fontFamily:"'DM Sans',sans-serif"}}>{m.ejercicios?.nombre}</div><div style={{display:"flex",gap:12}}>{m.rm1_real&&<span style={{fontFamily:"'DM Serif Display',serif",fontSize:18,color:"#00E5A0"}}>{m.rm1_real}kg</span>}{m.rm1_estimado&&<span style={{fontFamily:"'DM Serif Display',serif",fontSize:16,color:"#4D9FFF"}}>~{m.rm1_estimado}kg</span>}</div></div>))}</Card>}
+      {/* Mapa de calor de adherencia por semana */}
+      {tonelaje.length>0&&(
+        <Card style={{marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#8899BB",marginBottom:12,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif"}}>Adherencia por semana</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {Array.from({length:ciclo?.semanas||4},(_,i)=>{
+              const s=i+1;
+              const t=tonelaje.find(t=>t.x==="S"+s);
+              const intensity=t?Math.min(1,t.y/10000):0;
+              const col=t?(intensity>0.7?"#00E5A0":intensity>0.4?"#FFB84D":"#4D9FFF"):"#1E2D45";
+              return (
+                <div key={s} style={{textAlign:"center"}}>
+                  <div style={{width:44,height:44,borderRadius:8,background:t?col+"33":"#1E2D45",border:`1.5px solid ${t?col:"#2A3F5F"}`,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column"}}>
+                    <span style={{fontSize:13,fontWeight:700,color:t?col:"#3A4F6A",fontFamily:"'DM Serif Display',serif"}}>{s}</span>
+                    {t&&<span style={{fontSize:8,color:col}}>{(t.y/1000).toFixed(1)}t</span>}
+                  </div>
+                  <div style={{fontSize:9,color:"#3A4F6A",marginTop:3,fontFamily:"'DM Sans',sans-serif"}}>Sem {s}</div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
       {!tonelaje.length&&!bio.length&&!marcas.length&&<EmptyState title="Sin datos todavía" sub="Completá sesiones y registrá biomarcadores para ver tus gráficas"/>}
     </div>
   );
@@ -380,7 +403,7 @@ function DashboardCoach({ user }) {
 
   return (
     <div style={{padding:"16px",maxWidth:980}}>
-      <SectionHeader title="Dashboard coach" sub={atletas.length+" atletas activos"}/>
+      <SectionHeader title="Panel de control" sub={atletas.length+" atletas activos"}/>
       {tonGrupal.length>=2&&<Card style={{marginBottom:16}}><div style={{fontSize:11,fontWeight:700,color:"#8899BB",marginBottom:8,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif"}}>Tonelaje promedio grupal (kg)</div><LineChart data={tonGrupal} color="#00E5A0"/></Card>}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
         {atletas.map(a=>{
@@ -456,8 +479,8 @@ function Login({ onLogin }) {
       <div style={{ width:"100%",maxWidth:380 }}>
         <div style={{ textAlign:"center",marginBottom:40 }}>
           <div style={{ width:68,height:68,borderRadius:18,background:`linear-gradient(135deg,${C.jade3},${C.jade})`,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:30,color:C.deep,fontFamily:F.serif,boxShadow:`0 0 40px ${C.jade}55`,marginBottom:16 }}>N</div>
-          <div style={{ fontFamily:F.serif,fontSize:34,color:C.white,marginBottom:4 }}>NOA</div>
-          <div style={{ fontSize:11,color:C.jade,letterSpacing:"0.2em",textTransform:"uppercase",fontFamily:F.sans }}>never over, always</div>
+          <div style={{ fontFamily:F.serif,fontSize:34,color:C.white,marginBottom:4 }}>NOAH</div>
+          <div style={{ fontSize:11,color:C.jade,letterSpacing:"0.2em",textTransform:"uppercase",fontFamily:F.sans }}>never over, always higher</div>
         </div>
         <Card glow>
           <FInput label="Email" value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="tu@email.com"/>
@@ -475,7 +498,7 @@ function Login({ onLogin }) {
           {error&&<div style={{ fontSize:12,color:C.red,marginBottom:12,fontFamily:F.sans }}>{error}</div>}
           <Btn onClick={doLogin} disabled={loading} full>{loading?"Ingresando…":"Ingresar"}</Btn>
         </Card>
-        <div style={{ textAlign:"center",marginTop:20,fontSize:11,color:C.textD,fontFamily:F.sans }}>Las cuentas las crea tu coach · NOA v2.0</div>
+        <div style={{ textAlign:"center",marginTop:20,fontSize:11,color:C.textD,fontFamily:F.sans }}>Las cuentas las crea tu coach · NOAH v2.0</div>
       </div>
     </div>
   );
@@ -490,7 +513,7 @@ const NAV_ATLETA = [
   {id:"calendario",  icon:"◈", label:"Mi calendario"},
   {id:"biomarcadores",icon:"◆",label:"Biomarcadores"},
   {id:"marcas",      icon:"◎", label:"Mis marcas"},
-  {id:"noa_coach",   icon:"✦", label:"NOA Coach IA"},
+  {id:"noa_coach",   icon:"✦", label:"NOAH Coach IA"},
 ];
 const NAV_COACH = [
   {id:"c_dashboard", icon:"📊", label:"Dashboard"},
@@ -529,8 +552,8 @@ function Sidebar({ sec, setSec, rol, perfil, onLogout, open, setOpen }) {
           <div style={{ display:"flex",alignItems:"center",gap:10 }}>
             <div style={{ width:36,height:36,borderRadius:10,background:`linear-gradient(135deg,${C.jade3},${C.jade})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,color:C.deep,fontFamily:F.serif,boxShadow:`0 0 14px ${C.jade}44` }}>N</div>
             <div>
-              <div style={{ fontFamily:F.serif,fontSize:17,color:C.white,lineHeight:1 }}>NOA</div>
-              <div style={{ fontSize:9,color:C.jade,letterSpacing:"0.14em",marginTop:2,fontFamily:F.sans,textTransform:"uppercase" }}>never over, always</div>
+              <div style={{ fontFamily:F.serif,fontSize:17,color:C.white,lineHeight:1 }}>NOAH</div>
+              <div style={{ fontSize:9,color:C.jade,letterSpacing:"0.14em",marginTop:2,fontFamily:F.sans,textTransform:"uppercase" }}>never over, always higher</div>
             </div>
           </div>
           <button onClick={()=>setOpen(false)} style={{ background:"none",border:`1px solid ${C.border}`,borderRadius:7,color:C.textS,width:28,height:28,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center" }}>×</button>
@@ -574,7 +597,7 @@ function Sidebar({ sec, setSec, rol, perfil, onLogout, open, setOpen }) {
         </nav>
 
         <div style={{ padding:"12px 16px",borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-          <div style={{ fontSize:9,color:C.textD,fontFamily:F.sans }}>NOA v2.0</div>
+          <div style={{ fontSize:9,color:C.textD,fontFamily:F.sans }}>NOAH v2.0</div>
           <button onClick={onLogout} style={{ fontSize:10,color:C.textD,background:"none",border:"none",cursor:"pointer",fontFamily:F.sans }}>Salir →</button>
         </div>
       </aside>
@@ -688,41 +711,49 @@ function SesionHoy({ user }) {
 
   const guardar=async(marcarCumplida=false)=>{
     const sb=await getSB();
-    if (!sb||!cicloInfo)return;
+    if (!sb){alert("Sin conexión a Supabase");return;}
+    if (!cicloInfo){alert("Sin ciclo activo");return;}
     setSaved(false);
     const newLMap={...logsDB};
+    let errores=0;
     for (const e of sesionActual) {
       const completado=marcarCumplida?true:(logs[e.id]?.done||false);
+      const carga=logs[e.id]?.kg?parseFloat(logs[e.id].kg):null;
+      const reps=parseInt(e.reps)||null;
       const row={
-        atleta_id:user.id, ciclo_id:cicloInfo.id, sesion_plan_id:e.id,
-        ejercicio_id:e.ejercicio_id, semana:semSel, dia:diaSel,
-        carga_kg:parseFloat(logs[e.id]?.kg)||null,
-        rpe:parseFloat(logs[e.id]?.rpe)||null,
+        atleta_id:user.id,
+        ciclo_id:cicloInfo.id,
+        sesion_plan_id:e.id,
+        ejercicio_id:e.ejercicio_id,
+        semana:semSel,
+        dia:diaSel,
+        carga_kg:carga,
+        rpe:logs[e.id]?.rpe?parseFloat(logs[e.id].rpe):null,
         series_realizadas:e.series,
-        reps_realizadas:parseInt(e.reps)||null,
+        reps_realizadas:reps,
         completado,
         notas:nota||null,
-        // 1RM estimado (Epley) para progresión inteligente
-        e1rm: (logs[e.id]?.kg && e.reps)
-          ? Math.round(parseFloat(logs[e.id].kg)*(1+parseInt(e.reps)/30)*10)/10
-          : null,
+        e1rm:(carga&&reps)?Math.round(carga*(1+reps/30)*10)/10:null,
       };
-      // Si ya existe un log para este sesion_plan_id, actualizarlo
       const existente=logsDB[e.id];
       if (existente?.id) {
-        await sb.from("logs_entrenamiento").update(row).eq("id",existente.id);
-        newLMap[e.id]={...existente,...row};
+        const {error}=await sb.from("logs_entrenamiento").update(row).eq("id",existente.id);
+        if(error){console.error("update error:",error);errores++;}
+        else newLMap[e.id]={...existente,...row};
       } else {
-        const {data:inserted}=await sb.from("logs_entrenamiento").insert(row).select().single();
-        if(inserted) newLMap[e.id]=inserted;
+        const {data:inserted,error}=await sb.from("logs_entrenamiento").insert(row).select().single();
+        if(error){console.error("insert error:",error);errores++;}
+        else if(inserted) newLMap[e.id]=inserted;
       }
     }
+    if(errores>0){alert("Hubo "+errores+" error(es) al guardar. Revisá la consola.");return;}
     setLogsDB(newLMap);
     if(marcarCumplida){
       setSesionCumplida(true);
       setLogs(p=>{const n={...p};Object.keys(n).forEach(k=>n[k]={...n[k],done:true});return n;});
     }
-    setSaved(true); setTimeout(()=>setSaved(false),3000);
+    setSaved(true);
+    setTimeout(()=>setSaved(false),3000);
   };
 
   if (loading) return <div style={{padding:32}}><Spinner/></div>;
@@ -1714,8 +1745,30 @@ function Biomarcadores({ user }) {
   };
 
   const guardar=async()=>{
-    const sb=await getSB();if(!sb)return;
-    await sb.from("biomarcadores").upsert({atleta_id:user.id,fecha:new Date().toISOString().split("T")[0],...form,peso_kg:form.peso_kg?parseFloat(form.peso_kg):null,hrv:form.hrv?parseFloat(form.hrv):null,fc_reposo:form.fc_reposo?parseInt(form.fc_reposo):null},{onConflict:"atleta_id,fecha"});
+    const sb=await getSB();if(!sb){alert("Sin conexión a Supabase");return;}
+    const today=new Date().toISOString().split("T")[0];
+    const row={
+      atleta_id:user.id,
+      fecha:today,
+      peso_kg:form.peso_kg?parseFloat(form.peso_kg):null,
+      hrv:form.hrv?parseFloat(form.hrv):null,
+      fc_reposo:form.fc_reposo?parseInt(form.fc_reposo):null,
+      calidad_sueno:form.calidad_sueno,
+      dolor_muscular:form.dolor_muscular,
+      estres:form.estres,
+      motivacion:form.motivacion,
+    };
+    // Buscar si ya existe registro de hoy
+    const {data:existing}=await sb.from("biomarcadores").select("id").eq("atleta_id",user.id).eq("fecha",today).single().catch(()=>({data:null}));
+    let err;
+    if(existing?.id){
+      const res=await sb.from("biomarcadores").update(row).eq("id",existing.id);
+      err=res.error;
+    } else {
+      const res=await sb.from("biomarcadores").insert(row);
+      err=res.error;
+    }
+    if(err){alert("Error al guardar: "+err.message);return;}
     setSaved(true);setTimeout(()=>setSaved(false),3000);
   };
 
@@ -1804,10 +1857,10 @@ function Marcas({ user }) {
 }
 
 // ─────────────────────────────────────────
-// NOA COACH IA
+// NOAH COACH IA
 // ─────────────────────────────────────────
 function NOACoach({ perfil, user }) {
-  const [msgs,setMsgs]=useState([{rol:"noa",texto:"Hola! Soy NOA Coach 💪\n\nEstoy cargando tu contexto de entrenamiento para darte respuestas personalizadas. ¿En qué puedo ayudarte?"}]);
+  const [msgs,setMsgs]=useState([{rol:"noa",texto:"Hola! Soy NOAH Coach 💪\n\nEstoy cargando tu contexto de entrenamiento para darte respuestas personalizadas. ¿En qué puedo ayudarte?"}]);
   const [input,setInput]=useState("");
   const [loading,setLoading]=useState(false);
   const [ctx,setCtx]=useState({perfil});
@@ -1863,7 +1916,7 @@ function NOACoach({ perfil, user }) {
   return (
     <div style={{ padding:"28px 32px",maxWidth:720,display:"flex",flexDirection:"column",height:"calc(100vh - 56px)" }}>
       <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16 }}>
-        <SectionHeader title="NOA Coach" sub={groqActivo?"Groq · LLaMA 3 70B · contexto real del atleta":"Modo demo · configurá NEXT_PUBLIC_GROQ_KEY en Vercel"}/>
+        <SectionHeader title="NOAH Coach" sub={groqActivo?"Groq · LLaMA 3 70B · contexto real del atleta":"Modo demo · configurá NEXT_PUBLIC_GROQ_KEY en Vercel"}/>
         <div style={{ display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,background:groqActivo?C.jade+"18":C.amber+"18",border:`1px solid ${groqActivo?C.jade+"44":C.amber+"44"}` }}>
           <div style={{ width:7,height:7,borderRadius:"50%",background:groqActivo?C.jade:C.amber }}/>
           <span style={{ fontSize:10,fontWeight:700,color:groqActivo?C.jade:C.amber,fontFamily:F.sans,letterSpacing:"0.05em" }}>{groqActivo?"GROQ ACTIVO":"DEMO"}</span>
@@ -1894,11 +1947,11 @@ function NOACoach({ perfil, user }) {
             </div>
           </div>
         ))}
-        {loading&&<div style={{ display:"flex",gap:8,alignItems:"center" }}><div style={{ width:30,height:30,borderRadius:8,background:`linear-gradient(135deg,${C.jade3},${C.jade})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:C.deep,fontFamily:F.serif }}>N</div><div style={{ color:C.textS,fontSize:13,fontFamily:F.sans }}>NOA está pensando…</div></div>}
+        {loading&&<div style={{ display:"flex",gap:8,alignItems:"center" }}><div style={{ width:30,height:30,borderRadius:8,background:`linear-gradient(135deg,${C.jade3},${C.jade})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:C.deep,fontFamily:F.serif }}>N</div><div style={{ color:C.textS,fontSize:13,fontFamily:F.sans }}>NOAH está pensando…</div></div>}
         <div ref={ref}/>
       </div>
       <div style={{ display:"flex",gap:8 }}>
-        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()} placeholder="Preguntale a NOA Coach..." style={{ flex:1,padding:"12px 16px",background:C.card,border:`1px solid ${C.borderH}`,borderRadius:10,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans }}/>
+        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()} placeholder="Preguntale a NOAH Coach..." style={{ flex:1,padding:"12px 16px",background:C.card,border:`1px solid ${C.borderH}`,borderRadius:10,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans }}/>
         <button onClick={()=>send()} style={{ padding:"12px 18px",borderRadius:10,border:"none",background:`linear-gradient(135deg,${C.jade3},${C.jade})`,color:C.deep,fontWeight:700,fontSize:15,cursor:"pointer" }}>↑</button>
       </div>
     </div>
@@ -2026,7 +2079,7 @@ export default function NOAApp() {
       <style>{GLOBAL_CSS}</style>
       <div style={{ textAlign:"center" }}>
         <div style={{ width:52,height:52,borderRadius:13,background:`linear-gradient(135deg,${C.jade3},${C.jade})`,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:24,color:C.deep,fontFamily:F.serif,marginBottom:14,boxShadow:`0 0 30px ${C.jade}55` }}>N</div>
-        <div style={{ fontSize:13,color:C.textS,fontFamily:F.sans }}>Cargando NOA…</div>
+        <div style={{ fontSize:13,color:C.textS,fontFamily:F.sans }}>Cargando NOAH…</div>
       </div>
     </div>
   );
@@ -2071,7 +2124,7 @@ export default function NOAApp() {
           {/* Logo */}
           <div style={{ display:"flex",alignItems:"center",gap:8 }}>
             <div style={{ width:28,height:28,borderRadius:7,background:`linear-gradient(135deg,${C.jade3},${C.jade})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:C.deep,fontFamily:F.serif }}>N</div>
-            <span style={{ fontFamily:F.serif,fontSize:16,color:C.white }}>NOA</span>
+            <span style={{ fontFamily:F.serif,fontSize:16,color:C.white }}>NOAH</span>
           </div>
 
           {/* Sección actual */}
