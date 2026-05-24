@@ -733,7 +733,7 @@ function SesionHoy({ user }) {
         reps_realizadas:reps,
         completado,
         notas:nota||null,
-        e1rm:(carga&&reps)?Math.round(carga*(1+reps/30)*10)/10:null,
+        // e1rm: columna generada por Supabase — no insertar manualmente
       };
       const existente=logsDB[e.id];
       if (existente?.id) {
