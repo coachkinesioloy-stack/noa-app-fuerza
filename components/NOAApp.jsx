@@ -388,7 +388,7 @@ function DashboardCoach({ user }) {
         if(l.completado===true)comp++;tot++;
       });
       const semanas=Object.keys(tonMap).sort((a,b)=>Number(b)-Number(a));
-      const {data:bio}=await sb.from("biomarcadores").select("readiness_score,hrv").eq("atleta_id",p.id).eq("fecha",today).single().catch(()=>({data:null}));
+      const {data:bio}=await sb.from("biomarcadores").select("readiness_score,hrv").eq("atleta_id",p.id).eq("fecha",today).maybeSingle().then(r=>r).catch(()=>({data:null}));
       const {data:ciclo}=await sb.from("ciclos").select("nombre,tipo").eq("atleta_id",p.id).eq("activo",true).limit(1);
       return {...p,tonSemActual:semanas.length?Math.round(tonMap[semanas[0]]):0,adherencia:tot>0?Math.round(comp/tot*100):0,readiness:bio?.readiness_score||null,hrv:bio?.hrv||null,ciclo:ciclo?.[0]||null,tonHistorial:semanas.slice(0,6).reverse().map(s=>({x:"S"+s,y:Math.round(tonMap[s])}))};
     }));
@@ -1769,7 +1769,7 @@ function Biomarcadores({ user }) {
       motivacion:form.motivacion,
     };
     // Buscar si ya existe registro de hoy
-    const {data:existing}=await sb.from("biomarcadores").select("id").eq("atleta_id",user.id).eq("fecha",today).single().catch(()=>({data:null}));
+    const {data:existing}=await sb.from("biomarcadores").select("id").eq("atleta_id",user.id).eq("fecha",today).maybeSingle().then(r=>r).catch(()=>({data:null}));
     let err;
     if(existing?.id){
       const res=await sb.from("biomarcadores").update(row).eq("id",existing.id);
@@ -1889,7 +1889,7 @@ function NOACoach({ perfil, user }) {
       const ciclo=ciclos?.[0];
       // Biomarcadores de hoy
       const today=new Date().toISOString().split("T")[0];
-      const {data:bio}=await sb.from("biomarcadores").select("*").eq("atleta_id",user.id).eq("fecha",today).single().catch(()=>({data:null}));
+      const {data:bio}=await sb.from("biomarcadores").select("*").eq("atleta_id",user.id).eq("fecha",today).maybeSingle().then(r=>r).catch(()=>({data:null}));
       // Último tonelaje
       const {data:logs}=await sb.from("logs_entrenamiento").select("semana,tonelaje,rpe").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(20);
       const tonSem={};
