@@ -145,14 +145,24 @@ const USUARIOS = [
 // PALETA + TIPOS
 // ─────────────────────────────────────────
 const C = {
-  bg:"#070C18", deep:"#050913", surface:"#0D1425",
-  card:"#101828", cardH:"#141f30",
-  border:"#1E2D45", borderH:"#2A3F5F",
+  // Fondos
+  bg:"#060A12", deep:"#040709", surface:"#0A1020",
+  card:"#0D1528", cardH:"#111D35",
+  border:"#1A2840", borderH:"#243A5E",
+  // Acento principal — Verde jade NOAH
   jade:"#00E5A0", jade2:"#00BF86", jade3:"#007A56",
-  blue:"#4D9FFF", amber:"#FFB84D", red:"#FF5C5C", violet:"#A78BFA",
-  text:"#E8F0FE", textS:"#8899BB", textD:"#3A4F6A", white:"#F0F6FF",
+  // Azul Francia — identidad NOAH
+  france:"#0055A4", france2:"#0071D4", france3:"#3399FF",
+  // Naranja — energía, alertas altas
+  orange:"#FF6B2B", orange2:"#FF8C54", orange3:"#FF4500",
+  // Rojo — alertas críticas
+  red:"#FF3A3A", red2:"#FF6060",
+  // Blue claro — métricas secundarias
+  blue:"#4D9FFF", amber:"#FFB84D", violet:"#A78BFA",
+  // Textos
+  text:"#E8F2FF", textS:"#7A95BB", textD:"#2E4060", white:"#F5F9FF",
 };
-const F = { serif:"'DM Serif Display',serif", sans:"'DM Sans',sans-serif" };
+const F = { serif:"'DM Serif Display',serif", sans:"'DM Sans',sans-serif", title:"'Rajdhani',sans-serif" };
 
 const DIAS = ["","Día 1","Día 2","Día 3","Día 4","Día 5","Día 6","Día 7"];
 const CICLOS_TIPOS = [
@@ -170,42 +180,61 @@ const PERFILES_DEP = ["fitness","hibrido","cross","conjunto","individual","resis
 // COMPONENTES BASE
 // ─────────────────────────────────────────
 function Tag({ color=C.jade, children, sm }) {
-  return <span style={{ background:color+"18",color,border:`1px solid ${color}40`,borderRadius:5,padding:sm?"1px 6px":"3px 9px",fontSize:sm?10:11,fontWeight:700,letterSpacing:"0.05em",textTransform:"uppercase",fontFamily:F.sans }}>{children}</span>;
+  return <span style={{
+    background:`${color}15`,color,
+    border:`1px solid ${color}35`,
+    borderRadius:20,
+    padding:sm?"2px 8px":"4px 10px",
+    fontSize:sm?9:10,fontWeight:700,
+    letterSpacing:"0.08em",textTransform:"uppercase",
+    fontFamily:F.title,
+    boxShadow:`0 0 10px ${color}18`,
+  }}>{children}</span>;
 }
 
 function Card({ children, style={}, onClick, glow }) {
   const [h,setH]=useState(false);
-  return <div onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ background:h&&onClick?C.cardH:C.card,border:`1px solid ${h&&onClick?C.borderH:C.border}`,borderRadius:14,padding:"18px 20px",cursor:onClick?"pointer":"default",transition:"all 0.2s",boxShadow:glow?`0 0 24px ${C.jade}18`:"none",...style }}>{children}</div>;
+  return <div onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ background:h&&onClick?`rgba(17,29,53,0.85)`:`rgba(13,21,40,0.80)`,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",border:`1px solid ${h&&onClick?"rgba(51,153,255,0.25)":"rgba(26,40,64,0.8)"}`,borderRadius:16,padding:"18px 20px",cursor:onClick?"pointer":"default",transition:"all 0.25s ease",boxShadow:glow?`0 0 32px rgba(0,229,160,0.12), 0 8px 32px rgba(0,0,0,0.4)`:"0 4px 24px rgba(0,0,0,0.3)",...style }}>{children}</div>;
 }
 
 function Stat({ label, value, unit, color=C.jade }) {
-  return <div style={{ background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",textAlign:"center" }}>
+  return <div style={{
+    background:"rgba(10,16,32,0.7)",
+    backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",
+    border:`1px solid rgba(26,40,64,0.8)`,
+    borderRadius:14,padding:"14px 16px",textAlign:"center",
+    boxShadow:"0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)",
+    transition:"transform 0.2s, box-shadow 0.2s",
+  }}>
     <div style={{ fontSize:10,color:C.textS,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6,fontFamily:F.sans }}>{label}</div>
-    <div style={{ fontSize:26,fontWeight:700,color,lineHeight:1,fontFamily:F.serif }}>{value}</div>
-    {unit&&<div style={{ fontSize:11,color:C.textD,marginTop:3,fontFamily:F.sans }}>{unit}</div>}
+    <div style={{fontSize:26,fontWeight:700,color,lineHeight:1,fontFamily:F.title,textShadow:`0 0 16px ${color}55`,letterSpacing:"0.02em"}}>{value}</div>
+    {unit&&<div style={{fontSize:9,color:C.textD,marginTop:3,fontFamily:F.title,letterSpacing:"0.1em",textTransform:"uppercase"}}>{unit}</div>}
   </div>;
 }
 
 function Bar({ value, max=100, color=C.jade, h=5 }) {
-  return <div style={{ background:C.border,borderRadius:99,height:h,overflow:"hidden" }}><div style={{ width:`${Math.min(100,(value/max)*100)}%`,height:"100%",background:color,borderRadius:99,transition:"width 0.7s ease" }}/></div>;
+  return <div style={{background:"rgba(26,40,64,0.6)",borderRadius:99,height:h,overflow:"hidden"}}>
+    <div style={{width:`${Math.min(100,(value/max)*100)}%`,height:"100%",background:`linear-gradient(90deg,${color}CC,${color})`,borderRadius:99,transition:"width 0.8s cubic-bezier(0.4,0,0.2,1)",boxShadow:`0 0 8px ${color}55`}}/>
+  </div>;
 }
 
 function Btn({ children, onClick, color=C.jade, outline, sm, full, disabled, style={} }) {
   const [h,setH]=useState(false);
-  return <button onClick={onClick} disabled={disabled} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ width:full?"100%":"auto",padding:sm?"6px 14px":"10px 22px",borderRadius:9,border:outline?`1.5px solid ${color}`:"none",background:outline?"transparent":h?color+"DD":`linear-gradient(135deg,${color}99,${color})`,color:outline?color:C.deep,fontWeight:700,fontSize:sm?11:13,cursor:disabled?"not-allowed":"pointer",fontFamily:F.sans,opacity:disabled?0.4:1,transition:"all 0.2s",boxShadow:(!outline&&!disabled)?`0 3px 14px ${color}44`:"none",...style }}>{children}</button>;
+  const shadow=color===C.jade?`0 4px 0 #007A56, 0 6px 20px rgba(0,229,160,0.3)`:color===C.france||color===C.france2?`0 4px 0 #003A70, 0 6px 20px rgba(0,85,164,0.35)`:color===C.orange?`0 4px 0 #CC4400, 0 6px 20px rgba(255,107,43,0.35)`:`0 4px 0 rgba(0,0,0,0.4), 0 6px 20px ${color}33`;
+  return <button onClick={onClick} disabled={disabled} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ width:full?"100%":"auto",padding:sm?"7px 16px":"11px 24px",borderRadius:10,border:outline?`1.5px solid ${color}`:"none",background:outline?`${color}12`:h&&!disabled?`linear-gradient(135deg,${color},${color}CC)`:`linear-gradient(160deg,${color}EE,${color})`,color:outline?color:"#030810",fontWeight:700,fontSize:sm?11:13,cursor:disabled?"not-allowed":"pointer",fontFamily:F.title||F.sans,letterSpacing:outline?"0.04em":"0.06em",textTransform:"uppercase",opacity:disabled?0.4:1,transition:"all 0.15s",boxShadow:(!outline&&!disabled)?(h?`0 2px 0 ${color}88, 0 4px 14px ${color}33`:shadow):"none",transform:(!outline&&!disabled&&h)?"translateY(2px)":(!outline&&!disabled)?"translateY(0)":"none",...style }}>{children}</button>;
 }
 
 function FInput({ label, value, onChange, type="text", placeholder, min, max, step }) {
   return <div style={{ marginBottom:12 }}>
     {label&&<div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:5,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>{label}</div>}
-    <input type={type} value={value} onChange={onChange} placeholder={placeholder} min={min} max={max} step={step} style={{ width:"100%",padding:"9px 12px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,boxSizing:"border-box" }}/>
+    <input type={type} value={value} onChange={onChange} placeholder={placeholder} min={min} max={max} step={step} style={{ width:"100%",padding:"11px 14px",background:"rgba(10,16,32,0.6)",backdropFilter:"blur(12px)",border:`1px solid rgba(26,40,64,0.9)`,borderRadius:10,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,boxSizing:"border-box",transition:"border-color 0.2s" }}/>
   </div>;
 }
 
 function FSelect({ label, value, onChange, options }) {
   return <div style={{ marginBottom:12 }}>
     {label&&<div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:5,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>{label}</div>}
-    <select value={value} onChange={onChange} style={{ width:"100%",padding:"9px 12px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,boxSizing:"border-box" }}>
+    <select value={value} onChange={onChange} style={{width:"100%",padding:"11px 14px",background:"rgba(10,16,32,0.7)",backdropFilter:"blur(12px)",border:"1px solid rgba(26,40,64,0.9)",borderRadius:10,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,boxSizing:"border-box"}}>
       {options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   </div>;
@@ -221,8 +250,13 @@ function SectionHeader({ title, sub, tags=[] }) {
 
 function Modal({ open, onClose, title, children }) {
   if (!open) return null;
-  return <div style={{ position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }} onClick={onClose}>
-    <div onClick={e=>e.stopPropagation()} style={{ background:C.card,border:`1px solid ${C.borderH}`,borderRadius:16,padding:"24px 28px",maxWidth:520,width:"100%",maxHeight:"85vh",overflowY:"auto" }}>
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={onClose}>
+    <div onClick={e=>e.stopPropagation()} style={{
+      background:"rgba(13,21,40,0.92)",backdropFilter:"blur(28px)",WebkitBackdropFilter:"blur(28px)",
+      border:"1px solid rgba(51,153,255,0.2)",borderRadius:20,
+      padding:"24px 28px",maxWidth:520,width:"100%",maxHeight:"85vh",overflowY:"auto",
+      boxShadow:"0 24px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06)",
+    }}>
       <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20 }}>
         <div style={{ fontFamily:F.serif,fontSize:20,color:C.white }}>{title}</div>
         <button onClick={onClose} style={{ background:"none",border:"none",color:C.textS,fontSize:22,cursor:"pointer" }}>×</button>
@@ -234,14 +268,14 @@ function Modal({ open, onClose, title, children }) {
 
 function Spinner() {
   return <div style={{ display:"flex",alignItems:"center",justifyContent:"center",padding:48 }}>
-    <div style={{ width:32,height:32,border:`3px solid ${C.border}`,borderTopColor:C.jade,borderRadius:"50%",animation:"spin 0.8s linear infinite" }}/>
+    <div style={{width:32,height:32,border:"2px solid rgba(26,40,64,0.8)",borderTopColor:C.jade,borderRightColor:`${C.france3}66`,borderRadius:"50%",animation:"spin 0.7s linear infinite",boxShadow:`0 0 12px ${C.jade}33`}}/>
     <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
   </div>;
 }
 
 function EmptyState({ title, sub }) {
   return <Card style={{ textAlign:"center",padding:"48px 20px" }}>
-    <div style={{ fontFamily:F.serif,fontSize:20,color:C.textS,marginBottom:8 }}>{title}</div>
+    <div style={{fontFamily:F.title,fontSize:20,fontWeight:700,letterSpacing:"0.08em",color:C.textS,marginBottom:8,textTransform:"uppercase"}}>{title}</div>
     {sub&&<div style={{ fontSize:13,color:C.textD,fontFamily:F.sans }}>{sub}</div>}
   </Card>;
 }
@@ -1089,50 +1123,110 @@ function Login({ onLogin }) {
   const handleKey = (e) => { if (e.key==="Enter") doLogin(); };
 
   return (
-    <div style={{ minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:${C.bg};color:${C.text};font-family:${F.sans}}input::placeholder{color:${C.textD}}select option{background:${C.card};color:${C.text}}`}</style>
-      <div style={{ width:"100%",maxWidth:380 }}>
-        <div style={{ textAlign:"center",marginBottom:40 }}>
-          {/* NOAH Logo — N geométrica */}
-          <div style={{ marginBottom:20,display:"inline-block" }}>
-            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter:`drop-shadow(0 0 18px ${C.jade}88)` }}>
-              <rect width="80" height="80" rx="20" fill="#0A1A0F"/>
-              <rect width="80" height="80" rx="20" fill={C.jade} fillOpacity="0.07"/>
-              <polygon points="14,66 14,14 26,14 44,44 44,14 66,14 66,26 52,26 52,66 38,66 21,35 21,66" fill="url(#nlogin)"/>
-              <polygon points="38,66 52,66 52,54 44,44 38,54" fill={C.jade2} fillOpacity="0.7"/>
-              <polygon points="26,14 38,14 44,26 38,32" fill={C.jade} fillOpacity="0.35"/>
-              <defs>
-                <linearGradient id="nlogin" x1="14" y1="14" x2="66" y2="66" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor={C.jade}/>
-                  <stop offset="100%" stopColor={C.jade3}/>
-                </linearGradient>
-              </defs>
-            </svg>
+    <div style={{ minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",overflow:"hidden" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{background:${C.bg};color:${C.text};font-family:${F.sans}}
+        input::placeholder{color:${C.textD}}
+        select option{background:${C.card};color:${C.text}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes glow{0%,100%{opacity:0.4}50%{opacity:0.8}}
+        .noah-login-card{animation:fadeUp 0.6s ease forwards}
+        .noah-input:focus{border-color:rgba(0,229,160,0.5)!important;box-shadow:0 0 0 3px rgba(0,229,160,0.08)!important}
+      `}</style>
+
+      {/* Fondo con orbes de luz */}
+      <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
+        <div style={{position:"absolute",top:"-20%",left:"50%",transform:"translateX(-50%)",width:600,height:600,background:"radial-gradient(circle,rgba(0,85,164,0.18) 0%,transparent 70%)",animation:"glow 4s ease infinite"}}/>
+        <div style={{position:"absolute",bottom:"-10%",right:"-10%",width:400,height:400,background:"radial-gradient(circle,rgba(0,229,160,0.10) 0%,transparent 70%)",animation:"glow 5s ease infinite 1s"}}/>
+        <div style={{position:"absolute",top:"30%",left:"-10%",width:300,height:300,background:"radial-gradient(circle,rgba(255,107,43,0.07) 0%,transparent 70%)"}}/>
+        {/* Grid sutil */}
+        <div style={{position:"absolute",inset:0,backgroundImage:`linear-gradient(rgba(0,229,160,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,0.03) 1px,transparent 1px)`,backgroundSize:"48px 48px"}}/>
+      </div>
+
+      <div className="noah-login-card" style={{width:"100%",maxWidth:400,position:"relative",zIndex:1}}>
+        {/* Logo section */}
+        <div style={{textAlign:"center",marginBottom:36}}>
+          <div style={{
+            width:88,height:88,
+            borderRadius:22,
+            background:"linear-gradient(135deg,rgba(0,85,164,0.3),rgba(0,229,160,0.15))",
+            backdropFilter:"blur(20px)",
+            border:"1px solid rgba(0,229,160,0.25)",
+            display:"inline-flex",alignItems:"center",justifyContent:"center",
+            marginBottom:20,
+            boxShadow:"0 0 60px rgba(0,85,164,0.35), 0 0 30px rgba(0,229,160,0.15), inset 0 1px 0 rgba(255,255,255,0.08)",
+          }}>
+            <span style={{fontSize:42,lineHeight:1,fontFamily:F.serif,background:`linear-gradient(135deg,${C.jade},${C.france3})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>N</span>
           </div>
-          <div style={{ fontFamily:"'DM Serif Display',serif",fontSize:34,color:C.white,marginBottom:6,letterSpacing:"0.18em",textShadow:`0 0 32px ${C.jade}44, 0 2px 0 rgba(0,0,0,0.8), 0 6px 20px rgba(0,0,0,0.7)` }}>NOAH</div>
-          <div style={{ fontSize:10,color:C.jade,letterSpacing:"0.22em",textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif",textShadow:`0 0 12px ${C.jade}66`,display:"flex",alignItems:"center",gap:8 }}>
-            <span style={{ display:"inline-block",width:20,height:1,background:C.jade,opacity:0.6 }}/>
-            never over, always higher
-            <span style={{ display:"inline-block",width:20,height:1,background:C.jade,opacity:0.6 }}/>
+          <div style={{
+            fontFamily:F.title,fontSize:38,fontWeight:700,letterSpacing:"0.22em",
+            color:C.white,marginBottom:6,
+            textShadow:"0 0 40px rgba(0,229,160,0.3), 0 2px 0 rgba(0,0,0,0.8), 0 6px 24px rgba(0,0,0,0.6)",
+          }}>NOAH</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+            <div style={{height:1,width:28,background:`linear-gradient(90deg,transparent,${C.jade})`,opacity:0.6}}/>
+            <span style={{fontSize:10,color:C.jade,letterSpacing:"0.22em",textTransform:"uppercase",fontFamily:F.title,textShadow:`0 0 12px ${C.jade}88`}}>NEVER OVER, ALWAYS HIGHER</span>
+            <div style={{height:1,width:28,background:`linear-gradient(270deg,transparent,${C.jade})`,opacity:0.6}}/>
           </div>
         </div>
-        <Card glow>
-          <FInput label="Email" value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="tu@email.com"/>
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:5,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>Contraseña</div>
+
+        {/* Card glass */}
+        <div style={{
+          background:"rgba(13,21,40,0.75)",
+          backdropFilter:"blur(28px)",WebkitBackdropFilter:"blur(28px)",
+          border:"1px solid rgba(26,40,64,0.8)",
+          borderRadius:20,
+          padding:"28px 28px",
+          boxShadow:"0 8px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
+        }}>
+          {/* Email */}
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.12em",textTransform:"uppercase",fontFamily:F.title}}>EMAIL</div>
             <input
+              className="noah-input"
+              type="email"
+              value={email}
+              onChange={e=>setEmail(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder="tu@email.com"
+              style={{width:"100%",padding:"12px 14px",background:"rgba(6,10,18,0.7)",border:"1px solid rgba(26,40,64,0.9)",borderRadius:11,color:C.text,fontSize:14,outline:"none",fontFamily:F.sans,boxSizing:"border-box",transition:"border-color 0.2s, box-shadow 0.2s"}}
+            />
+          </div>
+          {/* Password */}
+          <div style={{marginBottom:20}}>
+            <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.12em",textTransform:"uppercase",fontFamily:F.title}}>CONTRASEÑA</div>
+            <input
+              className="noah-input"
               type="password"
               value={pass}
               onChange={e=>setPass(e.target.value)}
               onKeyDown={handleKey}
               placeholder="••••••••"
-              style={{ width:"100%",padding:"9px 12px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,boxSizing:"border-box" }}
+              style={{width:"100%",padding:"12px 14px",background:"rgba(6,10,18,0.7)",border:"1px solid rgba(26,40,64,0.9)",borderRadius:11,color:C.text,fontSize:14,outline:"none",fontFamily:F.sans,boxSizing:"border-box",transition:"border-color 0.2s, box-shadow 0.2s"}}
             />
           </div>
-          {error&&<div style={{ fontSize:12,color:C.red,marginBottom:12,fontFamily:F.sans }}>{error}</div>}
-          <Btn onClick={doLogin} disabled={loading} full>{loading?"Ingresando…":"Ingresar"}</Btn>
-        </Card>
-        <div style={{ textAlign:"center",marginTop:20,fontSize:11,color:C.textD,fontFamily:F.sans }}>Las cuentas las crea tu coach · NOAH v2.0</div>
+          {error&&<div style={{fontSize:12,color:C.red,marginBottom:14,fontFamily:F.sans,padding:"8px 12px",background:"rgba(255,58,58,0.08)",borderRadius:8,border:"1px solid rgba(255,58,58,0.2)"}}>{error}</div>}
+          <button
+            onClick={doLogin}
+            disabled={loading}
+            style={{
+              width:"100%",padding:"13px",borderRadius:11,border:"none",
+              background:loading?"rgba(0,229,160,0.3)":`linear-gradient(160deg,${C.jade}EE,${C.jade})`,
+              color:"#030810",fontWeight:700,fontSize:14,cursor:loading?"not-allowed":"pointer",
+              fontFamily:F.title,letterSpacing:"0.1em",textTransform:"uppercase",
+              boxShadow:loading?"none":"0 4px 0 #007A56, 0 6px 20px rgba(0,229,160,0.3)",
+              transition:"all 0.15s",opacity:loading?0.7:1,
+              transform:loading?"none":"translateY(0)",
+            }}
+          >{loading?"Ingresando…":"Ingresar"}</button>
+        </div>
+
+        <div style={{textAlign:"center",marginTop:18,fontSize:11,color:C.textD,fontFamily:F.sans,letterSpacing:"0.04em"}}>
+          Las cuentas las crea tu coach · NOAH v2.0
+        </div>
       </div>
     </div>
   );
@@ -1171,78 +1265,90 @@ function Sidebar({ sec, setSec, rol, perfil, onLogout, open, setOpen }) {
       )}
 
       <aside style={{
-        width:224, minWidth:224,
-        background:C.deep,
-        borderRight:`1px solid ${C.border}`,
+        width:240, minWidth:240,
+        background:"rgba(4,7,9,0.92)",
+        backdropFilter:"blur(28px)",WebkitBackdropFilter:"blur(28px)",
+        borderRight:"1px solid rgba(26,40,64,0.7)",
         display:"flex", flexDirection:"column",
         height:"100vh",
         position:"fixed", top:0, left:0,
         zIndex:100,
         transform: open ? "translateX(0)" : "translateX(-100%)",
-        transition:"transform 0.25s ease",
+        transition:"transform 0.28s cubic-bezier(0.4,0,0.2,1)",
+        boxShadow: open ? "4px 0 40px rgba(0,0,0,0.6), 1px 0 0 rgba(0,229,160,0.06)" : "none",
       }}>
         {/* Logo + cerrar */}
-        <div style={{ padding:"18px 16px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-          <div style={{ display:"flex",alignItems:"center",gap:10 }}>
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink:0, filter:`drop-shadow(0 0 6px ${C.jade}66)` }}>
-              <rect width="36" height="36" rx="9" fill="#0A1A0F"/>
-              <polygon points="6,30 6,6 12,6 20,20 20,6 30,6 30,12 24,12 24,30 18,30 9,16 9,30" fill="url(#nsidebar)"/>
-              <polygon points="18,30 24,30 24,24 20,20 18,24" fill={C.jade2} fillOpacity="0.7"/>
-              <defs>
-                <linearGradient id="nsidebar" x1="6" y1="6" x2="30" y2="30" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor={C.jade}/>
-                  <stop offset="100%" stopColor={C.jade3}/>
-                </linearGradient>
-              </defs>
-            </svg>
+        <div style={{padding:"20px 16px 16px",borderBottom:"1px solid rgba(26,40,64,0.6)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{
+              width:38,height:38,borderRadius:11,
+              background:"linear-gradient(135deg,rgba(0,85,164,0.35),rgba(0,229,160,0.18))",
+              border:"1px solid rgba(0,229,160,0.22)",
+              display:"flex",alignItems:"center",justifyContent:"center",
+              boxShadow:"0 0 16px rgba(0,229,160,0.15)",
+            }}>
+              <span style={{fontSize:18,fontFamily:F.serif,background:`linear-gradient(135deg,${C.jade},${C.france3})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",fontWeight:700}}>N</span>
+            </div>
             <div>
-              <div style={{ fontFamily:F.serif,fontSize:17,color:C.white,lineHeight:1 }}>NOAH</div>
-              <div style={{ fontSize:9,color:C.jade,letterSpacing:"0.14em",marginTop:2,fontFamily:F.sans,textTransform:"uppercase" }}>never over, always higher</div>
+              <div style={{fontFamily:F.title,fontSize:18,fontWeight:700,letterSpacing:"0.18em",color:C.white,textShadow:"0 0 20px rgba(0,229,160,0.2)"}}>NOAH</div>
+              <div style={{fontSize:8,color:C.jade,letterSpacing:"0.14em",fontFamily:F.title,textTransform:"uppercase",opacity:0.8}}>never over, always higher</div>
             </div>
           </div>
-          <button onClick={()=>setOpen(false)} style={{ background:"none",border:`1px solid ${C.border}`,borderRadius:7,color:C.textS,width:28,height:28,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center" }}>×</button>
+          <button onClick={()=>setOpen(false)} style={{
+            background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)",
+            borderRadius:8,color:C.textS,width:28,height:28,cursor:"pointer",
+            fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",
+          }}>×</button>
         </div>
 
         {/* Perfil */}
-        <div style={{ padding:"10px 14px",borderBottom:`1px solid ${C.border}` }}>
-          <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-            <div style={{ width:30,height:30,borderRadius:7,background:C.jade+"22",border:`1px solid ${C.jade}44`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F.serif,color:C.jade,fontSize:13,flexShrink:0 }}>
+        <div style={{padding:"12px 14px",borderBottom:"1px solid rgba(26,40,64,0.5)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{
+              width:36,height:36,borderRadius:10,
+              background:`linear-gradient(135deg,${C.france}55,${C.jade}22)`,
+              border:`1px solid ${C.jade}33`,
+              display:"flex",alignItems:"center",justifyContent:"center",
+              fontFamily:F.title,color:C.jade,fontSize:15,fontWeight:700,flexShrink:0,
+              boxShadow:`0 0 12px ${C.jade}18`,
+            }}>
               {(perfil?.nombre||perfil?.atleta_codigo||"?")[0].toUpperCase()}
             </div>
-            <div style={{ overflow:"hidden" }}>
-              <div style={{ fontSize:12,fontWeight:600,color:C.text,fontFamily:F.sans,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{perfil?.nombre||perfil?.atleta_codigo||"Usuario"}</div>
-              <div style={{ fontSize:10,color:C.jade,textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:F.sans }}>{rol}</div>
+            <div style={{overflow:"hidden"}}>
+              <div style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:F.sans,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{perfil?.nombre||perfil?.atleta_codigo||"Usuario"}</div>
+              <div style={{fontSize:10,color:C.jade,textTransform:"uppercase",letterSpacing:"0.1em",fontFamily:F.title}}>{rol}</div>
             </div>
           </div>
         </div>
 
         {/* Nav */}
-        <nav style={{ flex:1,padding:"10px 10px",overflowY:"auto" }}>
+        <nav style={{flex:1,padding:"10px 8px",overflowY:"auto"}}>
           {nav.map(item=>{
             const active=sec===item.id;
             return (
               <button key={item.id} onClick={()=>{setSec(item.id);setOpen(false);}} style={{
-                display:"flex",alignItems:"center",gap:9,width:"100%",
-                padding:"10px 12px",
-                background:active?C.jade+"14":"transparent",
+                display:"flex",alignItems:"center",gap:10,width:"100%",
+                padding:"11px 12px",
+                background:active?"rgba(0,229,160,0.08)":"transparent",
                 border:"none",
                 borderLeft:`2px solid ${active?C.jade:"transparent"}`,
-                borderRadius:"0 8px 8px 0",
+                borderRadius:"0 10px 10px 0",
                 color:active?C.jade:C.textS,
                 fontSize:13,fontWeight:active?600:400,
                 cursor:"pointer",textAlign:"left",
-                transition:"all 0.15s",fontFamily:F.sans,marginBottom:2,
+                transition:"all 0.15s",fontFamily:F.sans,marginBottom:3,
+                boxShadow:active?`inset 0 0 20px ${C.jade}08`:"none",
               }}>
-                <span style={{ fontSize:15,opacity:active?1:0.5 }}>{item.icon}</span>
+                <span style={{fontSize:16,opacity:active?1:0.45,filter:active?`drop-shadow(0 0 4px ${C.jade}88)`:"none"}}>{item.icon}</span>
                 {item.label}
               </button>
             );
           })}
         </nav>
 
-        <div style={{ padding:"12px 16px",borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-          <div style={{ fontSize:9,color:C.textD,fontFamily:F.sans }}>NOAH v2.0</div>
-          <button onClick={onLogout} style={{ fontSize:10,color:C.textD,background:"none",border:"none",cursor:"pointer",fontFamily:F.sans }}>Salir →</button>
+        <div style={{padding:"14px 16px",borderTop:"1px solid rgba(26,40,64,0.5)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{fontSize:9,color:C.textD,fontFamily:F.title,letterSpacing:"0.1em"}}>NOAH v2.0</div>
+          <button onClick={onLogout} style={{fontSize:10,color:C.textD,background:"none",border:"none",cursor:"pointer",fontFamily:F.sans,letterSpacing:"0.04em"}}>Salir →</button>
         </div>
       </aside>
     </>
@@ -2685,7 +2791,7 @@ export default function NOAApp() {
   const rol=perfil?.rol||"atleta";
 
   const GLOBAL_CSS=`
-    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap');
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html,body{background:${C.bg};color:${C.text};font-family:${F.sans};-webkit-tap-highlight-color:transparent;}
     ::-webkit-scrollbar{width:4px;height:4px}
@@ -2695,12 +2801,47 @@ export default function NOAApp() {
     input::placeholder,textarea::placeholder{color:${C.textD}}
     select option{background:${C.card};color:${C.text}}
     @keyframes spin{to{transform:rotate(360deg)}}
-    @media(max-width:640px){
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes glow{0%,100%{opacity:0.4}50%{opacity:0.9}}
+    @keyframes slideIn{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+    .noah-section{animation:fadeUp 0.4s ease forwards}
+    .noah-card-hover{transition:transform 0.2s ease,box-shadow 0.2s ease}
+    .noah-card-hover:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,0.5)!important}
+    .noah-input:focus{border-color:rgba(0,229,160,0.5)!important;box-shadow:0 0 0 3px rgba(0,229,160,0.07)!important;outline:none!important}
+    /* Carrusel mobile */
+    .noah-carousel{display:flex;overflow-x:auto;gap:12px;padding:4px 2px 12px;scrollbar-width:none;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+    .noah-carousel::-webkit-scrollbar{display:none}
+    .noah-carousel-item{scroll-snap-align:start;flex-shrink:0}
+    /* Bottom nav mobile */
+    .noah-bottom-nav{
+      display:none;
+      position:fixed;bottom:0;left:0;right:0;
+      background:rgba(4,7,9,0.94);
+      backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+      border-top:1px solid rgba(26,40,64,0.8);
+      z-index:90;
+      padding:8px 0 max(8px,env(safe-area-inset-bottom));
+      box-shadow:0 -4px 30px rgba(0,0,0,0.5);
+    }
+    .noah-bottom-nav-inner{display:flex;justify-content:space-around;align-items:center}
+    .noah-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;cursor:pointer;border:none;background:transparent;color:rgba(122,149,187,0.7);min-width:56px;border-radius:12px;transition:all 0.18s}
+    .noah-nav-item.active{color:#00E5A0}
+    .noah-nav-item.active .noah-nav-dot{opacity:1}
+    .noah-nav-dot{width:4px;height:4px;border-radius:50%;background:#00E5A0;box-shadow:0 0 8px #00E5A0;opacity:0;transition:opacity 0.2s;margin-top:1px}
+    .noah-nav-icon{font-size:20px;line-height:1}
+    .noah-nav-label{font-size:8px;letter-spacing:0.1em;font-weight:700;text-transform:uppercase;font-family:'Rajdhani',sans-serif}
+    @media(max-width:768px){
+      .noah-bottom-nav{display:block}
+      .hide-mobile{display:none!important}
+      .main-with-bottomnav{padding-bottom:72px!important}
       h1{font-size:22px!important}
       .grid-4{grid-template-columns:1fr 1fr!important}
       .grid-2{grid-template-columns:1fr!important}
-      .hide-mobile{display:none!important}
       input,select,textarea{font-size:16px!important}
+    }
+    @media(min-width:769px){
+      .main-with-bottomnav{padding-bottom:0!important}
     }
   `;
 
@@ -2727,21 +2868,32 @@ export default function NOAApp() {
   };
 
   if (appLoading) return (
-    <div style={{ minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center" }}>
+    <div style={{ minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden" }}>
       <style>{GLOBAL_CSS}</style>
-      <div style={{ textAlign:"center" }}>
-        <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom:14, filter:`drop-shadow(0 0 14px ${C.jade}99)` }}>
-          <rect width="60" height="60" rx="14" fill="#0A1A0F"/>
-          <polygon points="10,50 10,10 20,10 33,33 33,10 50,10 50,20 40,20 40,50 28,50 14,26 14,50" fill="url(#nload)"/>
-          <polygon points="28,50 40,50 40,40 33,33 28,40" fill={C.jade2} fillOpacity="0.7"/>
-          <defs>
-            <linearGradient id="nload" x1="10" y1="10" x2="50" y2="50" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor={C.jade}/>
-              <stop offset="100%" stopColor={C.jade3}/>
-            </linearGradient>
-          </defs>
-        </svg>
-        <div style={{ fontSize:13,color:C.textS,fontFamily:F.sans }}>Cargando NOAH…</div>
+      <div style={{position:"absolute",inset:0,pointerEvents:"none"}}>
+        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-60%)",width:500,height:500,background:"radial-gradient(circle,rgba(0,85,164,0.2) 0%,transparent 70%)"}}/>
+        <div style={{position:"absolute",inset:0,backgroundImage:`linear-gradient(rgba(0,229,160,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,0.025) 1px,transparent 1px)`,backgroundSize:"48px 48px"}}/>
+      </div>
+      <div style={{ textAlign:"center",position:"relative",zIndex:1 }}>
+        <div style={{
+          width:80,height:80,borderRadius:20,
+          background:"linear-gradient(135deg,rgba(0,85,164,0.3),rgba(0,229,160,0.15))",
+          backdropFilter:"blur(20px)",border:"1px solid rgba(0,229,160,0.2)",
+          display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:20,
+          boxShadow:"0 0 60px rgba(0,85,164,0.4),0 0 30px rgba(0,229,160,0.15)",
+        }}>
+          <span style={{fontSize:38,fontFamily:F.serif,background:`linear-gradient(135deg,${C.jade},${C.france3})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>N</span>
+        </div>
+        <div style={{fontFamily:F.title,fontSize:28,fontWeight:700,letterSpacing:"0.22em",color:C.white,marginBottom:6,textShadow:"0 0 30px rgba(0,229,160,0.3)"}}>NOAH</div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:24}}>
+          <div style={{height:1,width:20,background:C.jade,opacity:0.5}}/>
+          <span style={{fontSize:9,color:C.jade,letterSpacing:"0.2em",fontFamily:F.title}}>NEVER OVER, ALWAYS HIGHER</span>
+          <div style={{height:1,width:20,background:C.jade,opacity:0.5}}/>
+        </div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          <div style={{width:6,height:6,borderRadius:"50%",background:C.jade,boxShadow:`0 0 8px ${C.jade}`,animation:"spin 1s linear infinite"}}/>
+          <div style={{fontSize:12,color:C.textS,fontFamily:F.sans,letterSpacing:"0.06em"}}>Cargando NOAH…</div>
+        </div>
       </div>
     </div>
   );
@@ -2756,62 +2908,89 @@ export default function NOAApp() {
   return (
     <>
       <style>{GLOBAL_CSS}</style>
-      <div style={{ minHeight:"100vh",background:C.bg }}>
+      <div style={{minHeight:"100vh",background:C.bg,position:"relative"}}>
+        {/* Fondo con grid sutil */}
+        <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,backgroundImage:`linear-gradient(rgba(0,229,160,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,0.02) 1px,transparent 1px)`,backgroundSize:"48px 48px"}}/>
+        <div style={{position:"fixed",top:"10%",right:"5%",width:400,height:400,background:"radial-gradient(circle,rgba(0,85,164,0.07) 0%,transparent 70%)",pointerEvents:"none",zIndex:0}}/>
+        <div style={{position:"fixed",bottom:"20%",left:"0%",width:300,height:300,background:"radial-gradient(circle,rgba(0,229,160,0.05) 0%,transparent 70%)",pointerEvents:"none",zIndex:0}}/>
         <Sidebar sec={sec} setSec={setSec} rol={rol} perfil={perfil} onLogout={logout} open={sideOpen} setOpen={setSideOpen}/>
 
-        {/* TOPBAR fija */}
+        {/* TOPBAR fija — glassmorphism */}
         <div style={{
           position:"fixed",top:0,left:0,right:0,
-          height:52,
-          background:C.deep,
-          borderBottom:`1px solid ${C.border}`,
+          height:56,
+          background:"rgba(4,7,9,0.85)",
+          backdropFilter:"blur(24px)",WebkitBackdropFilter:"blur(24px)",
+          borderBottom:"1px solid rgba(26,40,64,0.8)",
           display:"flex",alignItems:"center",
           padding:"0 16px",gap:12,
           zIndex:80,
+          boxShadow:"0 1px 0 rgba(0,229,160,0.06), 0 4px 24px rgba(0,0,0,0.4)",
         }}>
           {/* Hamburguesa */}
           <button onClick={()=>setSideOpen(o=>!o)} style={{
-            background:"none",border:`1px solid ${C.border}`,
-            borderRadius:8,color:C.text,
-            width:36,height:36,cursor:"pointer",
+            background:"rgba(255,255,255,0.04)",
+            border:"1px solid rgba(255,255,255,0.08)",
+            borderRadius:10,color:C.text,
+            width:38,height:38,cursor:"pointer",
             display:"flex",flexDirection:"column",
-            alignItems:"center",justifyContent:"center",gap:4,
-            flexShrink:0,
+            alignItems:"center",justifyContent:"center",gap:4.5,
+            flexShrink:0,transition:"all 0.2s",
+            boxShadow:"inset 0 1px 0 rgba(255,255,255,0.05)",
           }}>
-            <div style={{ width:16,height:1.5,background:C.text,borderRadius:99 }}/>
-            <div style={{ width:16,height:1.5,background:C.text,borderRadius:99 }}/>
-            <div style={{ width:16,height:1.5,background:C.text,borderRadius:99 }}/>
+            <div style={{width:15,height:1.5,background:C.text,borderRadius:99}}/>
+            <div style={{width:15,height:1.5,background:C.text,borderRadius:99}}/>
+            <div style={{width:10,height:1.5,background:C.textS,borderRadius:99}}/>
           </button>
 
           {/* Logo */}
-          <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter:`drop-shadow(0 0 5px ${C.jade}77)` }}>
-              <rect width="28" height="28" rx="7" fill="#0A1A0F"/>
-              <polygon points="5,23 5,5 10,5 16,16 16,5 23,5 23,10 18,10 18,23 12,23 7,12 7,23" fill="url(#ntopbar)"/>
-              <polygon points="12,23 18,23 18,18 16,16 12,18" fill={C.jade2} fillOpacity="0.7"/>
-              <defs>
-                <linearGradient id="ntopbar" x1="5" y1="5" x2="23" y2="23" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor={C.jade}/>
-                  <stop offset="100%" stopColor={C.jade3}/>
-                </linearGradient>
-              </defs>
-            </svg>
-            <span style={{ fontFamily:F.serif,fontSize:16,color:C.white }}>NOAH</span>
+          <div style={{display:"flex",alignItems:"center",gap:9}}>
+            <div style={{
+              width:30,height:30,borderRadius:8,
+              background:"linear-gradient(135deg,rgba(0,85,164,0.4),rgba(0,229,160,0.2))",
+              border:"1px solid rgba(0,229,160,0.2)",
+              display:"flex",alignItems:"center",justifyContent:"center",
+              boxShadow:"0 0 12px rgba(0,229,160,0.15)",
+            }}>
+              <span style={{fontSize:15,fontFamily:F.serif,background:`linear-gradient(135deg,${C.jade},${C.france3})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",fontWeight:700}}>N</span>
+            </div>
+            <span style={{fontFamily:F.title,fontSize:17,fontWeight:700,letterSpacing:"0.18em",color:C.white,textShadow:"0 0 20px rgba(0,229,160,0.25)"}}>NOAH</span>
           </div>
 
           {/* Sección actual */}
-          <div style={{ flex:1,fontSize:12,color:C.textS,fontFamily:F.sans,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+          <div style={{flex:1,fontSize:11,color:C.textS,fontFamily:F.title,letterSpacing:"0.08em",textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
             {[...NAV_ATLETA,...NAV_COACH].find(n=>n.id===sec)?.label||""}
           </div>
 
           {/* Avatar */}
-          <div style={{ width:30,height:30,borderRadius:7,background:C.jade+"22",border:`1px solid ${C.jade}44`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F.serif,color:C.jade,fontSize:12,flexShrink:0 }}>
+          <div style={{
+            width:34,height:34,borderRadius:9,
+            background:`linear-gradient(135deg,${C.france}44,${C.jade}22)`,
+            border:`1px solid ${C.jade}33`,
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontFamily:F.title,color:C.jade,fontSize:14,fontWeight:700,flexShrink:0,
+            boxShadow:`0 0 12px ${C.jade}22`,
+          }}>
             {(perfil?.nombre||perfil?.atleta_codigo||"?")[0].toUpperCase()}
           </div>
         </div>
 
+        {/* Bottom Nav Mobile */}
+        <nav className="noah-bottom-nav">
+          <div className="noah-bottom-nav-inner">
+            {(rol==="coach"?NAV_COACH:NAV_ATLETA).slice(0,5).map(item=>(
+              <button key={item.id} className={`noah-nav-item${sec===item.id?" active":""}`}
+                onClick={()=>setSec(item.id)}>
+                <span className="noah-nav-icon">{item.icon}</span>
+                <span className="noah-nav-label">{item.label.split(" ")[0]}</span>
+                <div className="noah-nav-dot"/>
+              </button>
+            ))}
+          </div>
+        </nav>
+
         {/* Contenido con padding top para la topbar */}
-        <main style={{ paddingTop:52,minHeight:"100vh",overflowY:"auto" }}>
+        <main className="main-with-bottomnav" style={{paddingTop:56,minHeight:"100vh",overflowY:"auto",position:"relative",zIndex:1}}>
           {renderContent()}
         </main>
       </div>
