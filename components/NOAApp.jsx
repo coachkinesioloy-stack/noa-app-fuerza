@@ -1,6 +1,6 @@
 'use client'
 // ═══════════════════════════════════════════════════
-// NOA v2.0 — Never Over, Always Higher
+// NOAH v2.0 — Never Over, Always Higher
 // Auth real · Panel Coach · Planificador · Calendario
 // ═══════════════════════════════════════════════════
 
@@ -30,7 +30,7 @@ async function askNOA(q, ctx = {}) {
   const key = process.env.NEXT_PUBLIC_GROQ_KEY;
   if (!key || key === "gsk_..." || !key.startsWith("gsk_")) return demoMsg(q);
   try {
-    const sistema = `Sos NOA Coach, el asistente de entrenamiento de la app NOAH (Never Over, Always Higher), creada por el Prof. Rodrigo Fernández.
+    const sistema = `Sos NOAH Coach, el asistente de entrenamiento de la app NOAH (Never Over, Always Higher), creada por el Prof. Rodrigo Fernández.
 
 SOBRE EL COACH:
 El Prof. Rodrigo Fernández es quien diseña y supervisa todos los planes de entrenamiento. Es Profesor de Educación Física, Licenciado en Alto Rendimiento Deportivo, Preparador Físico (CENARD), Kinesiólogo, Osteópata, Especialista en Deportes y Científico de Datos. Toda planificación que el atleta tiene fue diseñada por él con criterio profesional y científico.
@@ -84,7 +84,7 @@ function demoMsg(p) {
   if (q.includes("rir")) return "**RIR (Reps en Reserva):** Cuántas reps te quedan antes del fallo. RIR 2 = podías hacer 2 más. Más preciso que RPE para periodizar.\n\nEn bloques de potencia: RIR 2–3. En hipertrofia: RIR 1–2.";
   if (q.includes("neural")) return "**Ciclo Neural:** 90–100% del 1RM, 1–3 reps, 1–2 semanas. Adaptación puramente neuromuscular. Descansos 4–6 min. Máxima intención de velocidad en cada rep.";
   if (q.includes("hrv")) return "**HRV:** Si cae >15% respecto a tu baseline, reducí la carga un 10–15% o hacé sesión de recuperación activa. No canceles, adaptá.";
-  return "**NOA Coach (demo):** Configurá `NEXT_PUBLIC_GROQ_KEY` en Vercel con tu API key de Groq (gratis en console.groq.com) para respuestas en tiempo real.";
+  return "**NOAH Coach (demo):** Configurá `NEXT_PUBLIC_GROQ_KEY` en Vercel con tu API key de Groq (gratis en console.groq.com) para respuestas en tiempo real.";
 }
 
 // ─────────────────────────────────────────
@@ -145,14 +145,14 @@ const USUARIOS = [
 // PALETA + TIPOS
 // ─────────────────────────────────────────
 const C = {
-  bg:"#080808", deep:"#060606", surface:"#0F0F0F",
-  card:"#141414", cardH:"#1C1C1C",
-  border:"rgba(255,255,255,0.08)", borderH:"rgba(255,255,255,0.14)",
+  bg:"#070C18", deep:"#050913", surface:"#0D1425",
+  card:"#101828", cardH:"#141f30",
+  border:"#1E2D45", borderH:"#2A3F5F",
   jade:"#00E5A0", jade2:"#00BF86", jade3:"#007A56",
-  blue:"#00D4FF", amber:"#FFB84D", red:"#FF4444", violet:"#A78BFA",
-  text:"#F0F0F0", textS:"#888888", textD:"#444444", white:"#FFFFFF",
+  blue:"#4D9FFF", amber:"#FFB84D", red:"#FF5C5C", violet:"#A78BFA",
+  text:"#E8F0FE", textS:"#8899BB", textD:"#3A4F6A", white:"#F0F6FF",
 };
-const F = { serif:"'DM Serif Display',serif", sans:"'Inter',sans-serif" };
+const F = { serif:"'DM Serif Display',serif", sans:"'DM Sans',sans-serif" };
 
 const DIAS = ["","Día 1","Día 2","Día 3","Día 4","Día 5","Día 6","Día 7"];
 const CICLOS_TIPOS = [
@@ -169,73 +169,43 @@ const PERFILES_DEP = ["fitness","hibrido","cross","conjunto","individual","resis
 // ─────────────────────────────────────────
 // COMPONENTES BASE
 // ─────────────────────────────────────────
-// ── NOA Logo Component ────────────────────────────────────────
-function NOALogo({ size=28 }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style={{width:size,height:size,borderRadius:size*0.22,flexShrink:0}}>
-      <defs>
-        <linearGradient id="noa-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{stopColor:"#070C18"}}/>
-          <stop offset="100%" style={{stopColor:"#0D1E35"}}/>
-        </linearGradient>
-        <linearGradient id="noa-jade" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{stopColor:"#007A56"}}/>
-          <stop offset="100%" style={{stopColor:"#00E5A0"}}/>
-        </linearGradient>
-        <filter id="noa-glow">
-          <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
-          <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </defs>
-      <rect width="512" height="512" rx="112" fill="url(#noa-bg)"/>
-      <circle cx="256" cy="256" r="220" fill="none" stroke="#00E5A0" strokeWidth="1.5" opacity="0.15"/>
-      <text x="256" y="310" fontFamily="Georgia, serif" fontSize="240" fontWeight="400" textAnchor="middle" fill="url(#noa-jade)" filter="url(#noa-glow)" letterSpacing="-8">N</text>
-      <line x1="156" y1="360" x2="356" y2="360" stroke="url(#noa-jade)" strokeWidth="2" opacity="0.5"/>
-      <text x="256" y="400" fontFamily="Georgia, serif" fontSize="28" textAnchor="middle" fill="#00E5A0" opacity="0.7" letterSpacing="6">NOA</text>
-    </svg>
-  );
-}
-
 function Tag({ color=C.jade, children, sm }) {
-  return <span style={{ background:color+"18",color,border:`1px solid ${color}35`,borderRadius:6,padding:sm?"2px 7px":"3px 10px",fontSize:sm?10:11,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",fontFamily:F.sans }}>{children}</span>;
+  return <span style={{ background:color+"18",color,border:`1px solid ${color}40`,borderRadius:5,padding:sm?"1px 6px":"3px 9px",fontSize:sm?10:11,fontWeight:700,letterSpacing:"0.05em",textTransform:"uppercase",fontFamily:F.sans }}>{children}</span>;
 }
 
 function Card({ children, style={}, onClick, glow }) {
   const [h,setH]=useState(false);
-  return <div onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ background:h&&onClick?C.cardH:C.card,border:`1px solid ${h&&onClick?C.borderH:C.border}`,borderRadius:16,padding:"18px 20px",cursor:onClick?"pointer":"default",transition:"all 0.2s",boxShadow:glow?`0 0 30px ${C.jade}12,0 2px 20px rgba(0,0,0,0.4)`:"0 2px 16px rgba(0,0,0,0.3)",...style }}>{children}</div>;
+  return <div onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ background:h&&onClick?C.cardH:C.card,border:`1px solid ${h&&onClick?C.borderH:C.border}`,borderRadius:14,padding:"18px 20px",cursor:onClick?"pointer":"default",transition:"all 0.2s",boxShadow:glow?`0 0 24px ${C.jade}18`:"none",...style }}>{children}</div>;
 }
 
 function Stat({ label, value, unit, color=C.jade }) {
-  return <div style={{ background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px",textAlign:"center",position:"relative",overflow:"hidden" }}>
-    <div style={{ position:"absolute",top:0,right:0,width:60,height:60,background:`radial-gradient(circle at top right, ${color}15, transparent 70%)`,pointerEvents:"none" }}/>
-    <div style={{ fontSize:10,color:C.textS,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8,fontFamily:F.sans,fontWeight:600 }}>{label}</div>
-    <div style={{ fontSize:26,fontWeight:900,color,lineHeight:1,fontFamily:F.sans,letterSpacing:"-0.02em" }}>{value}</div>
-    {unit&&<div style={{ fontSize:10,color:C.textD,marginTop:4,fontFamily:F.sans }}>{unit}</div>}
+  return <div style={{ background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",textAlign:"center" }}>
+    <div style={{ fontSize:10,color:C.textS,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6,fontFamily:F.sans }}>{label}</div>
+    <div style={{ fontSize:26,fontWeight:700,color,lineHeight:1,fontFamily:F.serif }}>{value}</div>
+    {unit&&<div style={{ fontSize:11,color:C.textD,marginTop:3,fontFamily:F.sans }}>{unit}</div>}
   </div>;
 }
 
-function Bar({ value, max=100, color=C.jade, h=4 }) {
-  return <div style={{ background:"rgba(255,255,255,0.06)",borderRadius:99,height:h,overflow:"hidden" }}><div style={{ width:`${Math.min(100,(value/max)*100)}%`,height:"100%",background:color,borderRadius:99,transition:"width 0.8s cubic-bezier(0.16,1,0.3,1)",boxShadow:`0 0 8px ${color}60` }}/></div>;
+function Bar({ value, max=100, color=C.jade, h=5 }) {
+  return <div style={{ background:C.border,borderRadius:99,height:h,overflow:"hidden" }}><div style={{ width:`${Math.min(100,(value/max)*100)}%`,height:"100%",background:color,borderRadius:99,transition:"width 0.7s ease" }}/></div>;
 }
 
 function Btn({ children, onClick, color=C.jade, outline, sm, full, disabled, style={} }) {
   const [h,setH]=useState(false);
-  const isMain = !outline;
-  return <button onClick={onClick} disabled={disabled} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ width:full?"100%":"auto",padding:sm?"6px 14px":"10px 22px",borderRadius:10,border:outline?`1.5px solid ${color}40`:"none",background:outline?"transparent":isMain?`linear-gradient(135deg,${color}CC,${color})`:`transparent`,color:outline?color:"#080808",fontWeight:700,fontSize:sm?11:13,cursor:disabled?"not-allowed":"pointer",fontFamily:F.sans,opacity:disabled?0.4:1,transition:"all 0.18s",boxShadow:(!outline&&!disabled&&isMain)?`0 4px 16px ${color}40`:"none",transform:h&&!disabled?"translateY(-1px)":"translateY(0)",...style }}>{children}</button>;
+  return <button onClick={onClick} disabled={disabled} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ width:full?"100%":"auto",padding:sm?"6px 14px":"10px 22px",borderRadius:9,border:outline?`1.5px solid ${color}`:"none",background:outline?"transparent":h?color+"DD":`linear-gradient(135deg,${color}99,${color})`,color:outline?color:C.deep,fontWeight:700,fontSize:sm?11:13,cursor:disabled?"not-allowed":"pointer",fontFamily:F.sans,opacity:disabled?0.4:1,transition:"all 0.2s",boxShadow:(!outline&&!disabled)?`0 3px 14px ${color}44`:"none",...style }}>{children}</button>;
 }
 
 function FInput({ label, value, onChange, type="text", placeholder, min, max, step }) {
-  const [focus, setFocus] = useState(false);
   return <div style={{ marginBottom:12 }}>
-    {label&&<div style={{ fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans }}>{label}</div>}
-    <input type={type} value={value} onChange={onChange} onFocus={()=>setFocus(true)} onBlur={()=>setFocus(false)} placeholder={placeholder} min={min} max={max} step={step} style={{ width:"100%",padding:"10px 13px",background:C.surface,border:`1px solid ${focus?C.jade+"60":C.border}`,borderRadius:10,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,boxSizing:"border-box",transition:"border-color 0.15s" }}/>
+    {label&&<div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:5,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>{label}</div>}
+    <input type={type} value={value} onChange={onChange} placeholder={placeholder} min={min} max={max} step={step} style={{ width:"100%",padding:"9px 12px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,boxSizing:"border-box" }}/>
   </div>;
 }
 
 function FSelect({ label, value, onChange, options }) {
   return <div style={{ marginBottom:12 }}>
-    {label&&<div style={{ fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans }}>{label}</div>}
-    <select value={value} onChange={onChange} style={{ width:"100%",padding:"10px 13px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,boxSizing:"border-box" }}>
+    {label&&<div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:5,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>{label}</div>}
+    <select value={value} onChange={onChange} style={{ width:"100%",padding:"9px 12px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,boxSizing:"border-box" }}>
       {options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   </div>;
@@ -244,18 +214,18 @@ function FSelect({ label, value, onChange, options }) {
 function SectionHeader({ title, sub, tags=[] }) {
   return <div style={{ marginBottom:24 }}>
     {tags.length>0&&<div style={{ display:"flex",gap:6,marginBottom:10,flexWrap:"wrap" }}>{tags.map((t,i)=><Tag key={i} color={t.color||C.jade}>{t.label}</Tag>)}</div>}
-    <h1 style={{ fontFamily:F.sans,fontSize:26,fontWeight:900,color:C.white,margin:0,lineHeight:1.15,letterSpacing:"-0.03em" }}>{title}<span style={{color:C.jade}}>.</span></h1>
+    <h1 style={{ fontFamily:F.serif,fontSize:28,fontWeight:400,color:C.white,margin:0,lineHeight:1.1 }}>{title}</h1>
     {sub&&<div style={{ fontSize:13,color:C.textS,marginTop:5,fontFamily:F.sans }}>{sub}</div>}
   </div>;
 }
 
 function Modal({ open, onClose, title, children }) {
   if (!open) return null;
-  return <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(8px)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }} onClick={onClose}>
-    <div onClick={e=>e.stopPropagation()} style={{ background:"#141414",border:`1px solid rgba(255,255,255,0.12)`,borderRadius:20,padding:"24px 28px",maxWidth:520,width:"100%",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 24px 60px rgba(0,0,0,0.7)" }}>
+  return <div style={{ position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }} onClick={onClose}>
+    <div onClick={e=>e.stopPropagation()} style={{ background:C.card,border:`1px solid ${C.borderH}`,borderRadius:16,padding:"24px 28px",maxWidth:520,width:"100%",maxHeight:"85vh",overflowY:"auto" }}>
       <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20 }}>
-        <div style={{ fontFamily:F.sans,fontSize:18,fontWeight:800,color:C.white,letterSpacing:"-0.02em" }}>{title}</div>
-        <button onClick={onClose} style={{ background:"rgba(255,255,255,0.06)",border:`1px solid ${C.border}`,color:C.textS,fontSize:18,cursor:"pointer",width:32,height:32,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1 }}>×</button>
+        <div style={{ fontFamily:F.serif,fontSize:20,color:C.white }}>{title}</div>
+        <button onClick={onClose} style={{ background:"none",border:"none",color:C.textS,fontSize:22,cursor:"pointer" }}>×</button>
       </div>
       {children}
     </div>
@@ -263,17 +233,15 @@ function Modal({ open, onClose, title, children }) {
 }
 
 function Spinner() {
-  return <div style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:48,gap:16 }}>
-    <div style={{ width:36,height:36,border:`2px solid rgba(255,255,255,0.06)`,borderTopColor:C.jade,borderRadius:"50%",animation:"spin 0.8s linear infinite" }}/>
+  return <div style={{ display:"flex",alignItems:"center",justifyContent:"center",padding:48 }}>
+    <div style={{ width:32,height:32,border:`3px solid ${C.border}`,borderTopColor:C.jade,borderRadius:"50%",animation:"spin 0.8s linear infinite" }}/>
     <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    <div style={{ fontSize:12,color:C.textD,fontFamily:F.sans,letterSpacing:"0.1em" }}>CARGANDO</div>
   </div>;
 }
 
 function EmptyState({ title, sub }) {
-  return <Card style={{ textAlign:"center",padding:"52px 24px" }}>
-    <div style={{ width:48,height:48,borderRadius:14,background:`${C.jade}15`,border:`1px solid ${C.jade}25`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",fontSize:20 }}>◎</div>
-    <div style={{ fontFamily:F.sans,fontSize:16,fontWeight:700,color:C.textS,marginBottom:6 }}>{title}</div>
+  return <Card style={{ textAlign:"center",padding:"48px 20px" }}>
+    <div style={{ fontFamily:F.serif,fontSize:20,color:C.textS,marginBottom:8 }}>{title}</div>
     {sub&&<div style={{ fontSize:13,color:C.textD,fontFamily:F.sans }}>{sub}</div>}
   </Card>;
 }
@@ -295,7 +263,7 @@ function LineChart({ data, color, height, showDots }) {
   return (
     <svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height}} preserveAspectRatio="none">
       <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.25"/><stop offset="100%" stopColor={color} stopOpacity="0.02"/></linearGradient></defs>
-      {[0,0.25,0.5,0.75,1].map((t,i)=>{const y=pt+t*(H-pt-pb);const val=maxV-t*range;return(<g key={i}><line x1={pl} y1={y} x2={W-pr} y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth="1"/><text x={pl-4} y={y+4} textAnchor="end" fontSize="9" fill="#3A4F6A" fontFamily="DM Sans">{Math.round(val).toLocaleString("es")}</text></g>);})}
+      {[0,0.25,0.5,0.75,1].map((t,i)=>{const y=pt+t*(H-pt-pb);const val=maxV-t*range;return(<g key={i}><line x1={pl} y1={y} x2={W-pr} y2={y} stroke="#1E2D45" strokeWidth="1"/><text x={pl-4} y={y+4} textAnchor="end" fontSize="9" fill="#3A4F6A" fontFamily="DM Sans">{Math.round(val).toLocaleString("es")}</text></g>);})}
       <polygon points={fill} fill={"url(#"+gid+")"}/>
       <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
       {data.map((d,i)=>(<g key={i}>{showDots&&<circle cx={toX(i)} cy={toY(d.y)} r="3.5" fill={color} stroke="#101828" strokeWidth="2"/>}<text x={toX(i)} y={H-pb+12} textAnchor="middle" fontSize="9" fill="#3A4F6A" fontFamily="DM Sans">{d.x}</text></g>))}
@@ -348,7 +316,7 @@ function MultiLineChart({ series, height=180, yLabel="" }) {
         const y=pt+t*(H-pt-pb);
         const val=Math.round(maxV-t*range);
         return <g key={i}>
-          <line x1={pl} y1={y} x2={W-pr} y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth="1"/>
+          <line x1={pl} y1={y} x2={W-pr} y2={y} stroke="#1E2D45" strokeWidth="1"/>
           <text x={pl-4} y={y+4} textAnchor="end" fontSize="8" fill="#3A4F6A" fontFamily="DM Sans">{val>=1000?(val/1000).toFixed(1)+"t":val}</text>
         </g>;
       })}
@@ -391,10 +359,10 @@ function RadarChart({ data, color, size=180 }) {
     <svg viewBox={`0 0 ${size} ${size}`} style={{width:size,height:size}}>
       {rings.map((ring,ri)=>{
         const rpts=Array.from({length:n},(_,i)=>({x:cx+r*ring*Math.cos(angle(i)),y:cy+r*ring*Math.sin(angle(i))}));
-        return <polygon key={ri} points={rpts.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1"/>;
+        return <polygon key={ri} points={rpts.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke="#1E2D45" strokeWidth="1"/>;
       })}
       {Array.from({length:n},(_,i)=>(
-        <line key={i} x1={cx} y1={cy} x2={outer(i).x} y2={outer(i).y} stroke="rgba(255,255,255,0.07)" strokeWidth="1"/>
+        <line key={i} x1={cx} y1={cy} x2={outer(i).x} y2={outer(i).y} stroke="#1E2D45" strokeWidth="1"/>
       ))}
       <polygon points={polyStr} fill={color+"30"} stroke={color} strokeWidth="2" strokeLinejoin="round"/>
       {data.map((d,i)=>{
@@ -488,9 +456,9 @@ function Legend({ items }) {
 function ChartCard({ title, sub, children, style={} }) {
   return (
     <Card style={{marginBottom:14,...style}}>
-      <div style={{marginBottom:12}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.textS,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans}}>{title}</div>
-        {sub&&<div style={{fontSize:10,color:C.textD,fontFamily:F.sans,marginTop:3}}>{sub}</div>}
+      <div style={{marginBottom:10}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.textS,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans}}>{title}</div>
+        {sub&&<div style={{fontSize:10,color:C.textD,fontFamily:F.sans,marginTop:2}}>{sub}</div>}
       </div>
       {children}
     </Card>
@@ -603,7 +571,7 @@ function DashboardAtleta({ user, perfil }) {
       {/* Tabs */}
       <div style={{display:"flex",gap:6,marginBottom:18,borderBottom:`1px solid ${C.border}`,paddingBottom:10,flexWrap:"wrap"}}>
         {tabs.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"7px 16px",borderRadius:10,border:"none",background:tab===t.id?"rgba(0,229,160,0.1)":"transparent",color:tab===t.id?C.jade:C.textS,fontSize:12,fontWeight:tab===t.id?700:400,cursor:"pointer",fontFamily:F.sans,transition:"all 0.15s",letterSpacing:tab===t.id?"-0.01em":"0"}}>
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"7px 16px",borderRadius:8,border:"none",background:tab===t.id?C.jade+"22":"transparent",color:tab===t.id?C.jade:C.textS,fontSize:12,fontWeight:tab===t.id?700:400,cursor:"pointer",fontFamily:F.sans}}>
             {t.label}
           </button>
         ))}
@@ -878,7 +846,7 @@ function DashboardCoach({ user }) {
       {/* Tabs principales */}
       <div style={{display:"flex",gap:6,marginBottom:18,borderBottom:`1px solid ${C.border}`,paddingBottom:10}}>
         {mainTabs.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"7px 18px",borderRadius:10,border:"none",background:tab===t.id?"rgba(0,229,160,0.1)":"transparent",color:tab===t.id?C.jade:C.textS,fontSize:12,fontWeight:tab===t.id?700:400,cursor:"pointer",fontFamily:F.sans,transition:"all 0.15s"}}>
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"7px 18px",borderRadius:8,border:"none",background:tab===t.id?C.jade+"22":"transparent",color:tab===t.id?C.jade:C.textS,fontSize:12,fontWeight:tab===t.id?700:400,cursor:"pointer",fontFamily:F.sans}}>
             {t.label}
           </button>
         ))}
@@ -1020,7 +988,7 @@ function DashboardCoach({ user }) {
                 const col=ATLETA_COLORS[atletas.findIndex(x=>x.id===a.id)%ATLETA_COLORS.length];
                 const tipo=CICLOS_TIPOS.find(t=>t.key===a.ciclo?.tipo);
                 return (
-                  <div key={a.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:i===0?"rgba(0,229,160,0.04)":C.surface,borderRadius:12,border:`1px solid ${i===0?col+"50":C.border}`,boxShadow:i===0?`0 0 20px ${col}10`:"none"}}>
+                  <div key={a.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:C.surface,borderRadius:9,border:`1px solid ${i===0?col:C.border}`}}>
                     <div style={{fontFamily:F.serif,fontSize:20,color:i===0?col:C.textD,minWidth:28,textAlign:"center"}}>{i+1}</div>
                     <div style={{width:30,height:30,borderRadius:7,background:col+"22",border:`1px solid ${col}44`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F.serif,color:col,fontSize:13,flexShrink:0}}>
                       {(a.nombre||a.atleta_codigo||"?")[0].toUpperCase()}
@@ -1121,14 +1089,32 @@ function Login({ onLogin }) {
   const handleKey = (e) => { if (e.key==="Enter") doLogin(); };
 
   return (
-    <div style={{ minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",overflow:"hidden" }}>
-      <div style={{ position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-60%)",width:600,height:600,background:`radial-gradient(circle, ${C.jade}08 0%, transparent 65%)`,pointerEvents:"none" }}/>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Serif+Display&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:${C.bg};color:${C.text};font-family:${F.sans}}input::placeholder{color:${C.textD}}select option{background:${C.card};color:${C.text}}`}</style>
-      <div style={{ width:"100%",maxWidth:360,position:"relative",zIndex:1 }}>
-        <div style={{ textAlign:"center",marginBottom:44 }}>
-          <div style={{ display:"inline-flex",marginBottom:20,filter:`drop-shadow(0 0 20px ${C.jade}50)` }}><NOALogo size={72}/></div>
-          <div style={{ fontFamily:F.sans,fontSize:30,fontWeight:900,color:C.white,marginBottom:6,letterSpacing:"-0.04em" }}>NOA</div>
-          <div style={{ fontSize:11,color:C.jade,letterSpacing:"0.2em",textTransform:"uppercase",fontFamily:F.sans,fontWeight:600 }}>never over, always</div>
+    <div style={{ minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:${C.bg};color:${C.text};font-family:${F.sans}}input::placeholder{color:${C.textD}}select option{background:${C.card};color:${C.text}}`}</style>
+      <div style={{ width:"100%",maxWidth:380 }}>
+        <div style={{ textAlign:"center",marginBottom:40 }}>
+          {/* NOAH Logo — N geométrica */}
+          <div style={{ marginBottom:20,display:"inline-block" }}>
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter:`drop-shadow(0 0 18px ${C.jade}88)` }}>
+              <rect width="80" height="80" rx="20" fill="#0A1A0F"/>
+              <rect width="80" height="80" rx="20" fill={C.jade} fillOpacity="0.07"/>
+              <polygon points="14,66 14,14 26,14 44,44 44,14 66,14 66,26 52,26 52,66 38,66 21,35 21,66" fill="url(#nlogin)"/>
+              <polygon points="38,66 52,66 52,54 44,44 38,54" fill={C.jade2} fillOpacity="0.7"/>
+              <polygon points="26,14 38,14 44,26 38,32" fill={C.jade} fillOpacity="0.35"/>
+              <defs>
+                <linearGradient id="nlogin" x1="14" y1="14" x2="66" y2="66" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor={C.jade}/>
+                  <stop offset="100%" stopColor={C.jade3}/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <div style={{ fontFamily:"'DM Serif Display',serif",fontSize:34,color:C.white,marginBottom:6,letterSpacing:"0.18em",textShadow:`0 0 32px ${C.jade}44, 0 2px 0 rgba(0,0,0,0.8), 0 6px 20px rgba(0,0,0,0.7)` }}>NOAH</div>
+          <div style={{ fontSize:10,color:C.jade,letterSpacing:"0.22em",textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif",textShadow:`0 0 12px ${C.jade}66`,display:"flex",alignItems:"center",gap:8 }}>
+            <span style={{ display:"inline-block",width:20,height:1,background:C.jade,opacity:0.6 }}/>
+            never over, always higher
+            <span style={{ display:"inline-block",width:20,height:1,background:C.jade,opacity:0.6 }}/>
+          </div>
         </div>
         <Card glow>
           <FInput label="Email" value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="tu@email.com"/>
@@ -1146,7 +1132,7 @@ function Login({ onLogin }) {
           {error&&<div style={{ fontSize:12,color:C.red,marginBottom:12,fontFamily:F.sans }}>{error}</div>}
           <Btn onClick={doLogin} disabled={loading} full>{loading?"Ingresando…":"Ingresar"}</Btn>
         </Card>
-        <div style={{ textAlign:"center",marginTop:20,fontSize:11,color:C.textD,fontFamily:F.sans }}>Las cuentas las crea tu coach · NOA v2.0</div>
+        <div style={{ textAlign:"center",marginTop:20,fontSize:11,color:C.textD,fontFamily:F.sans }}>Las cuentas las crea tu coach · NOAH v2.0</div>
       </div>
     </div>
   );
@@ -1161,7 +1147,7 @@ const NAV_ATLETA = [
   {id:"calendario",  icon:"◈", label:"Mi calendario"},
   {id:"biomarcadores",icon:"◆",label:"Biomarcadores"},
   {id:"marcas",      icon:"◎", label:"Mis marcas"},
-  {id:"noa_coach",   icon:"✦", label:"NOA Coach IA"},
+  {id:"noa_coach",   icon:"✦", label:"NOAH Coach IA"},
 ];
 const NAV_COACH = [
   {id:"c_dashboard", icon:"📊", label:"Dashboard"},
@@ -1186,7 +1172,7 @@ function Sidebar({ sec, setSec, rol, perfil, onLogout, open, setOpen }) {
 
       <aside style={{
         width:224, minWidth:224,
-        background:"#0A0A0A",
+        background:C.deep,
         borderRight:`1px solid ${C.border}`,
         display:"flex", flexDirection:"column",
         height:"100vh",
@@ -1198,13 +1184,23 @@ function Sidebar({ sec, setSec, rol, perfil, onLogout, open, setOpen }) {
         {/* Logo + cerrar */}
         <div style={{ padding:"18px 16px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
           <div style={{ display:"flex",alignItems:"center",gap:10 }}>
-            <NOALogo size={34}/>
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink:0, filter:`drop-shadow(0 0 6px ${C.jade}66)` }}>
+              <rect width="36" height="36" rx="9" fill="#0A1A0F"/>
+              <polygon points="6,30 6,6 12,6 20,20 20,6 30,6 30,12 24,12 24,30 18,30 9,16 9,30" fill="url(#nsidebar)"/>
+              <polygon points="18,30 24,30 24,24 20,20 18,24" fill={C.jade2} fillOpacity="0.7"/>
+              <defs>
+                <linearGradient id="nsidebar" x1="6" y1="6" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor={C.jade}/>
+                  <stop offset="100%" stopColor={C.jade3}/>
+                </linearGradient>
+              </defs>
+            </svg>
             <div>
-              <div style={{ fontFamily:F.sans,fontSize:15,fontWeight:900,color:C.white,lineHeight:1,letterSpacing:"-0.03em" }}>NOA</div>
-              <div style={{ fontSize:9,color:C.jade,letterSpacing:"0.14em",marginTop:2,fontFamily:F.sans,textTransform:"uppercase",fontWeight:600 }}>never over, always</div>
+              <div style={{ fontFamily:F.serif,fontSize:17,color:C.white,lineHeight:1 }}>NOAH</div>
+              <div style={{ fontSize:9,color:C.jade,letterSpacing:"0.14em",marginTop:2,fontFamily:F.sans,textTransform:"uppercase" }}>never over, always higher</div>
             </div>
           </div>
-          <button onClick={()=>setOpen(false)} style={{ background:"rgba(255,255,255,0.05)",border:`1px solid ${C.border}`,borderRadius:8,color:C.textS,width:28,height:28,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center" }}>×</button>
+          <button onClick={()=>setOpen(false)} style={{ background:"none",border:`1px solid ${C.border}`,borderRadius:7,color:C.textS,width:28,height:28,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center" }}>×</button>
         </div>
 
         {/* Perfil */}
@@ -1228,17 +1224,16 @@ function Sidebar({ sec, setSec, rol, perfil, onLogout, open, setOpen }) {
               <button key={item.id} onClick={()=>{setSec(item.id);setOpen(false);}} style={{
                 display:"flex",alignItems:"center",gap:9,width:"100%",
                 padding:"10px 12px",
-                background:active?"rgba(0,229,160,0.08)":"transparent",
+                background:active?C.jade+"14":"transparent",
                 border:"none",
                 borderLeft:`2px solid ${active?C.jade:"transparent"}`,
-                borderRadius:"0 10px 10px 0",
+                borderRadius:"0 8px 8px 0",
                 color:active?C.jade:C.textS,
-                fontSize:13,fontWeight:active?700:400,
+                fontSize:13,fontWeight:active?600:400,
                 cursor:"pointer",textAlign:"left",
-                transition:"all 0.15s",fontFamily:F.sans,marginBottom:3,
-                letterSpacing:active?"-0.01em":"0",
+                transition:"all 0.15s",fontFamily:F.sans,marginBottom:2,
               }}>
-                <span style={{ fontSize:14,opacity:active?1:0.4 }}>{item.icon}</span>
+                <span style={{ fontSize:15,opacity:active?1:0.5 }}>{item.icon}</span>
                 {item.label}
               </button>
             );
@@ -1246,7 +1241,7 @@ function Sidebar({ sec, setSec, rol, perfil, onLogout, open, setOpen }) {
         </nav>
 
         <div style={{ padding:"12px 16px",borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-          <div style={{ fontSize:9,color:C.textD,fontFamily:F.sans }}>NOA v2.0</div>
+          <div style={{ fontSize:9,color:C.textD,fontFamily:F.sans }}>NOAH v2.0</div>
           <button onClick={onLogout} style={{ fontSize:10,color:C.textD,background:"none",border:"none",cursor:"pointer",fontFamily:F.sans }}>Salir →</button>
         </div>
       </aside>
@@ -1416,9 +1411,9 @@ function SesionHoy({ user }) {
       <SectionHeader title="Mis sesiones" sub={cicloInfo.nombre} tags={[{label:(cicloInfo.tipo||"").replace(/_/g," "),color:tipoColor}]}/>
 
       {/* Selector semana */}
-      <div style={{ display:"flex",gap:6,flexWrap:"wrap",marginBottom:12 }}>
+      <div style={{ display:"flex",gap:6,flexWrap:"wrap",marginBottom:10 }}>
         {semsArr.map(s=>(
-          <button key={s} onClick={()=>{setSemSel(s);const dias=Object.keys(plan[s]||{}).map(Number).sort((a,b)=>a-b);if(dias.length)seleccionarDia(s,dias[0]);}} style={{ padding:"6px 14px",borderRadius:10,border:`1.5px solid ${semSel===s?tipoColor:"rgba(255,255,255,0.1)"}`,background:semSel===s?tipoColor+"18":"rgba(255,255,255,0.03)",color:semSel===s?tipoColor:C.textS,fontSize:12,fontWeight:semSel===s?700:400,cursor:"pointer",fontFamily:F.sans,transition:"all 0.15s",letterSpacing:"-0.01em" }}>
+          <button key={s} onClick={()=>{setSemSel(s);const dias=Object.keys(plan[s]||{}).map(Number).sort((a,b)=>a-b);if(dias.length)seleccionarDia(s,dias[0]);}} style={{ padding:"5px 12px",borderRadius:8,border:`1.5px solid ${semSel===s?tipoColor:C.border}`,background:semSel===s?tipoColor+"22":"transparent",color:semSel===s?tipoColor:C.textS,fontSize:12,fontWeight:semSel===s?700:400,cursor:"pointer",fontFamily:F.sans }}>
             Sem {s}
           </button>
         ))}
@@ -1438,7 +1433,7 @@ function SesionHoy({ user }) {
             }[estado]||{bg:"transparent",border:C.border,color:C.textS,icon:""};
             const activo=diaSel===d&&semSel===semSel;
             return (
-              <button key={d} onClick={()=>seleccionarDia(semSel,d)} style={{ padding:"9px 18px",borderRadius:11,border:`1.5px solid ${activo?colores.border:colores.border+"55"}`,background:activo?colores.bg:"rgba(255,255,255,0.02)",color:colores.color,fontSize:12,fontWeight:activo?700:500,cursor:"pointer",fontFamily:F.sans,display:"flex",alignItems:"center",gap:6,transition:"all 0.15s",boxShadow:activo?`0 0 16px ${colores.border}30`:"none" }}>
+              <button key={d} onClick={()=>seleccionarDia(semSel,d)} style={{ padding:"8px 16px",borderRadius:9,border:`2px solid ${activo?colores.border:colores.border+"88"}`,background:activo?colores.bg:"transparent",color:colores.color,fontSize:12,fontWeight:activo?700:400,cursor:"pointer",fontFamily:F.sans,display:"flex",alignItems:"center",gap:6,transition:"all 0.15s" }}>
                 {colores.icon&&<span style={{fontSize:11}}>{colores.icon}</span>}
                 {DIAS[d]}
               </button>
@@ -1454,11 +1449,11 @@ function SesionHoy({ user }) {
         <>
           {/* Estado banner */}
           {sesionCumplida&&(
-            <div style={{ padding:"14px 18px",background:"rgba(0,229,160,0.07)",border:`1px solid rgba(0,229,160,0.25)`,borderRadius:14,marginBottom:16,display:"flex",alignItems:"center",gap:12,backdropFilter:"blur(4px)" }}>
-              <div style={{ width:36,height:36,borderRadius:10,background:"rgba(0,229,160,0.12)",border:"1px solid rgba(0,229,160,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>✓</div>
+            <div style={{ padding:"10px 16px",background:C.jade+"18",border:`1px solid ${C.jade}44`,borderRadius:10,marginBottom:16,display:"flex",alignItems:"center",gap:10 }}>
+              <span style={{fontSize:18}}>✅</span>
               <div>
-                <div style={{fontSize:13,fontWeight:800,color:C.jade,fontFamily:F.sans,letterSpacing:"-0.01em"}}>Sesión cumplida</div>
-                <div style={{fontSize:11,color:C.textS,fontFamily:F.sans,marginTop:2}}>Podés seguir viendo tus registros o editarlos</div>
+                <div style={{fontSize:13,fontWeight:700,color:C.jade,fontFamily:F.sans}}>Sesión cumplida</div>
+                <div style={{fontSize:11,color:C.textS,fontFamily:F.sans}}>Podés seguir viendo tus registros o editarlos</div>
               </div>
             </div>
           )}
@@ -1477,7 +1472,7 @@ function SesionHoy({ user }) {
               const bgColor=log.done?C.jade+"0A":yaGuardado?C.amber+"08":C.card;
               const borderColor=log.done?C.jade+"55":yaGuardado?C.amber+"44":C.border;
               return (
-                <Card key={ej.id} style={{ padding:"14px 16px",background:bgColor,borderColor,borderRadius:16,boxShadow:log.done?`0 0 16px ${C.jade}10`:"none" }}>
+                <Card key={ej.id} style={{ padding:"14px 16px",background:bgColor,borderColor }}>
                   <div style={{ display:"flex",alignItems:"flex-start",gap:10,marginBottom:10 }}>
                     <div onClick={()=>upd(ej.id,"done",!log.done)} style={{ width:22,height:22,borderRadius:6,cursor:"pointer",border:`2px solid ${log.done?C.jade:C.borderH}`,background:log.done?C.jade:"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:C.deep,fontWeight:900,flexShrink:0,marginTop:1 }}>{log.done?"✓":""}</div>
                     <div style={{ flex:1 }}>
@@ -2517,7 +2512,7 @@ function Marcas({ user }) {
 // NOAH COACH IA
 // ─────────────────────────────────────────
 function NOACoach({ perfil, user }) {
-  const [msgs,setMsgs]=useState([{rol:"noa",texto:"Hola! Soy NOA Coach 💪\n\nEstoy cargando tu contexto de entrenamiento para darte respuestas personalizadas. ¿En qué puedo ayudarte?"}]);
+  const [msgs,setMsgs]=useState([{rol:"noa",texto:"Hola! Soy NOAH Coach 💪\n\nEstoy cargando tu contexto de entrenamiento para darte respuestas personalizadas. ¿En qué puedo ayudarte?"}]);
   const [input,setInput]=useState("");
   const [loading,setLoading]=useState(false);
   const [ctx,setCtx]=useState({perfil});
@@ -2573,7 +2568,7 @@ function NOACoach({ perfil, user }) {
   return (
     <div style={{ padding:"28px 32px",maxWidth:720,display:"flex",flexDirection:"column",height:"calc(100vh - 56px)" }}>
       <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16 }}>
-        <SectionHeader title="NOA Coach" sub={groqActivo?"Groq · LLaMA 3 70B · contexto real del atleta":"Modo demo · configurá NEXT_PUBLIC_GROQ_KEY en Vercel"}/>
+        <SectionHeader title="NOAH Coach" sub={groqActivo?"Groq · LLaMA 3 70B · contexto real del atleta":"Modo demo · configurá NEXT_PUBLIC_GROQ_KEY en Vercel"}/>
         <div style={{ display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,background:groqActivo?C.jade+"18":C.amber+"18",border:`1px solid ${groqActivo?C.jade+"44":C.amber+"44"}` }}>
           <div style={{ width:7,height:7,borderRadius:"50%",background:groqActivo?C.jade:C.amber }}/>
           <span style={{ fontSize:10,fontWeight:700,color:groqActivo?C.jade:C.amber,fontFamily:F.sans,letterSpacing:"0.05em" }}>{groqActivo?"GROQ ACTIVO":"DEMO"}</span>
@@ -2608,7 +2603,7 @@ function NOACoach({ perfil, user }) {
         <div ref={ref}/>
       </div>
       <div style={{ display:"flex",gap:8 }}>
-        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()} placeholder="Preguntale a NOA Coach..." style={{ flex:1,padding:"12px 16px",background:C.card,border:`1px solid ${C.borderH}`,borderRadius:10,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans }}/>
+        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()} placeholder="Preguntale a NOAH Coach..." style={{ flex:1,padding:"12px 16px",background:C.card,border:`1px solid ${C.borderH}`,borderRadius:10,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans }}/>
         <button onClick={()=>send()} style={{ padding:"12px 18px",borderRadius:10,border:"none",background:`linear-gradient(135deg,${C.jade3},${C.jade})`,color:C.deep,fontWeight:700,fontSize:15,cursor:"pointer" }}>↑</button>
       </div>
     </div>
@@ -2690,15 +2685,13 @@ export default function NOAApp() {
   const rol=perfil?.rol||"atleta";
 
   const GLOBAL_CSS=`
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Serif+Display&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap');
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html,body{background:${C.bg};color:${C.text};font-family:${F.sans};-webkit-tap-highlight-color:transparent;}
     ::-webkit-scrollbar{width:4px;height:4px}
     ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
-    ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.18)}
-    input[type=range]{height:3px;cursor:pointer;border-radius:2px;accent-color:${C.jade}}
-    *{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+    ::-webkit-scrollbar-thumb{background:${C.border};border-radius:2px}
+    input[type=range]{height:4px;cursor:pointer;border-radius:2px}
     input::placeholder,textarea::placeholder{color:${C.textD}}
     select option{background:${C.card};color:${C.text}}
     @keyframes spin{to{transform:rotate(360deg)}}
@@ -2737,8 +2730,18 @@ export default function NOAApp() {
     <div style={{ minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center" }}>
       <style>{GLOBAL_CSS}</style>
       <div style={{ textAlign:"center" }}>
-        <div style={{ display:"inline-flex",marginBottom:16,filter:`drop-shadow(0 0 24px ${C.jade}60)` }}><NOALogo size={56}/></div>
-        <div style={{ fontSize:11,color:C.textD,fontFamily:F.sans,letterSpacing:"0.15em",textTransform:"uppercase" }}>Cargando NOA…</div>
+        <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom:14, filter:`drop-shadow(0 0 14px ${C.jade}99)` }}>
+          <rect width="60" height="60" rx="14" fill="#0A1A0F"/>
+          <polygon points="10,50 10,10 20,10 33,33 33,10 50,10 50,20 40,20 40,50 28,50 14,26 14,50" fill="url(#nload)"/>
+          <polygon points="28,50 40,50 40,40 33,33 28,40" fill={C.jade2} fillOpacity="0.7"/>
+          <defs>
+            <linearGradient id="nload" x1="10" y1="10" x2="50" y2="50" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor={C.jade}/>
+              <stop offset="100%" stopColor={C.jade3}/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div style={{ fontSize:13,color:C.textS,fontFamily:F.sans }}>Cargando NOAH…</div>
       </div>
     </div>
   );
@@ -2759,8 +2762,8 @@ export default function NOAApp() {
         {/* TOPBAR fija */}
         <div style={{
           position:"fixed",top:0,left:0,right:0,
-          height:54,
-          background:"rgba(6,6,6,0.92)",backdropFilter:"blur(20px)",
+          height:52,
+          background:C.deep,
           borderBottom:`1px solid ${C.border}`,
           display:"flex",alignItems:"center",
           padding:"0 16px",gap:12,
@@ -2782,8 +2785,18 @@ export default function NOAApp() {
 
           {/* Logo */}
           <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-            <NOALogo size={26}/>
-            <span style={{ fontFamily:F.sans,fontSize:14,fontWeight:900,color:C.white,letterSpacing:"-0.03em" }}>NOA</span>
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter:`drop-shadow(0 0 5px ${C.jade}77)` }}>
+              <rect width="28" height="28" rx="7" fill="#0A1A0F"/>
+              <polygon points="5,23 5,5 10,5 16,16 16,5 23,5 23,10 18,10 18,23 12,23 7,12 7,23" fill="url(#ntopbar)"/>
+              <polygon points="12,23 18,23 18,18 16,16 12,18" fill={C.jade2} fillOpacity="0.7"/>
+              <defs>
+                <linearGradient id="ntopbar" x1="5" y1="5" x2="23" y2="23" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor={C.jade}/>
+                  <stop offset="100%" stopColor={C.jade3}/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <span style={{ fontFamily:F.serif,fontSize:16,color:C.white }}>NOAH</span>
           </div>
 
           {/* Sección actual */}
@@ -2798,7 +2811,7 @@ export default function NOAApp() {
         </div>
 
         {/* Contenido con padding top para la topbar */}
-        <main style={{ paddingTop:54,minHeight:"100vh",overflowY:"auto" }}>
+        <main style={{ paddingTop:52,minHeight:"100vh",overflowY:"auto" }}>
           {renderContent()}
         </main>
       </div>
