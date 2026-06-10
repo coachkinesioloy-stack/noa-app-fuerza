@@ -2385,7 +2385,7 @@ function CoachEjercicios({ user }) {
         patron_movimiento:form.patron_movimiento||null,
         nivel:form.nivel||"intermedio",
         tipo:form.tipo||"principal",
-        creado_por:user?.id||null,
+        creado_por:null, // FK a auth.users — se omite porque se usa auth local
       };
       const {error}=await sb.from("ejercicios").insert(payload);
       if(error){
