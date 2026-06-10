@@ -1876,10 +1876,13 @@ function CoachCiclos({ user }) {
   const [ciclos,setCiclos]=useState([]);
   const [loading,setLoading]=useState(true);
   const [modal,setModal]=useState(false);
-  const [form,setForm]=useState({ atleta_id:"",nombre:"",tipo:"fza_potencia",fecha_inicio:new Date().toISOString().split("T")[0],semanas:4,sesiones_semana:3,notas:"" });
+  const [form,setForm]=useState({ atleta_id:"",nombre:"",tipo:"fza_potencia",fecha_inicio:"",semanas:4,sesiones_semana:3,notas:"" });
   const [saving,setSaving]=useState(false);
 
-  useEffect(()=>{cargar();},[]);
+  useEffect(()=>{
+    cargar();
+    setForm(f=>({...f,fecha_inicio:new Date().toISOString().split("T")[0]}));
+  },[]);
 
   const cargar=async()=>{
     const sb=await getSB();if(!sb){setLoading(false);return;}
@@ -2367,14 +2370,35 @@ function CoachEjercicios({ user }) {
     cargar();
   };
 
+  const [errorGuardar,setErrorGuardar]=useState("");
+
   const guardar=async()=>{
     if (!form.nombre)return;
     setSaving(true);
-    const sb=await getSB();
-    await sb.from("ejercicios").insert({...form,creado_por:user.id});
-    await cargar();
-    setForm({nombre:"",grupo_muscular:"",patron_movimiento:"",nivel:"intermedio",tipo:"principal"});
-    setModal(false);setSaving(false);
+    setErrorGuardar("");
+    try {
+      const sb=await getSB();
+      if(!sb){setErrorGuardar("Sin conexión a la base de datos.");setSaving(false);return;}
+      const payload={
+        nombre:form.nombre.trim(),
+        grupo_muscular:form.grupo_muscular||null,
+        patron_movimiento:form.patron_movimiento||null,
+        nivel:form.nivel||"intermedio",
+        tipo:form.tipo||"principal",
+        creado_por:user?.id||null,
+      };
+      const {error}=await sb.from("ejercicios").insert(payload);
+      if(error){
+        setErrorGuardar(error.message||"Error al guardar. Revisá los permisos de la tabla.");
+        setSaving(false);return;
+      }
+      await cargar();
+      setForm({nombre:"",grupo_muscular:"",patron_movimiento:"",nivel:"intermedio",tipo:"principal"});
+      setModal(false);
+    } catch(e){
+      setErrorGuardar("Error inesperado: "+e.message);
+    }
+    setSaving(false);
   };
 
   const GRUPOS = ['Todos','Hombros','Espalda','Pecho','Pierna','Core','Biceps','Triceps','Olimpico','CrossFit'];
@@ -2439,9 +2463,14 @@ function CoachEjercicios({ user }) {
           <FSelect label="Tipo" value={form.tipo} onChange={e=>setForm({...form,tipo:e.target.value})}
             options={[{value:"principal",label:"Principal"},{value:"accesorio",label:"Accesorio"},{value:"cardio",label:"Cardio"},{value:"movilidad",label:"Movilidad"}]}/>
         </div>
+        {errorGuardar&&(
+          <div style={{marginTop:8,padding:"8px 12px",background:C.red+"18",border:`1px solid ${C.red}44`,borderRadius:8,color:C.red,fontSize:12,fontFamily:F.sans}}>
+            ⚠️ {errorGuardar}
+          </div>
+        )}
         <div style={{ display:"flex",gap:10,marginTop:4 }}>
           <Btn onClick={guardar} disabled={saving||!form.nombre} full>{saving?"Guardando…":"Guardar ejercicio"}</Btn>
-          <Btn onClick={()=>setModal(false)} outline full>Cancelar</Btn>
+          <Btn onClick={()=>{setModal(false);setErrorGuardar("");}} outline full>Cancelar</Btn>
         </div>
       </Modal>
     </div>
@@ -2455,8 +2484,12 @@ function Biomarcadores({ user }) {
   const [form,setForm]=useState({peso_kg:"",hrv:"",fc_reposo:"",calidad_sueno:7,dolor_muscular:3,estres:3,motivacion:8,calorias:"",proteinas:"",horas_sueno:""});
   const [saved,setSaved]=useState(false);
   const [loading,setLoading]=useState(true);
+  const [fechaHoy,setFechaHoy]=useState("");
 
-  useEffect(()=>{cargar();},[]);
+  useEffect(()=>{
+    cargar();
+    setFechaHoy(new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"}));
+  },[]);
   const cargar=async()=>{
     const sb=await getSB();if(!sb){setLoading(false);return;}
     const today=new Date().toISOString().split("T")[0];
@@ -2511,7 +2544,7 @@ function Biomarcadores({ user }) {
   return (
     <div style={{ padding:"28px 32px",maxWidth:720 }}>
       <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24 }}>
-        <SectionHeader title="Biomarcadores" sub={new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}/>
+        <SectionHeader title="Biomarcadores" sub={fechaHoy}/>
         <div style={{ textAlign:"center",padding:"14px 22px",background:rC+"14",border:`1px solid ${rC}44`,borderRadius:14,boxShadow:readiness>=75?`0 0 20px ${C.jade}22`:"none" }}>
           <div style={{ fontSize:36,fontWeight:400,color:rC,fontFamily:F.serif,lineHeight:1 }}>{readiness}</div>
           <div style={{ fontSize:9,fontWeight:700,color:rC,letterSpacing:"0.12em",textTransform:"uppercase",fontFamily:F.sans }}>readiness</div>
