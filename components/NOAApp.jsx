@@ -139,6 +139,14 @@ const USUARIOS = [
     rol: "atleta",
     atleta_codigo: "ATL-05",
   },
+  {
+    email: "lau@perez",
+    password: "lauperez",
+    id: "132dce5c-4de6-41c0-8bcb-205f669a71fd",
+    nombre: "Laura Perez",
+    rol: "atleta",
+    atleta_codigo: "ATL-06",
+  },
 ];
 
 // ─────────────────────────────────────────
