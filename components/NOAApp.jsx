@@ -155,6 +155,14 @@ const USUARIOS = [
     rol: "atleta",
     atleta_codigo: "ATL-06",
   },
+  {
+    email: "vikip",
+    password: "190800",
+    id: "5ebe1420-c019-4aac-bb5c-6b26050de09c",
+    nombre: "Victoria Pavon",
+    rol: "atleta",
+    atleta_codigo: "ATL-08",
+  },
 ];
 
 // ─────────────────────────────────────────
