@@ -163,6 +163,14 @@ const USUARIOS = [
     rol: "atleta",
     atleta_codigo: "ATL-08",
   },
+  {
+    email: "romina",
+    password: "050978",
+    id: "62a10b63-8856-4fcf-8cc1-7ad44ddcc50c",
+    nombre: "Romina Brancaforte",
+    rol: "atleta",
+    atleta_codigo: "ATL-09",
+  },
 ];
 
 // ─────────────────────────────────────────
