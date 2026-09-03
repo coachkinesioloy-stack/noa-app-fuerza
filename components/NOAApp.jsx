@@ -62,7 +62,7 @@ Fórmula 1RM Epley: kg × (1 + reps/30). Carga para %: 1RM × % / 100.`;
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "openai/gpt-oss-120b",
         messages: [
           { role: "system", content: sistema },
           { role: "user", content: q }
