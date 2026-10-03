@@ -1,25 +1,16 @@
 {
-  "name": "NOA — Never Over, Always",
-  "short_name": "NOA",
+  "name": "NOAH — Never Over, Always Higher",
+  "short_name": "NOAH",
   "description": "Plataforma de entrenamiento de fuerza inteligente",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#070C18",
-  "theme_color": "#00E5A0",
+  "background_color": "#00030b",
+  "theme_color": "#00030b",
   "orientation": "portrait-primary",
   "icons": [
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "categories": ["health", "fitness", "sports"]
 }
