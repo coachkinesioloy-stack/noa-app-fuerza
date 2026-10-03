@@ -55,6 +55,9 @@ Si el atleta pregunta sobre running, ciclismo, natación u otro deporte de resis
 2) Aclarás que la resistencia no es tu especialidad principal, la app NOAH está enfocada en fuerza
 3) Derivás al Coach Rodri para que arme o ajuste algo específico de resistencia si lo necesita
 
+FISIOTERAPIA / KINESIOLOGÍA:
+Los ejercicios y técnicas de fisio (crioterapia, termoterapia, masaje, elongación, autopostura, isométricos de rehabilitación) los indica el Coach Rodri y muchos son adaptados o inventados por él: NO busques ni inventes links de YouTube para esos. Si el atleta no entiende uno, remitilo a la imagen, descripción o video que figura en su sesión y a consultarle al Coach Rodri. No diagnostiques ni cambies dosis ni indicaciones. Ante dolor que empeora, mareos, hormigueo u otro síntoma de alarma, derivá a consulta presencial.
+
 TONO:
 - Motivador pero honesto
 - Técnico pero accesible  
@@ -211,6 +214,37 @@ const CICLOS_TIPOS = [
   { key:"neural",          label:"Neural / Pico",   color:"#00E5A0", pct:"90–100",reps:"1–3"   },
 ];
 const PATRONES = ["Sentadilla","Bisagra","Empuje","Jale","Cargada","Core","Full body","Accesorio"];
+
+// ── FISIO / KINESIOLOGÍA ──────────────────
+const FISIO_C = "#22D3EE";
+const FISIO_TIPOS = ["Crioterapia","Termoterapia","Masaje","Elongación","Autopostura","Isométrico","Magnetoterapia","Movilidad","Otro"];
+const isFisio = (e) => (e?.ejercicios?.categoria || e?.categoria) === "fisio";
+
+// Sube una imagen a Supabase Storage (bucket "fisio"), la achica a máx 1000px para que pese poco
+async function subirImagenFisio(file) {
+  const sb = await getSB();
+  if (!sb) throw new Error("Sin conexión a la base de datos");
+  const blob = await new Promise((res, rej) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const sc = Math.min(1, 1000 / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => b ? res(b) : rej(new Error("No se pudo procesar la imagen")), "image/jpeg", 0.82);
+    };
+    img.onerror = () => rej(new Error("El archivo no es una imagen válida"));
+    img.src = url;
+  });
+  const path = `ej_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`;
+  const { error } = await sb.storage.from("fisio").upload(path, blob, { contentType: "image/jpeg" });
+  if (error) throw error;
+  return sb.storage.from("fisio").getPublicUrl(path).data.publicUrl;
+}
 const PERFILES_DEP = ["fitness","hibrido","cross","conjunto","individual","resistencia","musculacion"];
 
 // ─────────────────────────────────────────
@@ -1398,7 +1432,7 @@ function SesionHoy({ user }) {
     if (!ciclos?.length){setLoading(false);return;}
     const c=ciclos[0]; setCicloInfo(c);
     // Plan completo
-    const {data:sps}=await sb.from("sesiones_plan").select("*,ejercicios(nombre,grupo_muscular,patron_movimiento)").eq("ciclo_id",c.id).order("semana").order("dia").order("orden");
+    const {data:sps}=await sb.from("sesiones_plan").select("*,ejercicios(nombre,grupo_muscular,patron_movimiento,categoria,subtipo,descripcion,imagen_url,video_url)").eq("ciclo_id",c.id).order("semana").order("dia").order("orden");
     const org={};
     sps?.forEach(s=>{
       if(!org[s.semana])org[s.semana]={};
@@ -1477,7 +1511,8 @@ function SesionHoy({ user }) {
     for (const e of sesionActual) {
       const completado=marcarCumplida?true:(logs[e.id]?.done||false);
       const carga=logs[e.id]?.kg?parseFloat(logs[e.id].kg):null;
-      const reps=parseInt(e.reps)||null;
+      const esFisio=isFisio(e);
+      const reps=esFisio?null:(parseInt(e.reps)||null);
       const row={
         atleta_id:user.id,
         ciclo_id:cicloInfo.id,
@@ -1487,7 +1522,7 @@ function SesionHoy({ user }) {
         dia:diaSel,
         carga_kg:carga,
         rpe:logs[e.id]?.rpe?parseFloat(logs[e.id].rpe):null,
-        series_realizadas:e.series,
+        series_realizadas:esFisio?null:e.series,
         reps_realizadas:reps,
         completado,
         notas:nota||null,
@@ -1578,7 +1613,7 @@ function SesionHoy({ user }) {
           </div>
 
           <div style={{ display:"flex",flexDirection:"column",gap:10,marginBottom:18 }}>
-            {sesionActual.map((ej)=>{
+            {sesionActual.filter(e=>!isFisio(e)).map((ej)=>{
               const log=logs[ej.id]||{};
               const kgN=parseFloat(log.kg);
               const diff=kgN&&ej.carga_kg?((kgN-ej.carga_kg)/ej.carga_kg*100):null;
@@ -1593,6 +1628,7 @@ function SesionHoy({ user }) {
                       <div style={{ fontSize:14,fontWeight:700,color:C.text,fontFamily:F.sans }}>{ej.ejercicios?.nombre}</div>
                       <div style={{ fontSize:11,color:C.textD,marginTop:1 }}>{ej.ejercicios?.patron_movimiento} · {ej.ejercicios?.grupo_muscular}</div>
                       {ej.notas_coach&&<div style={{ fontSize:11,color:C.amber,marginTop:3 }}>📌 {ej.notas_coach}</div>}
+                      {ej.ejercicios?.video_url&&<a href={ej.ejercicios.video_url} target="_blank" rel="noreferrer" style={{ fontSize:11,color:C.blue,marginTop:3,display:"inline-block",fontFamily:F.sans }}>▶ Ver video</a>}
                     </div>
                     {yaGuardado&&!log.done&&<span style={{fontSize:10,color:C.amber,fontFamily:F.sans}}>editado</span>}
                   </div>
@@ -1624,6 +1660,40 @@ function SesionHoy({ user }) {
               );
             })}
           </div>
+
+          {sesionActual.some(isFisio)&&(
+            <div style={{ marginBottom:18 }}>
+              <div style={{ display:"flex",alignItems:"center",gap:8,margin:"4px 0 10px" }}>
+                <span style={{ fontSize:11,fontWeight:700,color:FISIO_C,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans }}>✚ Kinesio / Fisio</span>
+                <div style={{ flex:1,height:1,background:FISIO_C+"33" }}/>
+              </div>
+              <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+                {sesionActual.filter(isFisio).map(ej=>{
+                  const log=logs[ej.id]||{};
+                  const info=ej.ejercicios||{};
+                  return (
+                    <Card key={ej.id} style={{ padding:"14px 16px",background:log.done?FISIO_C+"0A":C.card,borderColor:log.done?FISIO_C+"55":FISIO_C+"26" }}>
+                      <div style={{ display:"flex",alignItems:"flex-start",gap:10 }}>
+                        <div onClick={()=>upd(ej.id,"done",!log.done)} style={{ width:22,height:22,borderRadius:6,cursor:"pointer",border:`2px solid ${log.done?FISIO_C:C.borderH}`,background:log.done?FISIO_C:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:"#000",fontSize:13,fontWeight:700 }}>{log.done&&"✓"}</div>
+                        <div style={{ flex:1,minWidth:0 }}>
+                          <div style={{ fontSize:14,fontWeight:700,color:C.text,fontFamily:F.sans }}>{info.nombre}</div>
+                          <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginTop:6,alignItems:"center" }}>
+                            {info.subtipo&&<Tag color={FISIO_C} sm>{info.subtipo}</Tag>}
+                            {ej.dosis&&<Tag color={C.jade} sm>{ej.dosis}</Tag>}
+                            {ej.zona&&<Tag color={C.textS} sm>{ej.zona}</Tag>}
+                          </div>
+                          {ej.notas_coach&&<div style={{ fontSize:12,color:C.amber,marginTop:6 }}>📌 {ej.notas_coach}</div>}
+                          {info.descripcion&&<div style={{ fontSize:12,color:C.textS,marginTop:8,lineHeight:1.5,whiteSpace:"pre-wrap",fontFamily:F.sans }}>{info.descripcion}</div>}
+                          {info.imagen_url&&<a href={info.imagen_url} target="_blank" rel="noreferrer"><img src={info.imagen_url} alt={info.nombre} loading="lazy" style={{ width:"100%",maxWidth:420,borderRadius:10,marginTop:10,border:`1px solid ${C.border}`,display:"block" }}/></a>}
+                          {info.video_url&&<a href={info.video_url} target="_blank" rel="noreferrer" style={{ display:"inline-block",marginTop:10,padding:"7px 14px",borderRadius:8,border:`1.5px solid ${C.blue}`,color:C.blue,fontSize:12,fontWeight:600,textDecoration:"none",fontFamily:F.sans }}>▶ Ver video</a>}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <Card style={{ marginBottom:14 }}>
             <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:8,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans }}>Nota de sesión</div>
@@ -2048,6 +2118,7 @@ function CoachPlanificar({ user }) {
   const [form,setForm]=useState({ejercicio_id:"",busqueda:"",series:3,reps:"8",intensidad_pct:"",carga_kg:"",descanso_seg:"120",rir:"",notas_coach:""});
   const [saving,setSaving]=useState(false);
   const [editId,setEditId]=useState(null); // null = agregando, id = editando
+  const [modoFisio,setModoFisio]=useState(false); // el modal agrega/edita fisio
   const [dupModal,setDupModal]=useState(false);
   const [dupTipo,setDupTipo]=useState("dia"); // "dia" | "semana"
   const [dupSemsDest,setDupSemsDest]=useState([]);
@@ -2063,7 +2134,7 @@ function CoachPlanificar({ user }) {
     const sb=await getSB();if(!sb){setLoading(false);return;}
     const [{data:ats},{data:ejs}]=await Promise.all([
       sb.from("profiles").select("id,atleta_codigo,nombre").eq("rol","atleta").order("atleta_codigo"),
-      sb.from("ejercicios").select("id,nombre,grupo_muscular").order("nombre"),
+      sb.from("ejercicios").select("id,nombre,grupo_muscular,categoria,subtipo").order("nombre"),
     ]);
     setAtletas(ats||[]);setEjercicios(ejs||[]);setLoading(false);
   };
@@ -2078,7 +2149,7 @@ function CoachPlanificar({ user }) {
 
   const cargarPlan=async(cId)=>{
     const sb=await getSB();
-    const {data}=await sb.from("sesiones_plan").select("*,ejercicios(nombre,grupo_muscular)").eq("ciclo_id",parseInt(cId)).order("semana").order("dia").order("orden");
+    const {data}=await sb.from("sesiones_plan").select("*,ejercicios(nombre,grupo_muscular,categoria,subtipo)").eq("ciclo_id",parseInt(cId)).order("semana").order("dia").order("orden");
     const org={};
     data?.forEach(s=>{
       if(!org[s.semana])org[s.semana]={};
@@ -2088,17 +2159,18 @@ function CoachPlanificar({ user }) {
     setPlan(org);
   };
 
-  const formVacio={ejercicio_id:"",busqueda:"",series:3,reps:"8",intensidad_pct:"",carga_kg:"",descanso_seg:"120",rir:"",notas_coach:""};
+  const formVacio={ejercicio_id:"",busqueda:"",series:3,reps:"8",intensidad_pct:"",carga_kg:"",descanso_seg:"120",rir:"",notas_coach:"",dosis:"",zona:""};
 
-  const abrirNuevo=()=>{setEditId(null);setForm(formVacio);setAddModal(true);};
+  const abrirNuevo=(fisio=false)=>{setEditId(null);setModoFisio(fisio);setForm(formVacio);setAddModal(true);};
 
   const abrirEditar=(ej)=>{
     setEditId(ej.id);
+    setModoFisio(isFisio(ej));
     setForm({
       ejercicio_id:String(ej.ejercicio_id),busqueda:ej.ejercicios?.nombre||"",
       series:ej.series??3,reps:ej.reps??"8",
       intensidad_pct:ej.intensidad_pct??"",carga_kg:ej.carga_kg??"",
-      descanso_seg:ej.descanso_seg??"",rir:ej.rir??"",notas_coach:ej.notas_coach||"",
+      descanso_seg:ej.descanso_seg??"",rir:ej.rir??"",notas_coach:ej.notas_coach||"",dosis:ej.dosis||"",zona:ej.zona||"",
     });
     setAddModal(true);
   };
@@ -2110,7 +2182,13 @@ function CoachPlanificar({ user }) {
     if (!form.ejercicio_id||!cicloSel)return;
     setSaving(true);
     const sb=await getSB();
-    const datos={
+    const datos=modoFisio?{
+      ejercicio_id:parseInt(form.ejercicio_id),
+      series:1,reps:"1",           // la fisio no usa series/reps: se completan para no romper la tabla
+      intensidad_pct:null,carga_kg:null,descanso_seg:null,rir:null,
+      dosis:form.dosis||null,zona:form.zona||null,
+      notas_coach:form.notas_coach||null,
+    }:{
       ejercicio_id:parseInt(form.ejercicio_id),
       series:parseInt(form.series)||3,
       reps:String(form.reps||"8"),
@@ -2118,6 +2196,7 @@ function CoachPlanificar({ user }) {
       carga_kg:form.carga_kg!==""&&form.carga_kg!=null?parseFloat(form.carga_kg):null,
       descanso_seg:form.descanso_seg!==""&&form.descanso_seg!=null?parseInt(form.descanso_seg):120,
       rir:form.rir!==""&&form.rir!=null?parseInt(form.rir):null,
+      dosis:null,zona:null,
       notas_coach:form.notas_coach||null,
     };
     let err;
@@ -2133,17 +2212,22 @@ function CoachPlanificar({ user }) {
     cerrarModal();setSaving(false);
   };
 
-  // Mover un ejercicio arriba (-1) o abajo (+1) dentro del día
-  const mover=async(idx,dir)=>{
+  // Mover un ejercicio arriba (-1) o abajo (+1) dentro de su bloque (Fuerza o Fisio)
+  const mover=async(ej,dir)=>{
     const lista=plan[semSel]?.[diaSel]||[];
+    const fis=isFisio(ej);
+    const seccion=lista.filter(x=>isFisio(x)===fis);
+    const idx=seccion.findIndex(x=>x.id===ej.id);
     const j=idx+dir;
-    if(j<0||j>=lista.length)return;
-    const nueva=[...lista];
-    [nueva[idx],nueva[j]]=[nueva[j],nueva[idx]];
-    const renum=nueva.map((e,k)=>({...e,orden:k+1}));
-    setPlan(p=>({...p,[semSel]:{...(p[semSel]||{}),[diaSel]:renum}})); // se ve al instante
+    if(idx<0||j<0||j>=seccion.length)return;
+    const nuevaSec=[...seccion];
+    [nuevaSec[idx],nuevaSec[j]]=[nuevaSec[j],nuevaSec[idx]];
+    let k=0;
+    const nueva=lista.map(x=>isFisio(x)===fis?nuevaSec[k++]:x);
+    const renum=nueva.map((e,n)=>({...e,orden:n+1}));
+    setPlan(p=>({...p,[semSel]:{...(p[semSel]||{}),[diaSel]:renum}}));
     const sb=await getSB();
-    const res=await Promise.all(renum.filter((e,k)=>lista.find(x=>x.id===e.id)?.orden!==e.orden)
+    const res=await Promise.all(renum.filter(e=>lista.find(x=>x.id===e.id)?.orden!==e.orden)
       .map(e=>sb.from("sesiones_plan").update({orden:e.orden}).eq("id",e.id)));
     if(res.some(r=>r.error)){alert("No se pudo guardar el orden");cargarPlan(cicloSel);}
   };
@@ -2180,6 +2264,8 @@ function CoachPlanificar({ user }) {
           descanso_seg:ej.descanso_seg,
           rir:ej.rir,
           notas_coach:ej.notas_coach,
+          dosis:ej.dosis||null,
+          zona:ej.zona||null,
         });
       });
     });
@@ -2214,6 +2300,8 @@ function CoachPlanificar({ user }) {
             descanso_seg:ej.descanso_seg,
             rir:ej.rir,
             notas_coach:ej.notas_coach,
+          dosis:ej.dosis||null,
+          zona:ej.zona||null,
           });
         });
       });
@@ -2232,6 +2320,7 @@ function CoachPlanificar({ user }) {
   const diasDisp=cicloActual?Array.from({length:cicloActual.sesiones_semana},(_,i)=>i+1):[1,2,3];
   const semsDisp=cicloActual?Array.from({length:cicloActual.semanas},(_,i)=>i+1):[1,2,3,4];
   const ejsDia=plan[semSel]?.[diaSel]||[];
+  const ejsCat=ejercicios.filter(e=>modoFisio?e.categoria==="fisio":e.categoria!=="fisio");
 
   if (loading) return <div style={{padding:32}}><Spinner/></div>;
 
@@ -2273,31 +2362,56 @@ function CoachPlanificar({ user }) {
               <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
                 {ejsDia.length>0&&<Btn sm outline color={C.amber} onClick={()=>{setDupTipo("dia");setDupSemsDest([]);setDupProgresion(0);setDupDiaDest(diaSel);setDupModal(true);}}>⧉ Duplicar día</Btn>}
                 {Object.values(plan[semSel]||{}).flat().length>0&&<Btn sm outline color={C.violet} onClick={()=>{setDupTipo("semana");setDupSemsDest([]);setDupProgresion(0);setDupModal(true);}}>⧉ Duplicar semana</Btn>}
-                <Btn sm onClick={abrirNuevo}>+ Agregar</Btn>
+                <Btn sm onClick={()=>abrirNuevo(false)}>+ Fuerza</Btn>
+                <Btn sm outline color={FISIO_C} onClick={()=>abrirNuevo(true)}>+ Fisio</Btn>
               </div>
             </div>
             {ejsDia.length===0?(
-              <div style={{ textAlign:"center",padding:"24px 0",color:C.textD,fontFamily:F.sans,fontSize:13 }}>Sin ejercicios · hacé clic en "+ Agregar ejercicio"</div>
+              <div style={{ textAlign:"center",padding:"24px 0",color:C.textD,fontFamily:F.sans,fontSize:13 }}>Sin ejercicios · hacé clic en "+ Fuerza" o "+ Fisio"</div>
             ):(
-              <div style={{ display:"grid",gap:8 }}>
-                {ejsDia.map((ej,i)=>(
-                  <div key={ej.id} style={{ display:"flex",alignItems:"center",gap:12,padding:"10px 12px",background:C.surface,borderRadius:9,border:`1px solid ${C.border}` }}>
-                    <div style={{ width:24,height:24,borderRadius:6,background:C.jade+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:C.jade,fontWeight:700,flexShrink:0 }}>{i+1}</div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:13,fontWeight:600,color:C.text,fontFamily:F.sans }}>{ej.ejercicios?.nombre}</div>
-                      <div style={{ display:"flex",gap:8,marginTop:3,flexWrap:"wrap",alignItems:"center" }}>
-                        <span style={{ fontSize:12,color:C.jade,fontWeight:700 }}>{ej.series}×{ej.reps}</span>
-                        {ej.carga_kg&&<Tag color={C.blue} sm>{ej.carga_kg}kg</Tag>}
-                        {ej.intensidad_pct&&<Tag color={C.violet} sm>{ej.intensidad_pct}%</Tag>}
-                        {ej.descanso_seg&&<Tag color={C.textS} sm>⏱ {ej.descanso_seg}"</Tag>}
-                        {ej.rir!=null&&ej.rir!==""&&<Tag color={C.amber} sm>RIR {ej.rir}</Tag>}
-                        {ej.notas_coach&&<span style={{ fontSize:10,color:C.amber }}>📌 {ej.notas_coach}</span>}
-                      </div>
+              <>
+                {[{key:"f",titulo:"Fuerza",color:C.jade,lista:ejsDia.filter(x=>!isFisio(x))},
+                  {key:"k",titulo:"✚ Kinesio / Fisio",color:FISIO_C,lista:ejsDia.filter(x=>isFisio(x))}]
+                  .filter(sec=>sec.lista.length>0).map(sec=>(
+                  <div key={sec.key} style={{ marginBottom:14 }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8 }}>
+                      <span style={{ fontSize:11,fontWeight:700,color:sec.color,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans }}>{sec.titulo}</span>
+                      <div style={{ flex:1,height:1,background:sec.color+"33" }}/>
                     </div>
-                    <div style={{ display:"flex",alignItems:"center",gap:2,flexShrink:0 }}><button title="Subir" disabled={i===0} onClick={()=>mover(i,-1)} style={{ background:"none",border:"none",cursor:i===0?"default":"pointer",fontSize:15,padding:"4px 7px",lineHeight:1,color:i===0?C.border:C.textS }}>▲</button><button title="Bajar" disabled={i===ejsDia.length-1} onClick={()=>mover(i,1)} style={{ background:"none",border:"none",cursor:i===ejsDia.length-1?"default":"pointer",fontSize:15,padding:"4px 7px",lineHeight:1,color:i===ejsDia.length-1?C.border:C.textS }}>▼</button><button title="Editar" onClick={()=>abrirEditar(ej)} style={{ background:"none",border:"none",cursor:"pointer",fontSize:15,padding:"4px 7px",lineHeight:1,color:C.jade }}>✎</button><button title="Quitar" onClick={()=>eliminar(ej.id)} style={{ background:"none",border:"none",color:C.textD,cursor:"pointer",fontSize:18,padding:"2px 6px",lineHeight:1 }}>×</button></div>
+                    <div style={{ display:"grid",gap:8 }}>
+                      {sec.lista.map((ej,i)=>(
+                        <div key={ej.id} style={{ display:"flex",alignItems:"center",gap:12,padding:"10px 12px",background:C.surface,borderRadius:9,border:`1px solid ${isFisio(ej)?FISIO_C+"44":C.border}` }}>
+                          <div style={{ width:24,height:24,borderRadius:6,background:sec.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:sec.color,fontWeight:700,flexShrink:0 }}>{i+1}</div>
+                          <div style={{ flex:1,minWidth:0 }}>
+                            <div style={{ fontSize:13,fontWeight:600,color:C.text,fontFamily:F.sans }}>{ej.ejercicios?.nombre}</div>
+                            <div style={{ display:"flex",gap:8,marginTop:3,flexWrap:"wrap",alignItems:"center" }}>
+                              {isFisio(ej)?(<>
+                                {ej.ejercicios?.subtipo&&<Tag color={FISIO_C} sm>{ej.ejercicios.subtipo}</Tag>}
+                                {ej.dosis&&<span style={{ fontSize:12,color:FISIO_C,fontWeight:700 }}>{ej.dosis}</span>}
+                                {ej.zona&&<Tag color={C.textS} sm>{ej.zona}</Tag>}
+                                {ej.notas_coach&&<span style={{ fontSize:10,color:C.amber }}>📌 {ej.notas_coach}</span>}
+                              </>):(<>
+                                <span style={{ fontSize:12,color:C.jade,fontWeight:700 }}>{ej.series}×{ej.reps}</span>
+                                {ej.carga_kg&&<Tag color={C.blue} sm>{ej.carga_kg}kg</Tag>}
+                                {ej.intensidad_pct&&<Tag color={C.violet} sm>{ej.intensidad_pct}%</Tag>}
+                                {ej.descanso_seg&&<Tag color={C.textS} sm>⏱ {ej.descanso_seg}"</Tag>}
+                                {ej.rir!=null&&ej.rir!==""&&<Tag color={C.amber} sm>RIR {ej.rir}</Tag>}
+                                {ej.notas_coach&&<span style={{ fontSize:10,color:C.amber }}>📌 {ej.notas_coach}</span>}
+                              </>)}
+                            </div>
+                          </div>
+                          <div style={{ display:"flex",alignItems:"center",gap:2,flexShrink:0 }}>
+                            <button title="Subir" disabled={i===0} onClick={()=>mover(ej,-1)} style={{ background:"none",border:"none",cursor:i===0?"default":"pointer",fontSize:15,padding:"4px 7px",lineHeight:1,color:i===0?C.border:C.textS }}>▲</button>
+                            <button title="Bajar" disabled={i===sec.lista.length-1} onClick={()=>mover(ej,1)} style={{ background:"none",border:"none",cursor:i===sec.lista.length-1?"default":"pointer",fontSize:15,padding:"4px 7px",lineHeight:1,color:i===sec.lista.length-1?C.border:C.textS }}>▼</button>
+                            <button title="Editar" onClick={()=>abrirEditar(ej)} style={{ background:"none",border:"none",cursor:"pointer",fontSize:15,padding:"4px 7px",lineHeight:1,color:C.jade }}>✎</button>
+                            <button title="Quitar" onClick={()=>eliminar(ej.id)} style={{ background:"none",border:"none",color:C.textD,cursor:"pointer",fontSize:18,padding:"2px 6px",lineHeight:1 }}>×</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
-              </div>
+              </>
             )}
           </Card>
         </>
@@ -2371,7 +2485,7 @@ function CoachPlanificar({ user }) {
           <Btn onClick={()=>setDupModal(false)} outline full>Cancelar</Btn>
         </div>
       </Modal>
-      <Modal open={addModal} onClose={cerrarModal} title={`Sem ${semSel} · ${DIAS[diaSel]} · ${editId?"Editar":"Agregar"} ejercicio`}>
+      <Modal open={addModal} onClose={cerrarModal} title={`Sem ${semSel} · ${DIAS[diaSel]} · ${editId?"Editar":"Agregar"} ${modoFisio?"fisio":"ejercicio"}`}>
         {/* Búsqueda de ejercicio */}
         <div style={{ marginBottom:12 }}>
           <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:5,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>Ejercicio *</div>
@@ -2385,7 +2499,7 @@ function CoachPlanificar({ user }) {
           />
           {form.busqueda&&!form.ejercicio_id&&(
             <div style={{ maxHeight:180,overflowY:"auto",background:C.deep,border:`1px solid ${C.border}`,borderRadius:8 }}>
-              {ejercicios.filter(e=>e.nombre.toLowerCase().includes((form.busqueda||"").toLowerCase())).slice(0,8).map(e=>(
+              {ejsCat.filter(e=>e.nombre.toLowerCase().includes((form.busqueda||"").toLowerCase())).slice(0,8).map(e=>(
                 <div key={e.id} onClick={()=>setForm({...form,ejercicio_id:String(e.id),busqueda:e.nombre})}
                   style={{ padding:"9px 12px",cursor:"pointer",fontSize:12,color:C.text,fontFamily:F.sans,borderBottom:`1px solid ${C.border}` }}
                   onMouseEnter={ev=>ev.currentTarget.style.background=C.surface}
@@ -2394,13 +2508,19 @@ function CoachPlanificar({ user }) {
                   {e.grupo_muscular&&<span style={{color:C.textS}}> · {e.grupo_muscular}</span>}
                 </div>
               ))}
-              {ejercicios.filter(e=>e.nombre.toLowerCase().includes((form.busqueda||"").toLowerCase())).length===0&&(
+              {ejsCat.filter(e=>e.nombre.toLowerCase().includes((form.busqueda||"").toLowerCase())).length===0&&(
                 <div style={{ padding:"9px 12px",fontSize:12,color:C.textD,fontFamily:F.sans }}>Sin resultados</div>
               )}
             </div>
           )}
           {form.ejercicio_id&&<div style={{ fontSize:11,color:C.jade,fontFamily:F.sans }}>✓ {form.busqueda}</div>}
         </div>
+        {modoFisio?(<>
+          <FInput label="Dosis" value={form.dosis||""} onChange={e=>setForm({...form,dosis:e.target.value})} placeholder="15 min | 3 x 30 seg | 10 rep c/lado"/>
+          <FInput label="Zona / lado" value={form.zona||""} onChange={e=>setForm({...form,zona:e.target.value})} placeholder="Rodilla derecha | Lumbar | Hombro izq."/>
+          <FInput label="Indicación para el atleta" value={form.notas_coach} onChange={e=>setForm({...form,notas_coach:e.target.value})} placeholder="Sin dolor, 2 veces al día, antes de entrenar..."/>
+          {ejsCat.length===0&&<div style={{ fontSize:11,color:C.amber,fontFamily:F.sans,marginBottom:10 }}>Todavía no cargaste ejercicios de fisio. Andá a Ejercicios → Fisio para crearlos.</div>}
+        </>):(<>
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10 }}>
           <FInput label="Series" value={form.series} onChange={e=>setForm({...form,series:e.target.value})} type="number" min="1" max="10"/>
           <FInput label="Reps" value={form.reps} onChange={e=>setForm({...form,reps:e.target.value})} placeholder="8 | 8-10 | AMRAP"/>
@@ -2412,6 +2532,7 @@ function CoachPlanificar({ user }) {
           <FInput label="RIR" value={form.rir||""} onChange={e=>setForm({...form,rir:e.target.value})} type="number" min="0" max="5" placeholder="2"/>
         </div>
         <FInput label="Observación para el atleta" value={form.notas_coach} onChange={e=>setForm({...form,notas_coach:e.target.value})} placeholder="Pausa en fondo, explosivo en subida, técnica estricta..."/>
+        </>)}
         <div style={{ display:"flex",gap:10 }}>
           <Btn onClick={agregar} disabled={saving||!form.ejercicio_id} full>{saving?"Guardando…":(editId?"Guardar cambios":"Agregar ejercicio")}</Btn>
           <Btn onClick={cerrarModal} outline full>Cancelar</Btn>
@@ -2428,9 +2549,14 @@ function CoachEjercicios({ user }) {
   const [ejercicios,setEjercicios]=useState([]);
   const [loading,setLoading]=useState(true);
   const [modal,setModal]=useState(false);
+  const [editId,setEditId]=useState(null);
+  const [cat,setCat]=useState("fuerza"); // "fuerza" | "fisio"
   const [filtro,setFiltro]=useState("");
-  const [form,setForm]=useState({nombre:"",grupo_muscular:"",patron_movimiento:"",nivel:"intermedio",tipo:"principal"});
+  const formBase={nombre:"",grupo_muscular:"",patron_movimiento:"",nivel:"intermedio",tipo:"principal",subtipo:"",descripcion:"",imagen_url:"",video_url:""};
+  const [form,setForm]=useState(formBase);
   const [saving,setSaving]=useState(false);
+  const [subiendo,setSubiendo]=useState(false);
+  const [errorGuardar,setErrorGuardar]=useState("");
 
   useEffect(()=>{cargar();},[]);
 
@@ -2443,35 +2569,69 @@ function CoachEjercicios({ user }) {
   const eliminarEjercicio=async(id,nombre)=>{
     if (!confirm(`¿Eliminar "${nombre}"?`))return;
     const sb=await getSB();
-    await sb.from("ejercicios").delete().eq("id",id);
+    const {error}=await sb.from("ejercicios").delete().eq("id",id);
+    if(error)alert("No se pudo eliminar (¿está usado en algún plan?): "+error.message);
     cargar();
   };
 
-  const [errorGuardar,setErrorGuardar]=useState("");
+  const abrirNuevo=()=>{setEditId(null);setForm(formBase);setErrorGuardar("");setModal(true);};
+  const abrirEditar=(e)=>{
+    setEditId(e.id);
+    setForm({
+      nombre:e.nombre||"",grupo_muscular:e.grupo_muscular||"",patron_movimiento:e.patron_movimiento||"",
+      nivel:e.nivel||"intermedio",tipo:e.tipo||"principal",subtipo:e.subtipo||"",
+      descripcion:e.descripcion||"",imagen_url:e.imagen_url||"",video_url:e.video_url||"",
+    });
+    setErrorGuardar("");setModal(true);
+  };
+  const cerrar=()=>{setModal(false);setEditId(null);setErrorGuardar("");};
+
+  const elegirImagen=async(ev)=>{
+    const f=ev.target.files?.[0];
+    ev.target.value="";
+    if(!f)return;
+    setSubiendo(true);setErrorGuardar("");
+    try{
+      const url=await subirImagenFisio(f);
+      setForm(fm=>({...fm,imagen_url:url}));
+    }catch(e){
+      setErrorGuardar("No se pudo subir la imagen: "+(e.message||"error")+". Podés pegar un link en su lugar.");
+    }
+    setSubiendo(false);
+  };
 
   const guardar=async()=>{
     if (!form.nombre)return;
-    setSaving(true);
-    setErrorGuardar("");
+    setSaving(true);setErrorGuardar("");
     try {
       const sb=await getSB();
       if(!sb){setErrorGuardar("Sin conexión a la base de datos.");setSaving(false);return;}
-      const payload={
+      const comun={
         nombre:form.nombre.trim(),
-        grupo_muscular:form.grupo_muscular||null,
-        patron_movimiento:form.patron_movimiento||null,
-        nivel:form.nivel||"intermedio",
-        tipo:form.tipo||"principal",
-        creado_por:null, // FK a auth.users — se omite porque se usa auth local
+        descripcion:form.descripcion?.trim()||null,
+        video_url:form.video_url?.trim()||null,
       };
-      const {error}=await sb.from("ejercicios").insert(payload);
+      const payload=cat==="fisio"
+        ?{...comun,categoria:"fisio",subtipo:form.subtipo||"Otro",imagen_url:form.imagen_url?.trim()||null,
+          // columnas viejas: se completan con valores neutros por si la base las exige
+          grupo_muscular:null,patron_movimiento:null,nivel:"basico",tipo:"movilidad"}
+        :{...comun,categoria:"fuerza",
+          grupo_muscular:form.grupo_muscular||null,
+          patron_movimiento:form.patron_movimiento||null,
+          nivel:form.nivel||"intermedio",
+          tipo:form.tipo||"principal"};
+      let error;
+      if(editId){
+        ({error}=await sb.from("ejercicios").update(payload).eq("id",editId));
+      }else{
+        ({error}=await sb.from("ejercicios").insert({...payload,creado_por:null})); // auth local: sin FK a auth.users
+      }
       if(error){
         setErrorGuardar(error.message||"Error al guardar. Revisá los permisos de la tabla.");
         setSaving(false);return;
       }
       await cargar();
-      setForm({nombre:"",grupo_muscular:"",patron_movimiento:"",nivel:"intermedio",tipo:"principal"});
-      setModal(false);
+      cerrar();
     } catch(e){
       setErrorGuardar("Error inesperado: "+e.message);
     }
@@ -2479,75 +2639,128 @@ function CoachEjercicios({ user }) {
   };
 
   const GRUPOS = ['Todos','Hombros','Espalda','Pecho','Pierna','Core','Biceps','Triceps','Olimpico','CrossFit'];
+  const SUBTIPOS = ['Todos',...FISIO_TIPOS];
   const grupoColor = {'Hombros':C.blue,'Espalda':C.jade,'Pecho':C.red,'Pierna':C.amber,'Core':C.violet,'Bíceps':'#4ade80','Tríceps':'#f97316','Olímpico':'#06b6d4','CrossFit':'#ec4899'};
   const [grupoSel,setGrupoSel]=useState('Todos');
-  const filtrados=ejercicios.filter(e=>{
+  const [subSel,setSubSel]=useState('Todos');
+  const esFisioCat=cat==="fisio";
+  const delCat=ejercicios.filter(e=>esFisioCat?e.categoria==="fisio":e.categoria!=="fisio");
+  const filtrados=delCat.filter(e=>{
     const matchQ=!filtro||e.nombre.toLowerCase().includes(filtro.toLowerCase());
-    const matchG=grupoSel==='Todos'||(e.grupo_muscular||'')=== grupoSel;
-    return matchQ&&matchG;
+    const matchF=esFisioCat?(subSel==='Todos'||(e.subtipo||'')===subSel):(grupoSel==='Todos'||(e.grupo_muscular||'')===grupoSel);
+    return matchQ&&matchF;
   });
   const nC={avanzado:C.red,intermedio:C.amber,basico:C.jade};
   const tC={principal:C.blue,accesorio:C.violet,cardio:C.amber,movilidad:C.jade};
+  const accent=esFisioCat?FISIO_C:C.jade;
 
   if (loading) return <div style={{padding:32}}><Spinner/></div>;
 
   return (
     <div style={{ padding:"16px",maxWidth:920 }}>
       <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16,flexWrap:"wrap",gap:8 }}>
-        <SectionHeader title="Ejercicios" sub={`${filtrados.length} de ${ejercicios.length} ejercicios`}/>
-        <Btn onClick={()=>setModal(true)} sm>+ Nuevo</Btn>
+        <SectionHeader title="Ejercicios" sub={`${filtrados.length} de ${delCat.length} ${esFisioCat?"de fisio":"de fuerza"}`}/>
+        <Btn onClick={abrirNuevo} sm color={accent}>+ Nuevo</Btn>
       </div>
-      {/* Filtro por grupo */}
-      <div style={{ display:"flex",gap:6,flexWrap:"wrap",marginBottom:12 }}>
-        {GRUPOS.map(g=>(
-          <button key={g} onClick={()=>setGrupoSel(g)} style={{ padding:"5px 12px",borderRadius:99,border:`1.5px solid ${grupoSel===g?(grupoColor[g]||C.jade):C.border}`,background:grupoSel===g?(grupoColor[g]||C.jade)+"22":"transparent",color:grupoSel===g?(grupoColor[g]||C.jade):C.textS,fontSize:11,fontWeight:grupoSel===g?700:400,cursor:"pointer",fontFamily:F.sans }}>
-            {g}
-          </button>
+
+      {/* Fuerza / Fisio */}
+      <div style={{ display:"flex",gap:8,marginBottom:14 }}>
+        {[{k:"fuerza",l:"Fuerza",c:C.jade},{k:"fisio",l:"✚ Kinesio / Fisio",c:FISIO_C}].map(t=>(
+          <button key={t.k} onClick={()=>{setCat(t.k);setFiltro("");}} style={{ flex:1,padding:"10px 14px",borderRadius:10,border:`1.5px solid ${cat===t.k?t.c:C.border}`,background:cat===t.k?t.c+"18":"transparent",color:cat===t.k?t.c:C.textS,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:F.sans }}>{t.l}</button>
         ))}
       </div>
-      <input value={filtro} onChange={e=>setFiltro(e.target.value)} placeholder="Buscar por nombre..." style={{ width:"100%",padding:"9px 13px",background:C.card,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,marginBottom:12,boxSizing:"border-box" }}/>
+
+      {/* Filtros */}
+      <div style={{ display:"flex",gap:6,flexWrap:"wrap",marginBottom:12 }}>
+        {(esFisioCat?SUBTIPOS:GRUPOS).map(g=>{
+          const sel=esFisioCat?subSel:grupoSel;
+          const col=esFisioCat?FISIO_C:(grupoColor[g]||C.jade);
+          return (
+            <button key={g} onClick={()=>esFisioCat?setSubSel(g):setGrupoSel(g)} style={{ padding:"5px 12px",borderRadius:99,border:`1.5px solid ${sel===g?col:C.border}`,background:sel===g?col+"22":"transparent",color:sel===g?col:C.textS,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:F.sans }}>
+              {g}
+            </button>
+          );
+        })}
+      </div>
+      <input value={filtro} onChange={e=>setFiltro(e.target.value)} placeholder="Buscar por nombre..." style={{ width:"100%",padding:"9px 13px",background:C.card,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,boxSizing:"border-box",marginBottom:12 }}/>
+
       <Card style={{ padding:0,overflow:"hidden" }}>
         <div style={{ padding:"9px 18px",fontSize:10,fontWeight:700,color:C.textD,letterSpacing:"0.08em",textTransform:"uppercase",borderBottom:`1px solid ${C.border}`,fontFamily:F.sans }}>
           {filtrados.length} ejercicio{filtrados.length!==1?"s":""}
         </div>
+        {filtrados.length===0&&<div style={{ padding:"22px 18px",fontSize:13,color:C.textD,fontFamily:F.sans }}>{esFisioCat?"Todavía no hay ejercicios de fisio. Tocá + Nuevo para crear el primero.":"Sin resultados"}</div>}
         {filtrados.map((e,i)=>(
           <div key={e.id} style={{ padding:"11px 18px",borderBottom:i<filtrados.length-1?`1px solid ${C.border}`:"none" }}
             onMouseEnter={ev=>ev.currentTarget.style.background=C.surface}
             onMouseLeave={ev=>ev.currentTarget.style.background="transparent"}>
-            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-              <div>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",gap:10 }}>
+              {esFisioCat&&e.imagen_url&&<img src={e.imagen_url} alt="" loading="lazy" style={{ width:44,height:44,objectFit:"cover",borderRadius:8,flexShrink:0,border:`1px solid ${C.border}` }}/>}
+              <div style={{ flex:1,minWidth:0 }}>
                 <div style={{ fontSize:13,fontWeight:600,color:C.text,fontFamily:F.sans }}>{e.nombre}</div>
-                <div style={{ display:"flex",gap:6,marginTop:2 }}>
-                  <Tag color={grupoColor[e.grupo_muscular]||C.textS} sm>{e.grupo_muscular||"—"}</Tag>
-                  <Tag color={nC[e.nivel]||C.jade} sm>{e.nivel||"—"}</Tag>
-                  <Tag color={tC[e.tipo]||C.jade} sm>{e.tipo||"—"}</Tag>
+                <div style={{ display:"flex",gap:6,marginTop:2,flexWrap:"wrap" }}>
+                  {esFisioCat?(<>
+                    <Tag color={FISIO_C} sm>{e.subtipo||"—"}</Tag>
+                    {!e.imagen_url&&!e.video_url&&<Tag color={C.textD} sm>sin imagen/video</Tag>}
+                    {e.imagen_url&&<Tag color={C.jade} sm>imagen</Tag>}
+                    {e.video_url&&<Tag color={C.blue} sm>video</Tag>}
+                  </>):(<>
+                    <Tag color={grupoColor[e.grupo_muscular]||C.textS} sm>{e.grupo_muscular||"—"}</Tag>
+                    <Tag color={nC[e.nivel]||C.jade} sm>{e.nivel||"—"}</Tag>
+                    <Tag color={tC[e.tipo]||C.jade} sm>{e.tipo||"—"}</Tag>
+                  </>)}
                 </div>
               </div>
-              <button onClick={()=>eliminarEjercicio(e.id,e.nombre)} style={{ background:"none",border:"none",color:C.textD,cursor:"pointer",fontSize:16,padding:"4px 8px",flexShrink:0 }} title="Eliminar">✕</button>
+              <div style={{ display:"flex",flexShrink:0 }}>
+                <button onClick={()=>abrirEditar(e)} style={{ background:"none",border:"none",color:C.jade,cursor:"pointer",fontSize:15,padding:"4px 8px" }} title="Editar">✎</button>
+                <button onClick={()=>eliminarEjercicio(e.id,e.nombre)} style={{ background:"none",border:"none",color:C.textD,cursor:"pointer",fontSize:16,padding:"4px 8px" }} title="Eliminar">✕</button>
+              </div>
             </div>
           </div>
         ))}
       </Card>
-      <Modal open={modal} onClose={()=>setModal(false)} title="Nuevo ejercicio">
-        <FInput label="Nombre *" value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} placeholder="Ej: Zancada con mancuernas"/>
-        <FSelect label="Grupo muscular" value={form.grupo_muscular} onChange={e=>setForm({...form,grupo_muscular:e.target.value})}
-          options={[{value:"",label:"— Elegir grupo —"},{value:"Hombros",label:"Hombros"},{value:"Espalda",label:"Espalda"},{value:"Pecho",label:"Pecho"},{value:"Pierna",label:"Pierna"},{value:"Core",label:"Core / Abdomen"},{value:"Bíceps",label:"Bíceps"},{value:"Tríceps",label:"Tríceps"},{value:"Olímpico",label:"Levantamiento Olímpico"},{value:"CrossFit",label:"CrossFit"},{value:"Full body",label:"Full body"}]}/>
-        <FSelect label="Patrón de movimiento" value={form.patron_movimiento} onChange={e=>setForm({...form,patron_movimiento:e.target.value})}
-          options={[{value:"",label:"— Elegir —"},...PATRONES.map(p=>({value:p,label:p}))]}/>
-        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
-          <FSelect label="Nivel" value={form.nivel} onChange={e=>setForm({...form,nivel:e.target.value})}
-            options={[{value:"basico",label:"Básico"},{value:"intermedio",label:"Intermedio"},{value:"avanzado",label:"Avanzado"}]}/>
-          <FSelect label="Tipo" value={form.tipo} onChange={e=>setForm({...form,tipo:e.target.value})}
-            options={[{value:"principal",label:"Principal"},{value:"accesorio",label:"Accesorio"},{value:"cardio",label:"Cardio"},{value:"movilidad",label:"Movilidad"}]}/>
-        </div>
+
+      <Modal open={modal} onClose={cerrar} title={`${editId?"Editar":"Nuevo"} ejercicio${esFisioCat?" de fisio":""}`}>
+        <FInput label="Nombre *" value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} placeholder={esFisioCat?"Ej: Isométrico de cuádriceps en extensión":"Ej: Zancada con mancuernas"}/>
+        {esFisioCat?(<>
+          <FSelect label="Tipo de técnica" value={form.subtipo} onChange={e=>setForm({...form,subtipo:e.target.value})}
+            options={[{value:"",label:"— Elegir —"},...FISIO_TIPOS.map(t=>({value:t,label:t}))]}/>
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:5,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>Cómo se hace (lo ve el atleta)</div>
+            <textarea value={form.descripcion} onChange={e=>setForm({...form,descripcion:e.target.value})} rows={4} placeholder={"Posición inicial, qué hacer, cuánto sostener, qué sensación es normal y cuándo parar..."} style={{ width:"100%",padding:"11px 14px",background:"rgba(10,16,32,0.6)",border:`1px solid ${C.border}`,borderRadius:10,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,boxSizing:"border-box",resize:"vertical" }}/>
+          </div>
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:5,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>Imagen</div>
+            {form.imagen_url&&<img src={form.imagen_url} alt="" style={{ width:"100%",maxWidth:260,borderRadius:10,marginBottom:8,display:"block",border:`1px solid ${C.border}` }}/>}
+            <div style={{ display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginBottom:8 }}>
+              <label style={{ padding:"8px 14px",borderRadius:8,border:`1.5px solid ${FISIO_C}`,color:FISIO_C,fontSize:12,fontWeight:600,cursor:subiendo?"default":"pointer",fontFamily:F.sans,opacity:subiendo?0.6:1 }}>
+                {subiendo?"Subiendo…":(form.imagen_url?"Cambiar imagen":"📷 Subir imagen")}
+                <input type="file" accept="image/*" onChange={elegirImagen} disabled={subiendo} style={{ display:"none" }}/>
+              </label>
+              {form.imagen_url&&<button onClick={()=>setForm({...form,imagen_url:""})} style={{ background:"none",border:"none",color:C.textD,cursor:"pointer",fontSize:12,fontFamily:F.sans }}>Quitar</button>}
+            </div>
+            <FInput value={form.imagen_url} onChange={e=>setForm({...form,imagen_url:e.target.value})} placeholder="…o pegá un link de imagen (https://…)"/>
+          </div>
+        </>):(<>
+          <FSelect label="Grupo muscular" value={form.grupo_muscular} onChange={e=>setForm({...form,grupo_muscular:e.target.value})}
+            options={[{value:"",label:"— Elegir grupo —"},{value:"Hombros",label:"Hombros"},{value:"Espalda",label:"Espalda"},{value:"Pecho",label:"Pecho"},{value:"Pierna",label:"Pierna"},{value:"Core",label:"Core / Abdomen"},{value:"Bíceps",label:"Bíceps"},{value:"Tríceps",label:"Tríceps"},{value:"Olímpico",label:"Olímpico"},{value:"CrossFit",label:"CrossFit"}]}/>
+          <FSelect label="Patrón de movimiento" value={form.patron_movimiento} onChange={e=>setForm({...form,patron_movimiento:e.target.value})}
+            options={[{value:"",label:"— Elegir —"},...PATRONES.map(p=>({value:p,label:p}))]}/>
+          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
+            <FSelect label="Nivel" value={form.nivel} onChange={e=>setForm({...form,nivel:e.target.value})}
+              options={[{value:"basico",label:"Básico"},{value:"intermedio",label:"Intermedio"},{value:"avanzado",label:"Avanzado"}]}/>
+            <FSelect label="Tipo" value={form.tipo} onChange={e=>setForm({...form,tipo:e.target.value})}
+              options={[{value:"principal",label:"Principal"},{value:"accesorio",label:"Accesorio"},{value:"cardio",label:"Cardio"},{value:"movilidad",label:"Movilidad"}]}/>
+          </div>
+        </>)}
+        <FInput label="Link de video (opcional)" value={form.video_url} onChange={e=>setForm({...form,video_url:e.target.value})} placeholder="https://youtube.com/…"/>
         {errorGuardar&&(
           <div style={{marginTop:8,padding:"8px 12px",background:C.red+"18",border:`1px solid ${C.red}44`,borderRadius:8,color:C.red,fontSize:12,fontFamily:F.sans}}>
             ⚠️ {errorGuardar}
           </div>
         )}
         <div style={{ display:"flex",gap:10,marginTop:4 }}>
-          <Btn onClick={guardar} disabled={saving||!form.nombre} full>{saving?"Guardando…":"Guardar ejercicio"}</Btn>
-          <Btn onClick={()=>{setModal(false);setErrorGuardar("");}} outline full>Cancelar</Btn>
+          <Btn onClick={guardar} disabled={saving||subiendo||!form.nombre} full color={accent}>{saving?"Guardando…":(editId?"Guardar cambios":"Guardar ejercicio")}</Btn>
+          <Btn onClick={cerrar} outline full>Cancelar</Btn>
         </div>
       </Modal>
     </div>
