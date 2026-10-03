@@ -215,6 +215,9 @@ const CICLOS_TIPOS = [
 ];
 const PATRONES = ["Sentadilla","Bisagra","Empuje","Jale","Cargada","Core","Full body","Accesorio"];
 
+// Fondo de login y pantalla de carga: mismo azul oscuro del logo
+const NOAH_BG = "radial-gradient(ellipse 80% 60% at 50% 32%, #010b26 0%, #00030b 65%, #000208 100%)";
+
 // ── FISIO / KINESIOLOGÍA ──────────────────
 const FISIO_C = "#22D3EE";
 const FISIO_TIPOS = ["Crioterapia","Termoterapia","Masaje","Elongación","Autopostura","Isométrico","Magnetoterapia","Movilidad","Otro"];
@@ -1194,11 +1197,11 @@ function Login({ onLogin }) {
   const handleKey = (e) => { if (e.key==="Enter") doLogin(); };
 
   return (
-    <div style={{ minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",overflow:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:NOAH_BG,display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",overflow:"hidden" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
-        body{background:${C.bg};color:${C.text};font-family:${F.sans}}
+        html,body{background:#00030b;color:${C.text};font-family:${F.sans}}
         input::placeholder{color:${C.textD}}
         select option{background:${C.card};color:${C.text}}
         @keyframes spin{to{transform:rotate(360deg)}}
@@ -1208,19 +1211,10 @@ function Login({ onLogin }) {
         .noah-input:focus{border-color:rgba(0,229,160,0.5)!important;box-shadow:0 0 0 3px rgba(0,229,160,0.08)!important}
       `}</style>
 
-      {/* Fondo con orbes de luz */}
-      <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
-        <div style={{position:"absolute",top:"-20%",left:"50%",transform:"translateX(-50%)",width:600,height:600,background:"radial-gradient(circle,rgba(0,85,164,0.18) 0%,transparent 70%)",animation:"glow 4s ease infinite"}}/>
-        <div style={{position:"absolute",bottom:"-10%",right:"-10%",width:400,height:400,background:"radial-gradient(circle,rgba(0,229,160,0.10) 0%,transparent 70%)",animation:"glow 5s ease infinite 1s"}}/>
-        <div style={{position:"absolute",top:"30%",left:"-10%",width:300,height:300,background:"radial-gradient(circle,rgba(255,107,43,0.07) 0%,transparent 70%)"}}/>
-        {/* Grid sutil */}
-        <div style={{position:"absolute",inset:0,backgroundImage:`linear-gradient(rgba(0,229,160,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,0.03) 1px,transparent 1px)`,backgroundSize:"48px 48px"}}/>
-      </div>
-
       <div className="noah-login-card" style={{width:"100%",maxWidth:400,position:"relative",zIndex:1}}>
         {/* Logo section */}
         <div style={{textAlign:"center",marginBottom:36}}>
-          <img src="/noah-logo.jpg" alt="NOAH" style={{width:300,height:"auto",display:"block",margin:"0 auto"}}/>
+          <img src="/noah-login-logo.png" alt="NOAH" style={{width:"100%",maxWidth:340,height:"auto",display:"block",margin:"0 auto"}}/>
         </div>
 
         {/* Card glass */}
@@ -1330,7 +1324,7 @@ function Sidebar({ sec, setSec, rol, perfil, onLogout, open, setOpen }) {
         {/* Logo + cerrar */}
         <div style={{padding:"20px 16px 16px",borderBottom:"1px solid rgba(26,40,64,0.6)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <img src="/noah-logo-small.jpg" alt="NOAH" style={{width:38,height:38,objectFit:"contain",flexShrink:0}}/>
+            <img src="/noah-mark.png" alt="NOAH" style={{width:38,height:38,objectFit:"contain",flexShrink:0}}/>
             <div>
               <div style={{fontFamily:F.title,fontSize:18,fontWeight:700,letterSpacing:"0.18em",color:C.white,textShadow:"0 0 20px rgba(0,229,160,0.2)"}}>NOAH</div>
               <div style={{fontSize:8,color:C.jade,letterSpacing:"0.14em",fontFamily:F.title,textTransform:"uppercase",opacity:0.8}}>never over, always higher</div>
@@ -3162,14 +3156,10 @@ export default function NOAApp() {
   };
 
   if (appLoading) return (
-    <div style={{ minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:NOAH_BG,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden" }}>
       <style>{GLOBAL_CSS}</style>
-      <div style={{position:"absolute",inset:0,pointerEvents:"none"}}>
-        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-60%)",width:500,height:500,background:"radial-gradient(circle,rgba(0,85,164,0.2) 0%,transparent 70%)"}}/>
-        <div style={{position:"absolute",inset:0,backgroundImage:`linear-gradient(rgba(0,229,160,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,0.025) 1px,transparent 1px)`,backgroundSize:"48px 48px"}}/>
-      </div>
-      <div style={{ textAlign:"center",position:"relative",zIndex:1 }}>
-        <img src="/noah-logo.jpg" alt="NOAH" style={{width:260,height:"auto",display:"block",margin:"0 auto 24px"}}/>
+      <div style={{ textAlign:"center",position:"relative",zIndex:1,width:"100%",maxWidth:300,padding:"0 20px",boxSizing:"content-box" }}>
+        <img src="/noah-login-logo.png" alt="NOAH" style={{width:"100%",maxWidth:300,height:"auto",display:"block",margin:"0 auto 20px"}}/>
         <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
           <div style={{width:6,height:6,borderRadius:"50%",background:C.jade,boxShadow:`0 0 8px ${C.jade}`,animation:"spin 1s linear infinite"}}/>
           <div style={{fontSize:12,color:C.textS,fontFamily:F.sans,letterSpacing:"0.06em"}}>Cargando NOAH…</div>
@@ -3225,7 +3215,7 @@ export default function NOAApp() {
 
           {/* Logo */}
           <div style={{display:"flex",alignItems:"center",gap:9}}>
-            <img src="/noah-logo-small.jpg" alt="NOAH" style={{width:30,height:30,objectFit:"contain",flexShrink:0}}/>
+            <img src="/noah-mark.png" alt="NOAH" style={{width:30,height:30,objectFit:"contain",flexShrink:0}}/>
             <span style={{fontFamily:F.title,fontSize:17,fontWeight:700,letterSpacing:"0.18em",color:C.white,textShadow:"0 0 20px rgba(0,229,160,0.25)"}}>NOAH</span>
           </div>
 
