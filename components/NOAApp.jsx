@@ -179,22 +179,6 @@ const USUARIOS = [
     rol: "atleta",
     atleta_codigo: "ATL-09",
   },
-  {
-    email: "leandarkbull",
-    password: "lean1234",
-    id: "d4d9f8ba-23a4-4723-a888-6fd2f19856ce",
-    nombre: "leandro",
-    rol: "atleta",
-    atleta_codigo: "ATL-10",
-  },
-  {
-    email: "maisalopez",
-    password: "titis23",
-    id: "a70dc05f-3d1f-4316-93f2-e6cb75415b05",
-    nombre: "maisa daniela lopez",
-    rol: "atleta",
-    atleta_codigo: "ATL-11",
-  },
 ];
 
 // ─────────────────────────────────────────
@@ -237,6 +221,7 @@ const NOAH_BG = "radial-gradient(ellipse 80% 60% at 50% 32%, #010b26 0%, #00030b
 // ── FISIO / KINESIOLOGÍA ──────────────────
 const FISIO_C = "#22D3EE";
 const FISIO_TIPOS = ["Crioterapia","Termoterapia","Masaje","Elongación","Autopostura","Isométrico","Magnetoterapia","Movilidad","Otro"];
+const TURNOS = { "1":{ txt:"Turno 1", full:"Turno 1 · Mañana" }, "2":{ txt:"Turno 2", full:"Turno 2 · Tarde" } };
 const isFisio = (e) => (e?.ejercicios?.categoria || e?.categoria) === "fisio";
 
 // Sube una imagen a Supabase Storage (bucket "fisio"), la achica a máx 1000px para que pese poco
@@ -1493,6 +1478,77 @@ function SesionHoy({ user }) {
   const upd=(id,f,v)=>setLogs(p=>({...p,[id]:{...p[id],[f]:v}}));
 
   const sesionActual=plan[semSel]?.[diaSel]||[];
+
+  // Una tarjeta por ítem del plan: fuerza o fisio, en el orden que armó el coach
+  const renderItem=(ej)=>{
+    if(isFisio(ej)){
+                  const log=logs[ej.id]||{};
+                  const info=ej.ejercicios||{};
+                  return (
+                    <Card key={ej.id} style={{ padding:"14px 16px",background:log.done?FISIO_C+"0A":C.card,borderColor:log.done?FISIO_C+"55":FISIO_C+"26" }}>
+                      <div style={{ display:"flex",alignItems:"flex-start",gap:10 }}>
+                        <div onClick={()=>upd(ej.id,"done",!log.done)} style={{ width:22,height:22,borderRadius:6,cursor:"pointer",border:`2px solid ${log.done?FISIO_C:C.borderH}`,background:log.done?FISIO_C:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:"#000",fontSize:13,fontWeight:700 }}>{log.done&&"✓"}</div>
+                        <div style={{ flex:1,minWidth:0 }}>
+                          <div style={{ fontSize:14,fontWeight:700,color:C.text,fontFamily:F.sans }}>{info.nombre}</div>
+                          <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginTop:6,alignItems:"center" }}>
+                            {info.subtipo&&<Tag color={FISIO_C} sm>{info.subtipo}</Tag>}
+                            {ej.dosis&&<Tag color={C.jade} sm>{ej.dosis}</Tag>}
+                            {ej.zona&&<Tag color={C.textS} sm>{ej.zona}</Tag>}
+                          </div>
+                          {ej.notas_coach&&<div style={{ fontSize:12,color:C.amber,marginTop:6 }}>📌 {ej.notas_coach}</div>}
+                          {info.descripcion&&<div style={{ fontSize:12,color:C.textS,marginTop:8,lineHeight:1.5,whiteSpace:"pre-wrap",fontFamily:F.sans }}>{info.descripcion}</div>}
+                          {info.imagen_url&&<a href={info.imagen_url} target="_blank" rel="noreferrer"><img src={info.imagen_url} alt={info.nombre} loading="lazy" style={{ width:"100%",maxWidth:420,borderRadius:10,marginTop:10,border:`1px solid ${C.border}`,display:"block" }}/></a>}
+                          {info.video_url&&<a href={info.video_url} target="_blank" rel="noreferrer" style={{ display:"inline-block",marginTop:10,padding:"7px 14px",borderRadius:8,border:`1.5px solid ${C.blue}`,color:C.blue,fontSize:12,fontWeight:600,textDecoration:"none",fontFamily:F.sans }}>▶ Ver video</a>}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+    }
+              const log=logs[ej.id]||{};
+              const kgN=parseFloat(log.kg);
+              const diff=kgN&&ej.carga_kg?((kgN-ej.carga_kg)/ej.carga_kg*100):null;
+              const yaGuardado=!!logsDB[ej.id];
+              const bgColor=log.done?C.jade+"0A":yaGuardado?C.amber+"08":C.card;
+              const borderColor=log.done?C.jade+"55":yaGuardado?C.amber+"44":C.border;
+              return (
+                <Card key={ej.id} style={{ padding:"14px 16px",background:bgColor,borderColor }}>
+                  <div style={{ display:"flex",alignItems:"flex-start",gap:10,marginBottom:10 }}>
+                    <div onClick={()=>upd(ej.id,"done",!log.done)} style={{ width:22,height:22,borderRadius:6,cursor:"pointer",border:`2px solid ${log.done?C.jade:C.borderH}`,background:log.done?C.jade:"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:C.deep,fontWeight:900,flexShrink:0,marginTop:1 }}>{log.done?"✓":""}</div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:14,fontWeight:700,color:C.text,fontFamily:F.sans }}>{ej.ejercicios?.nombre}</div>
+                      <div style={{ fontSize:11,color:C.textD,marginTop:1 }}>{ej.ejercicios?.patron_movimiento} · {ej.ejercicios?.grupo_muscular}</div>
+                      {ej.notas_coach&&<div style={{ fontSize:11,color:C.amber,marginTop:3 }}>📌 {ej.notas_coach}</div>}
+                      {ej.ejercicios?.video_url&&<a href={ej.ejercicios.video_url} target="_blank" rel="noreferrer" style={{ fontSize:11,color:C.blue,marginTop:3,display:"inline-block",fontFamily:F.sans }}>▶ Ver video</a>}
+                    </div>
+                    {yaGuardado&&!log.done&&<span style={{fontSize:10,color:C.amber,fontFamily:F.sans}}>editado</span>}
+                  </div>
+                  <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:10,paddingLeft:32 }}>
+                    <Tag color={C.jade} sm>{ej.series} series</Tag>
+                    <Tag color={C.blue} sm>{ej.reps} reps</Tag>
+                    {ej.intensidad_pct&&<Tag color={C.violet} sm>{ej.intensidad_pct}% 1RM</Tag>}
+                    {ej.carga_kg&&<Tag color={C.textS} sm>Plan: {ej.carga_kg}kg</Tag>}
+                    {ej.descanso_seg&&<Tag color={C.textD} sm>⏱{ej.descanso_seg}"</Tag>}
+                    {ej.rir!=null&&ej.rir!==""&&<Tag color={C.amber} sm>RIR {ej.rir}</Tag>}
+                  </div>
+                  <div style={{ display:"flex",gap:10,alignItems:"center",paddingLeft:32 }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:10,color:C.textS,marginBottom:4,fontFamily:F.sans,letterSpacing:"0.06em",textTransform:"uppercase" }}>Kg real</div>
+                      <div style={{ display:"flex",alignItems:"center",gap:6 }}>
+                        <input value={log.kg||""} onChange={e=>upd(ej.id,"kg",e.target.value)} placeholder={ej.carga_kg||"0"} type="number" style={{ width:"100%",padding:"8px 10px",background:C.surface,border:`1.5px solid ${kgN?C.jade+"AA":C.border}`,borderRadius:8,color:C.white,fontSize:15,fontWeight:700,outline:"none",fontFamily:F.serif }}/>
+                        {diff!==null&&<span style={{ fontSize:10,color:diff>=0?C.jade:C.red,whiteSpace:"nowrap" }}>{diff>=0?"+":""}{diff.toFixed(0)}%</span>}
+                      </div>
+                    </div>
+                    <div style={{ minWidth:80 }}>
+                      <div style={{ fontSize:10,color:C.textS,marginBottom:4,fontFamily:F.sans,letterSpacing:"0.06em",textTransform:"uppercase" }}>RPE</div>
+                      <select value={log.rpe||""} onChange={e=>upd(ej.id,"rpe",e.target.value)} style={{ width:"100%",padding:"8px 6px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.textS,fontSize:13,outline:"none" }}>
+                        <option value="">—</option>
+                        {[6,6.5,7,7.5,8,8.5,9,9.5,10].map(v=><option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </Card>
+              );
+  };
   const tonelaje=sesionActual.reduce((acc,e)=>acc+(e.series*(parseInt(e.reps)||0)*(parseFloat(logs[e.id]?.kg)||0)),0);
   const done=Object.values(logs).filter(l=>l.done).length;
   const todosHechos=sesionActual.length>0&&done===sesionActual.length;
@@ -1622,88 +1678,26 @@ function SesionHoy({ user }) {
             <Stat label="Completados" value={`${done}/${sesionActual.length}`} color={done===sesionActual.length?C.jade:C.amber}/>
           </div>
 
-          <div style={{ display:"flex",flexDirection:"column",gap:10,marginBottom:18 }}>
-            {sesionActual.filter(e=>!isFisio(e)).map((ej)=>{
-              const log=logs[ej.id]||{};
-              const kgN=parseFloat(log.kg);
-              const diff=kgN&&ej.carga_kg?((kgN-ej.carga_kg)/ej.carga_kg*100):null;
-              const yaGuardado=!!logsDB[ej.id];
-              const bgColor=log.done?C.jade+"0A":yaGuardado?C.amber+"08":C.card;
-              const borderColor=log.done?C.jade+"55":yaGuardado?C.amber+"44":C.border;
-              return (
-                <Card key={ej.id} style={{ padding:"14px 16px",background:bgColor,borderColor }}>
-                  <div style={{ display:"flex",alignItems:"flex-start",gap:10,marginBottom:10 }}>
-                    <div onClick={()=>upd(ej.id,"done",!log.done)} style={{ width:22,height:22,borderRadius:6,cursor:"pointer",border:`2px solid ${log.done?C.jade:C.borderH}`,background:log.done?C.jade:"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:C.deep,fontWeight:900,flexShrink:0,marginTop:1 }}>{log.done?"✓":""}</div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:14,fontWeight:700,color:C.text,fontFamily:F.sans }}>{ej.ejercicios?.nombre}</div>
-                      <div style={{ fontSize:11,color:C.textD,marginTop:1 }}>{ej.ejercicios?.patron_movimiento} · {ej.ejercicios?.grupo_muscular}</div>
-                      {ej.notas_coach&&<div style={{ fontSize:11,color:C.amber,marginTop:3 }}>📌 {ej.notas_coach}</div>}
-                      {ej.ejercicios?.video_url&&<a href={ej.ejercicios.video_url} target="_blank" rel="noreferrer" style={{ fontSize:11,color:C.blue,marginTop:3,display:"inline-block",fontFamily:F.sans }}>▶ Ver video</a>}
-                    </div>
-                    {yaGuardado&&!log.done&&<span style={{fontSize:10,color:C.amber,fontFamily:F.sans}}>editado</span>}
+          {(()=>{
+            const hayTurnos=sesionActual.some(e=>e.turno);
+            const grupos=hayTurnos
+              ?[{k:"1",t:TURNOS["1"].full,c:C.amber},{k:"2",t:TURNOS["2"].full,c:C.violet},{k:"",t:"Cualquier momento",c:C.textS}]
+                  .map(g=>({...g,items:sesionActual.filter(e=>(e.turno||"")===g.k)})).filter(g=>g.items.length>0)
+              :[{k:"x",t:null,c:C.jade,items:sesionActual}];
+            return grupos.map(g=>(
+              <div key={g.k} style={{ marginBottom:18 }}>
+                {g.t&&(
+                  <div style={{ display:"flex",alignItems:"center",gap:8,margin:"4px 0 10px" }}>
+                    <span style={{ fontSize:11,fontWeight:700,color:g.c,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans }}>{g.t}</span>
+                    <div style={{ flex:1,height:1,background:g.c+"33" }}/>
                   </div>
-                  <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:10,paddingLeft:32 }}>
-                    <Tag color={C.jade} sm>{ej.series} series</Tag>
-                    <Tag color={C.blue} sm>{ej.reps} reps</Tag>
-                    {ej.intensidad_pct&&<Tag color={C.violet} sm>{ej.intensidad_pct}% 1RM</Tag>}
-                    {ej.carga_kg&&<Tag color={C.textS} sm>Plan: {ej.carga_kg}kg</Tag>}
-                    {ej.descanso_seg&&<Tag color={C.textD} sm>⏱{ej.descanso_seg}"</Tag>}
-                    {ej.rir!=null&&ej.rir!==""&&<Tag color={C.amber} sm>RIR {ej.rir}</Tag>}
-                  </div>
-                  <div style={{ display:"flex",gap:10,alignItems:"center",paddingLeft:32 }}>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:10,color:C.textS,marginBottom:4,fontFamily:F.sans,letterSpacing:"0.06em",textTransform:"uppercase" }}>Kg real</div>
-                      <div style={{ display:"flex",alignItems:"center",gap:6 }}>
-                        <input value={log.kg||""} onChange={e=>upd(ej.id,"kg",e.target.value)} placeholder={ej.carga_kg||"0"} type="number" style={{ width:"100%",padding:"8px 10px",background:C.surface,border:`1.5px solid ${kgN?C.jade+"AA":C.border}`,borderRadius:8,color:C.white,fontSize:15,fontWeight:700,outline:"none",fontFamily:F.serif }}/>
-                        {diff!==null&&<span style={{ fontSize:10,color:diff>=0?C.jade:C.red,whiteSpace:"nowrap" }}>{diff>=0?"+":""}{diff.toFixed(0)}%</span>}
-                      </div>
-                    </div>
-                    <div style={{ minWidth:80 }}>
-                      <div style={{ fontSize:10,color:C.textS,marginBottom:4,fontFamily:F.sans,letterSpacing:"0.06em",textTransform:"uppercase" }}>RPE</div>
-                      <select value={log.rpe||""} onChange={e=>upd(ej.id,"rpe",e.target.value)} style={{ width:"100%",padding:"8px 6px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.textS,fontSize:13,outline:"none" }}>
-                        <option value="">—</option>
-                        {[6,6.5,7,7.5,8,8.5,9,9.5,10].map(v=><option key={v} value={v}>{v}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-
-          {sesionActual.some(isFisio)&&(
-            <div style={{ marginBottom:18 }}>
-              <div style={{ display:"flex",alignItems:"center",gap:8,margin:"4px 0 10px" }}>
-                <span style={{ fontSize:11,fontWeight:700,color:FISIO_C,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans }}>✚ Kinesio / Fisio</span>
-                <div style={{ flex:1,height:1,background:FISIO_C+"33" }}/>
+                )}
+                <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+                  {g.items.map(renderItem)}
+                </div>
               </div>
-              <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-                {sesionActual.filter(isFisio).map(ej=>{
-                  const log=logs[ej.id]||{};
-                  const info=ej.ejercicios||{};
-                  return (
-                    <Card key={ej.id} style={{ padding:"14px 16px",background:log.done?FISIO_C+"0A":C.card,borderColor:log.done?FISIO_C+"55":FISIO_C+"26" }}>
-                      <div style={{ display:"flex",alignItems:"flex-start",gap:10 }}>
-                        <div onClick={()=>upd(ej.id,"done",!log.done)} style={{ width:22,height:22,borderRadius:6,cursor:"pointer",border:`2px solid ${log.done?FISIO_C:C.borderH}`,background:log.done?FISIO_C:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:"#000",fontSize:13,fontWeight:700 }}>{log.done&&"✓"}</div>
-                        <div style={{ flex:1,minWidth:0 }}>
-                          <div style={{ fontSize:14,fontWeight:700,color:C.text,fontFamily:F.sans }}>{info.nombre}</div>
-                          <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginTop:6,alignItems:"center" }}>
-                            {info.subtipo&&<Tag color={FISIO_C} sm>{info.subtipo}</Tag>}
-                            {ej.dosis&&<Tag color={C.jade} sm>{ej.dosis}</Tag>}
-                            {ej.zona&&<Tag color={C.textS} sm>{ej.zona}</Tag>}
-                          </div>
-                          {ej.notas_coach&&<div style={{ fontSize:12,color:C.amber,marginTop:6 }}>📌 {ej.notas_coach}</div>}
-                          {info.descripcion&&<div style={{ fontSize:12,color:C.textS,marginTop:8,lineHeight:1.5,whiteSpace:"pre-wrap",fontFamily:F.sans }}>{info.descripcion}</div>}
-                          {info.imagen_url&&<a href={info.imagen_url} target="_blank" rel="noreferrer"><img src={info.imagen_url} alt={info.nombre} loading="lazy" style={{ width:"100%",maxWidth:420,borderRadius:10,marginTop:10,border:`1px solid ${C.border}`,display:"block" }}/></a>}
-                          {info.video_url&&<a href={info.video_url} target="_blank" rel="noreferrer" style={{ display:"inline-block",marginTop:10,padding:"7px 14px",borderRadius:8,border:`1.5px solid ${C.blue}`,color:C.blue,fontSize:12,fontWeight:600,textDecoration:"none",fontFamily:F.sans }}>▶ Ver video</a>}
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+            ));
+          })()}
 
           <Card style={{ marginBottom:14 }}>
             <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:8,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:F.sans }}>Nota de sesión</div>
@@ -2169,7 +2163,7 @@ function CoachPlanificar({ user }) {
     setPlan(org);
   };
 
-  const formVacio={ejercicio_id:"",busqueda:"",series:3,reps:"8",intensidad_pct:"",carga_kg:"",descanso_seg:"120",rir:"",notas_coach:"",dosis:"",zona:""};
+  const formVacio={ejercicio_id:"",busqueda:"",series:3,reps:"8",intensidad_pct:"",carga_kg:"",descanso_seg:"120",rir:"",notas_coach:"",dosis:"",zona:"",turno:""};
 
   const abrirNuevo=(fisio=false)=>{setEditId(null);setModoFisio(fisio);setForm(formVacio);setAddModal(true);};
 
@@ -2180,7 +2174,7 @@ function CoachPlanificar({ user }) {
       ejercicio_id:String(ej.ejercicio_id),busqueda:ej.ejercicios?.nombre||"",
       series:ej.series??3,reps:ej.reps??"8",
       intensidad_pct:ej.intensidad_pct??"",carga_kg:ej.carga_kg??"",
-      descanso_seg:ej.descanso_seg??"",rir:ej.rir??"",notas_coach:ej.notas_coach||"",dosis:ej.dosis||"",zona:ej.zona||"",
+      descanso_seg:ej.descanso_seg??"",rir:ej.rir??"",notas_coach:ej.notas_coach||"",dosis:ej.dosis||"",zona:ej.zona||"",turno:ej.turno||"",
     });
     setAddModal(true);
   };
@@ -2211,30 +2205,30 @@ function CoachPlanificar({ user }) {
     };
     let err;
     if(editId){
-      ({error:err}=await sb.from("sesiones_plan").update(datos).eq("id",editId));
+      ({error:err}=await sb.from("sesiones_plan").update({...datos,turno:form.turno==="1"||form.turno==="2"?form.turno:null}).eq("id",editId));
     }else{
       const lista=plan[semSel]?.[diaSel]||[];
       const orden=lista.length?Math.max(...lista.map(x=>x.orden||0))+1:1;
-      ({error:err}=await sb.from("sesiones_plan").insert({ciclo_id:parseInt(cicloSel),semana:semSel,dia:diaSel,orden,...datos}));
+      const base={ciclo_id:parseInt(cicloSel),semana:semSel,dia:diaSel,...datos};
+      // "Repetir en ambos turnos" = se crean dos filas, una por turno (cada una se tilda por separado)
+      const filas=form.turno==="ambos"
+        ?[{...base,orden,turno:"1"},{...base,orden:orden+1,turno:"2"}]
+        :[{...base,orden,turno:form.turno==="1"||form.turno==="2"?form.turno:null}];
+      ({error:err}=await sb.from("sesiones_plan").insert(filas));
     }
     if(err){alert("Error: "+err.message);setSaving(false);return;}
     await cargarPlan(cicloSel);
     cerrarModal();setSaving(false);
   };
 
-  // Mover un ejercicio arriba (-1) o abajo (+1) dentro de su bloque (Fuerza o Fisio)
-  const mover=async(ej,dir)=>{
+  // Mover un ejercicio arriba (-1) o abajo (+1): fuerza y fisio se pueden mezclar en cualquier orden
+  const mover=async(idx,dir)=>{
     const lista=plan[semSel]?.[diaSel]||[];
-    const fis=isFisio(ej);
-    const seccion=lista.filter(x=>isFisio(x)===fis);
-    const idx=seccion.findIndex(x=>x.id===ej.id);
     const j=idx+dir;
-    if(idx<0||j<0||j>=seccion.length)return;
-    const nuevaSec=[...seccion];
-    [nuevaSec[idx],nuevaSec[j]]=[nuevaSec[j],nuevaSec[idx]];
-    let k=0;
-    const nueva=lista.map(x=>isFisio(x)===fis?nuevaSec[k++]:x);
-    const renum=nueva.map((e,n)=>({...e,orden:n+1}));
+    if(j<0||j>=lista.length)return;
+    const nueva=[...lista];
+    [nueva[idx],nueva[j]]=[nueva[j],nueva[idx]];
+    const renum=nueva.map((e,k)=>({...e,orden:k+1}));
     setPlan(p=>({...p,[semSel]:{...(p[semSel]||{}),[diaSel]:renum}}));
     const sb=await getSB();
     const res=await Promise.all(renum.filter(e=>lista.find(x=>x.id===e.id)?.orden!==e.orden)
@@ -2276,6 +2270,7 @@ function CoachPlanificar({ user }) {
           notas_coach:ej.notas_coach,
           dosis:ej.dosis||null,
           zona:ej.zona||null,
+          turno:ej.turno||null,
         });
       });
     });
@@ -2312,6 +2307,7 @@ function CoachPlanificar({ user }) {
             notas_coach:ej.notas_coach,
           dosis:ej.dosis||null,
           zona:ej.zona||null,
+          turno:ej.turno||null,
           });
         });
       });
@@ -2367,7 +2363,8 @@ function CoachPlanificar({ user }) {
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8 }}>
               <div style={{ fontFamily:F.serif,fontSize:17,color:C.white }}>
                 Semana {semSel} · {DIAS[diaSel]}
-                <span style={{ fontSize:12,color:C.textS,fontFamily:F.sans,marginLeft:10 }}>{ejsDia.length} ejercicios</span>
+                <span style={{ fontSize:12,color:C.textS,fontFamily:F.sans,marginLeft:10 }}>{ejsDia.length} ítems</span>
+                {ejsDia.some(x=>x.turno==="1")&&ejsDia.some(x=>x.turno==="2")&&<span style={{ fontSize:10,fontWeight:700,color:C.amber,background:C.amber+"18",border:`1px solid ${C.amber}44`,borderRadius:99,padding:"2px 9px",marginLeft:8,fontFamily:F.sans,letterSpacing:"0.06em" }}>DOBLE TURNO</span>}
               </div>
               <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
                 {ejsDia.length>0&&<Btn sm outline color={C.amber} onClick={()=>{setDupTipo("dia");setDupSemsDest([]);setDupProgresion(0);setDupDiaDest(diaSel);setDupModal(true);}}>⧉ Duplicar día</Btn>}
@@ -2379,49 +2376,45 @@ function CoachPlanificar({ user }) {
             {ejsDia.length===0?(
               <div style={{ textAlign:"center",padding:"24px 0",color:C.textD,fontFamily:F.sans,fontSize:13 }}>Sin ejercicios · hacé clic en "+ Fuerza" o "+ Fisio"</div>
             ):(
-              <>
-                {[{key:"f",titulo:"Fuerza",color:C.jade,lista:ejsDia.filter(x=>!isFisio(x))},
-                  {key:"k",titulo:"✚ Kinesio / Fisio",color:FISIO_C,lista:ejsDia.filter(x=>isFisio(x))}]
-                  .filter(sec=>sec.lista.length>0).map(sec=>(
-                  <div key={sec.key} style={{ marginBottom:14 }}>
-                    <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8 }}>
-                      <span style={{ fontSize:11,fontWeight:700,color:sec.color,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:F.sans }}>{sec.titulo}</span>
-                      <div style={{ flex:1,height:1,background:sec.color+"33" }}/>
+              <div style={{ display:"grid",gap:8 }}>
+                {ejsDia.map((ej,i)=>{
+                  const fis=isFisio(ej);
+                  const col=fis?FISIO_C:C.jade;
+                  return (
+                  <div key={ej.id} style={{ display:"flex",alignItems:"center",gap:12,padding:"10px 12px",background:C.surface,borderRadius:9,border:`1px solid ${fis?FISIO_C+"55":C.border}`,borderLeft:`3px solid ${col}` }}>
+                    <div style={{ width:24,height:24,borderRadius:6,background:col+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:col,fontWeight:700,flexShrink:0 }}>{i+1}</div>
+                    <div style={{ flex:1,minWidth:0 }}>
+                      <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
+                        <span style={{ fontSize:13,fontWeight:600,color:C.text,fontFamily:F.sans }}>{ej.ejercicios?.nombre}</span>
+                        {fis&&<Tag color={FISIO_C} sm>✚ Fisio</Tag>}
+                        {ej.turno&&TURNOS[ej.turno]&&<Tag color={ej.turno==="1"?C.amber:C.violet} sm>{TURNOS[ej.turno].txt}</Tag>}
+                      </div>
+                      <div style={{ display:"flex",gap:8,marginTop:3,flexWrap:"wrap",alignItems:"center" }}>
+                        {fis?(<>
+                          {ej.ejercicios?.subtipo&&<Tag color={FISIO_C} sm>{ej.ejercicios.subtipo}</Tag>}
+                          {ej.dosis&&<span style={{ fontSize:12,color:FISIO_C,fontWeight:700 }}>{ej.dosis}</span>}
+                          {ej.zona&&<Tag color={C.textS} sm>{ej.zona}</Tag>}
+                          {ej.notas_coach&&<span style={{ fontSize:10,color:C.amber }}>📌 {ej.notas_coach}</span>}
+                        </>):(<>
+                          <span style={{ fontSize:12,color:C.jade,fontWeight:700 }}>{ej.series}×{ej.reps}</span>
+                          {ej.carga_kg&&<Tag color={C.blue} sm>{ej.carga_kg}kg</Tag>}
+                          {ej.intensidad_pct&&<Tag color={C.violet} sm>{ej.intensidad_pct}%</Tag>}
+                          {ej.descanso_seg&&<Tag color={C.textS} sm>⏱ {ej.descanso_seg}"</Tag>}
+                          {ej.rir!=null&&ej.rir!==""&&<Tag color={C.amber} sm>RIR {ej.rir}</Tag>}
+                          {ej.notas_coach&&<span style={{ fontSize:10,color:C.amber }}>📌 {ej.notas_coach}</span>}
+                        </>)}
+                      </div>
                     </div>
-                    <div style={{ display:"grid",gap:8 }}>
-                      {sec.lista.map((ej,i)=>(
-                        <div key={ej.id} style={{ display:"flex",alignItems:"center",gap:12,padding:"10px 12px",background:C.surface,borderRadius:9,border:`1px solid ${isFisio(ej)?FISIO_C+"44":C.border}` }}>
-                          <div style={{ width:24,height:24,borderRadius:6,background:sec.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:sec.color,fontWeight:700,flexShrink:0 }}>{i+1}</div>
-                          <div style={{ flex:1,minWidth:0 }}>
-                            <div style={{ fontSize:13,fontWeight:600,color:C.text,fontFamily:F.sans }}>{ej.ejercicios?.nombre}</div>
-                            <div style={{ display:"flex",gap:8,marginTop:3,flexWrap:"wrap",alignItems:"center" }}>
-                              {isFisio(ej)?(<>
-                                {ej.ejercicios?.subtipo&&<Tag color={FISIO_C} sm>{ej.ejercicios.subtipo}</Tag>}
-                                {ej.dosis&&<span style={{ fontSize:12,color:FISIO_C,fontWeight:700 }}>{ej.dosis}</span>}
-                                {ej.zona&&<Tag color={C.textS} sm>{ej.zona}</Tag>}
-                                {ej.notas_coach&&<span style={{ fontSize:10,color:C.amber }}>📌 {ej.notas_coach}</span>}
-                              </>):(<>
-                                <span style={{ fontSize:12,color:C.jade,fontWeight:700 }}>{ej.series}×{ej.reps}</span>
-                                {ej.carga_kg&&<Tag color={C.blue} sm>{ej.carga_kg}kg</Tag>}
-                                {ej.intensidad_pct&&<Tag color={C.violet} sm>{ej.intensidad_pct}%</Tag>}
-                                {ej.descanso_seg&&<Tag color={C.textS} sm>⏱ {ej.descanso_seg}"</Tag>}
-                                {ej.rir!=null&&ej.rir!==""&&<Tag color={C.amber} sm>RIR {ej.rir}</Tag>}
-                                {ej.notas_coach&&<span style={{ fontSize:10,color:C.amber }}>📌 {ej.notas_coach}</span>}
-                              </>)}
-                            </div>
-                          </div>
-                          <div style={{ display:"flex",alignItems:"center",gap:2,flexShrink:0 }}>
-                            <button title="Subir" disabled={i===0} onClick={()=>mover(ej,-1)} style={{ background:"none",border:"none",cursor:i===0?"default":"pointer",fontSize:15,padding:"4px 7px",lineHeight:1,color:i===0?C.border:C.textS }}>▲</button>
-                            <button title="Bajar" disabled={i===sec.lista.length-1} onClick={()=>mover(ej,1)} style={{ background:"none",border:"none",cursor:i===sec.lista.length-1?"default":"pointer",fontSize:15,padding:"4px 7px",lineHeight:1,color:i===sec.lista.length-1?C.border:C.textS }}>▼</button>
-                            <button title="Editar" onClick={()=>abrirEditar(ej)} style={{ background:"none",border:"none",cursor:"pointer",fontSize:15,padding:"4px 7px",lineHeight:1,color:C.jade }}>✎</button>
-                            <button title="Quitar" onClick={()=>eliminar(ej.id)} style={{ background:"none",border:"none",color:C.textD,cursor:"pointer",fontSize:18,padding:"2px 6px",lineHeight:1 }}>×</button>
-                          </div>
-                        </div>
-                      ))}
+                    <div style={{ display:"flex",alignItems:"center",gap:2,flexShrink:0 }}>
+                      <button title="Subir" disabled={i===0} onClick={()=>mover(i,-1)} style={{ background:"none",border:"none",cursor:i===0?"default":"pointer",fontSize:15,padding:"4px 7px",lineHeight:1,color:i===0?C.border:C.textS }}>▲</button>
+                      <button title="Bajar" disabled={i===ejsDia.length-1} onClick={()=>mover(i,1)} style={{ background:"none",border:"none",cursor:i===ejsDia.length-1?"default":"pointer",fontSize:15,padding:"4px 7px",lineHeight:1,color:i===ejsDia.length-1?C.border:C.textS }}>▼</button>
+                      <button title="Editar" onClick={()=>abrirEditar(ej)} style={{ background:"none",border:"none",cursor:"pointer",fontSize:15,padding:"4px 7px",lineHeight:1,color:C.jade }}>✎</button>
+                      <button title="Quitar" onClick={()=>eliminar(ej.id)} style={{ background:"none",border:"none",color:C.textD,cursor:"pointer",fontSize:18,padding:"2px 6px",lineHeight:1 }}>×</button>
                     </div>
                   </div>
-                ))}
-              </>
+                  );
+                })}
+              </div>
             )}
           </Card>
         </>
@@ -2543,6 +2536,8 @@ function CoachPlanificar({ user }) {
         </div>
         <FInput label="Observación para el atleta" value={form.notas_coach} onChange={e=>setForm({...form,notas_coach:e.target.value})} placeholder="Pausa en fondo, explosivo en subida, técnica estricta..."/>
         </>)}
+        <FSelect label="Turno" value={form.turno||""} onChange={e=>setForm({...form,turno:e.target.value})}
+          options={[{value:"",label:"Sin turno (un solo momento del día)"},{value:"1",label:"Turno 1 · Mañana"},{value:"2",label:"Turno 2 · Tarde"},...(editId?[]:[{value:"ambos",label:"Repetir en los dos turnos (se carga 2 veces)"}])]}/>
         <div style={{ display:"flex",gap:10 }}>
           <Btn onClick={agregar} disabled={saving||!form.ejercicio_id} full>{saving?"Guardando…":(editId?"Guardar cambios":"Agregar ejercicio")}</Btn>
           <Btn onClick={cerrarModal} outline full>Cancelar</Btn>
