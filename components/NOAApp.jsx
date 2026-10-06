@@ -26,10 +26,64 @@ async function getSB() {
 // ─────────────────────────────────────────
 // GROQ
 // ─────────────────────────────────────────
+// ── Catálogo de ejercicios para NOAH Coach ──
+// Se carga una vez (cache 5 min) y se buscan solo los ejercicios que tienen que ver con la pregunta,
+// así el prompt no crece con cientos de ejercicios.
+let _catalogoEj = null, _catalogoTs = 0;
+async function cargarCatalogoEj() {
+  if (_catalogoEj && Date.now() - _catalogoTs < 5 * 60 * 1000) return _catalogoEj;
+  try {
+    const sb = await getSB();
+    if (!sb) return _catalogoEj || [];
+    const { data, error } = await sb.from("ejercicios").select("*");
+    if (error) return _catalogoEj || [];
+    _catalogoEj = data || [];
+    _catalogoTs = Date.now();
+  } catch (e) { return _catalogoEj || []; }
+  return _catalogoEj;
+}
+const _normTxt = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, " ");
+const _STOP = new Set("de la el los las un una unos unas que es en con para por como mi me se del al y o a lo ejercicio ejercicios significa significan hace hago hacer quiero puedo cual cuales cuando donde tengo hay sirve este esta esto son ser sobre mas muy tambien explicame explica decime dime".split(" "));
+const _stem = (w) => w.replace(/(es|s)$/, "");
+function buscarEjercicios(pregunta, catalogo, max = 8) {
+  const qn = _normTxt(pregunta);
+  const toks = qn.split(/\s+/).filter(w => w.length >= 3 && !_STOP.has(w)).map(_stem);
+  const quiereFisio = /fisio|kinesio|rehab/.test(qn);
+  if (!toks.length && !quiereFisio) return [];
+  const mismo = (a, b) => a === b || (a.length >= 4 && b.length >= 4 && (a.startsWith(b) || b.startsWith(a)));
+  const res = [];
+  for (const e of catalogo) {
+    const nombreN = _normTxt(e.nombre);
+    const palabras = nombreN.split(/\s+/).filter(Boolean).map(_stem);
+    let score = 0;
+    if (nombreN.trim().length >= 4 && qn.includes(nombreN.trim())) score += 5;
+    for (const t of toks) {
+      if (palabras.some(w => mismo(w, t))) score += 3;
+      else if (_normTxt([e.grupo_muscular, e.patron_movimiento, e.subtipo, e.tipo].join(" ")).split(/\s+/).map(_stem).some(w => mismo(w, t))) score += 1;
+    }
+    if (quiereFisio && e.categoria === "fisio") score += 1;
+    if (score >= 1) res.push({ e, score });
+  }
+  res.sort((x, y) => y.score - x.score);
+  return res.slice(0, max).map(r => r.e);
+}
+function lineaEjercicio(e) {
+  const meta = e.categoria === "fisio"
+    ? `FISIO${e.subtipo ? " · " + e.subtipo : ""}`
+    : `Fuerza${e.grupo_muscular ? " · " + e.grupo_muscular : ""}${e.patron_movimiento ? " · " + e.patron_movimiento : ""}${e.tipo ? " · " + e.tipo : ""}`;
+  const desc = e.descripcion ? ": " + String(e.descripcion).replace(/\s+/g, " ").slice(0, 240) : "";
+  return `- ${e.nombre} [${meta}]${desc}${e.imagen_url ? " (tiene imagen en la app)" : ""}${e.video_url ? " (tiene video en la app)" : ""}`;
+}
+
 async function askNOA(q, ctx = {}) {
   const key = process.env.NEXT_PUBLIC_GROQ_KEY;
   if (!key || key === "gsk_..." || !key.startsWith("gsk_")) return demoMsg(q);
   try {
+    const catalogo = await cargarCatalogoEj();
+    const relacionados = buscarEjercicios(q, catalogo);
+    const bloqueEjercicios = relacionados.length
+      ? "Ejercicios del catálogo de la app que coinciden con la pregunta:\n" + relacionados.map(lineaEjercicio).join("\n")
+      : "Ningún ejercicio del catálogo de la app coincide con lo que mencionó el atleta.";
     const sistema = `Sos NOAH Coach, el asistente de entrenamiento de la app NOAH (Never Over, Always Higher), creada por el Prof. Rodrigo Fernández.
 
 SOBRE EL COACH:
@@ -81,6 +135,14 @@ SEGURIDAD (obligatorio en estos temas):
 2) Terminá SIEMPRE las respuestas de fisio, dolor, lesiones o técnicas con una línea como: "Consultale a Rodri sobre tu caso y, si el dolor persiste o te preocupa, consultá con un médico."
 3) SIGNOS DE ALARMA: si menciona pérdida de fuerza progresiva, adormecimiento en la zona genital o dificultad para controlar la orina o las heces, dolor de reposo o nocturno intenso, fiebre con dolor, hinchazón con calor y enrojecimiento, dolor en el pecho, dolor tras un golpe fuerte con deformidad o imposibilidad de apoyar, o hormigueo que no se va: indicale que frene el entrenamiento y consulte a un médico o guardia hoy mismo.
 4) Nunca recomiendes medicación ni contradigas una indicación médica.
+
+LA APP NOAH (para orientar al atleta):
+Secciones del atleta: "Sesión de hoy" (los ítems del día en el orden que armó Rodri, con registro de series, carga y RPE; la fisio se tilda; puede haber Turno 1 y Turno 2), "Mi dashboard", "Mi calendario" (ciclo y semanas), "Biomarcadores" (HRV, calidad de sueño, dolor muscular, estrés, motivación), "Mis marcas" (1RM real y estimado) y "NOAH Coach IA". Rodri, desde su panel, usa Dashboard, Mis atletas, Ciclos, Planificar, Ejercicios (catálogo de Fuerza y de Kinesio/Fisio, con imagen y video) y Ver como atleta. Si te preguntan dónde está algo, orientá con esos nombres. Si no estás seguro de cómo funciona una parte de la app, decilo y derivá a Rodri; no inventes funciones.
+
+EJERCICIOS DE LA APP:
+Rodri tiene un catálogo propio de ejercicios (${catalogo.length} cargados) y muchos tienen nombres propios o variantes que NO son ejercicios estándar.
+${bloqueEjercicios}
+Reglas: (1) Si el ejercicio por el que preguntan está en esa lista, explicalo usando esos datos; la descripción que cargó Rodri tiene prioridad sobre tu conocimiento general. (2) Si NO aparece en la lista y no estás seguro de qué es, decí claramente que no lo reconocés en el catálogo y que le pregunte a Rodri; NUNCA lo asimiles a otro ejercicio ni lo inventes. (3) Si es un ejercicio estándar conocido, podés explicarlo aclarando que no lo encontraste cargado en la app. (4) En fisio, no inventes dosis ni variantes.
 
 TONO:
 - Motivador pero honesto
@@ -202,22 +264,6 @@ const USUARIOS = [
     nombre: "Romina Brancaforte",
     rol: "atleta",
     atleta_codigo: "ATL-09",
-  },
-  {
-    email: "leandarkbull",
-    password: "lean1234",
-    id: "d4d9f8ba-23a4-4723-a888-6fd2f19856ce",
-    nombre: "Lean",
-    rol: "atleta",
-    atleta_codigo: "ATL-10",
-  },
-  {
-    email: "maisalopez",
-    password: "titis23",
-    id: "a70dc05f-3d1f-4316-93f2-e6cb75415b05",
-    nombre: "Maisa Daniela lopez",
-    rol: "atleta",
-    atleta_codigo: "ATL-11",
   },
 ];
 
@@ -1559,6 +1605,8 @@ function SesionHoy({ user }) {
                       <div style={{ fontSize:11,color:C.textD,marginTop:1 }}>{ej.ejercicios?.patron_movimiento} · {ej.ejercicios?.grupo_muscular}</div>
                       {ej.notas_coach&&<div style={{ fontSize:11,color:C.amber,marginTop:3 }}>📌 {ej.notas_coach}</div>}
                       {ej.ejercicios?.video_url&&<a href={ej.ejercicios.video_url} target="_blank" rel="noreferrer" style={{ fontSize:11,color:C.blue,marginTop:3,display:"inline-block",fontFamily:F.sans }}>▶ Ver video</a>}
+                      {ej.ejercicios?.descripcion&&<div style={{ fontSize:11,color:C.textS,marginTop:4,lineHeight:1.45,whiteSpace:"pre-wrap",fontFamily:F.sans }}>{ej.ejercicios.descripcion}</div>}
+                      {ej.ejercicios?.imagen_url&&<a href={ej.ejercicios.imagen_url} target="_blank" rel="noreferrer"><img src={ej.ejercicios.imagen_url} alt={ej.ejercicios?.nombre||""} loading="lazy" style={{ width:"100%",maxWidth:240,borderRadius:8,marginTop:8,border:`1px solid ${C.border}`,display:"block" }}/></a>}
                     </div>
                     {yaGuardado&&!log.done&&<span style={{fontSize:10,color:C.amber,fontFamily:F.sans}}>editado</span>}
                   </div>
@@ -2655,6 +2703,7 @@ function CoachEjercicios({ user }) {
         nombre:form.nombre.trim(),
         descripcion:form.descripcion?.trim()||null,
         video_url:form.video_url?.trim()||null,
+        imagen_url:form.imagen_url?.trim()||null,
       };
       const payload=cat==="fisio"
         ?{...comun,categoria:"fisio",subtipo:form.subtipo||"Otro",imagen_url:form.imagen_url?.trim()||null,
@@ -2739,7 +2788,7 @@ function CoachEjercicios({ user }) {
             onMouseEnter={ev=>ev.currentTarget.style.background=C.surface}
             onMouseLeave={ev=>ev.currentTarget.style.background="transparent"}>
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",gap:10 }}>
-              {esFisioCat&&e.imagen_url&&<img src={e.imagen_url} alt="" loading="lazy" style={{ width:44,height:44,objectFit:"cover",borderRadius:8,flexShrink:0,border:`1px solid ${C.border}` }}/>}
+              {e.imagen_url&&<img src={e.imagen_url} alt="" loading="lazy" style={{ width:44,height:44,objectFit:"cover",borderRadius:8,flexShrink:0,border:`1px solid ${C.border}` }}/>}
               <div style={{ flex:1,minWidth:0 }}>
                 <div style={{ fontSize:13,fontWeight:600,color:C.text,fontFamily:F.sans }}>{e.nombre}</div>
                 <div style={{ display:"flex",gap:6,marginTop:2,flexWrap:"wrap" }}>
@@ -2752,6 +2801,7 @@ function CoachEjercicios({ user }) {
                     <Tag color={grupoColor[e.grupo_muscular]||C.textS} sm>{e.grupo_muscular||"—"}</Tag>
                     <Tag color={nC[e.nivel]||C.jade} sm>{e.nivel||"—"}</Tag>
                     <Tag color={tC[e.tipo]||C.jade} sm>{e.tipo||"—"}</Tag>
+                    {e.imagen_url&&<Tag color={C.jade} sm>imagen</Tag>}
                   </>)}
                 </div>
               </div>
@@ -2769,22 +2819,6 @@ function CoachEjercicios({ user }) {
         {esFisioCat?(<>
           <FSelect label="Tipo de técnica" value={form.subtipo} onChange={e=>setForm({...form,subtipo:e.target.value})}
             options={[{value:"",label:"— Elegir —"},...FISIO_TIPOS.map(t=>({value:t,label:t}))]}/>
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:5,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>Cómo se hace (lo ve el atleta)</div>
-            <textarea value={form.descripcion} onChange={e=>setForm({...form,descripcion:e.target.value})} rows={4} placeholder={"Posición inicial, qué hacer, cuánto sostener, qué sensación es normal y cuándo parar..."} style={{ width:"100%",padding:"11px 14px",background:"rgba(10,16,32,0.6)",border:`1px solid ${C.border}`,borderRadius:10,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,boxSizing:"border-box",resize:"vertical" }}/>
-          </div>
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:5,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>Imagen</div>
-            {form.imagen_url&&<img src={form.imagen_url} alt="" style={{ width:"100%",maxWidth:260,borderRadius:10,marginBottom:8,display:"block",border:`1px solid ${C.border}` }}/>}
-            <div style={{ display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginBottom:8 }}>
-              <label style={{ padding:"8px 14px",borderRadius:8,border:`1.5px solid ${FISIO_C}`,color:FISIO_C,fontSize:12,fontWeight:600,cursor:subiendo?"default":"pointer",fontFamily:F.sans,opacity:subiendo?0.6:1 }}>
-                {subiendo?"Subiendo…":(form.imagen_url?"Cambiar imagen":"📷 Subir imagen")}
-                <input type="file" accept="image/*" onChange={elegirImagen} disabled={subiendo} style={{ display:"none" }}/>
-              </label>
-              {form.imagen_url&&<button onClick={()=>setForm({...form,imagen_url:""})} style={{ background:"none",border:"none",color:C.textD,cursor:"pointer",fontSize:12,fontFamily:F.sans }}>Quitar</button>}
-            </div>
-            <FInput value={form.imagen_url} onChange={e=>setForm({...form,imagen_url:e.target.value})} placeholder="…o pegá un link de imagen (https://…)"/>
-          </div>
         </>):(<>
           <FSelect label="Grupo muscular" value={form.grupo_muscular} onChange={e=>setForm({...form,grupo_muscular:e.target.value})}
             options={[{value:"",label:"— Elegir grupo —"},{value:"Hombros",label:"Hombros"},{value:"Espalda",label:"Espalda"},{value:"Pecho",label:"Pecho"},{value:"Pierna",label:"Pierna"},{value:"Core",label:"Core / Abdomen"},{value:"Bíceps",label:"Bíceps"},{value:"Tríceps",label:"Tríceps"},{value:"Olímpico",label:"Olímpico"},{value:"CrossFit",label:"CrossFit"}]}/>
@@ -2797,6 +2831,22 @@ function CoachEjercicios({ user }) {
               options={[{value:"principal",label:"Principal"},{value:"accesorio",label:"Accesorio"},{value:"cardio",label:"Cardio"},{value:"movilidad",label:"Movilidad"}]}/>
           </div>
         </>)}
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:5,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>{esFisioCat?"Cómo se hace (lo ve el atleta y lo usa NOAH)":"Descripción / aclaración (lo ve el atleta y lo usa NOAH)"}</div>
+            <textarea value={form.descripcion} onChange={e=>setForm({...form,descripcion:e.target.value})} rows={4} placeholder={esFisioCat?"Posición inicial, qué hacer, cuánto sostener, qué sensación es normal y cuándo parar...":"Ej: nombre que usás en tu planificación, cómo se ejecuta, qué músculo trabaja, variante de qué ejercicio es..."} style={{ width:"100%",padding:"11px 14px",background:"rgba(10,16,32,0.6)",border:`1px solid ${C.border}`,borderRadius:10,color:C.text,fontSize:13,outline:"none",fontFamily:F.sans,boxSizing:"border-box",resize:"vertical" }}/>
+          </div>
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontSize:11,fontWeight:700,color:C.textS,marginBottom:5,letterSpacing:"0.07em",textTransform:"uppercase",fontFamily:F.sans }}>Imagen</div>
+            {form.imagen_url&&<img src={form.imagen_url} alt="" style={{ width:"100%",maxWidth:260,borderRadius:10,marginBottom:8,display:"block",border:`1px solid ${C.border}` }}/>}
+            <div style={{ display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginBottom:8 }}>
+              <label style={{ padding:"8px 14px",borderRadius:8,border:`1.5px solid ${accent}`,color:accent,fontSize:12,fontWeight:600,cursor:subiendo?"default":"pointer",fontFamily:F.sans,opacity:subiendo?0.6:1 }}>
+                {subiendo?"Subiendo…":(form.imagen_url?"Cambiar imagen":"📷 Subir imagen")}
+                <input type="file" accept="image/*" onChange={elegirImagen} disabled={subiendo} style={{ display:"none" }}/>
+              </label>
+              {form.imagen_url&&<button onClick={()=>setForm({...form,imagen_url:""})} style={{ background:"none",border:"none",color:C.textD,cursor:"pointer",fontSize:12,fontFamily:F.sans }}>Quitar</button>}
+            </div>
+            <FInput value={form.imagen_url} onChange={e=>setForm({...form,imagen_url:e.target.value})} placeholder="…o pegá un link de imagen (https://…)"/>
+          </div>
         <FInput label="Link de video (opcional)" value={form.video_url} onChange={e=>setForm({...form,video_url:e.target.value})} placeholder="https://youtube.com/…"/>
         {errorGuardar&&(
           <div style={{marginTop:8,padding:"8px 12px",background:C.red+"18",border:`1px solid ${C.red}44`,borderRadius:8,color:C.red,fontSize:12,fontFamily:F.sans}}>
@@ -2981,8 +3031,19 @@ function NOACoach({ perfil, user }) {
       const {data:logs}=await sb.from("logs_entrenamiento").select("semana,tonelaje,rpe").eq("atleta_id",user.id).order("fecha",{ascending:false}).limit(20);
       const tonSem={};
       logs?.forEach(l=>{if(l.semana)tonSem[l.semana]=(tonSem[l.semana]||0)+(l.tonelaje||0);});
+      // Ejercicios que tiene en su plan (sin repetir), para que NOAH sepa de qué habla
+      let planEj=[];
+      if (ciclo?.id) {
+        const {data:pl}=await sb.from("sesiones_plan").select("series,reps,dosis,zona,ejercicios(nombre,categoria)").eq("ciclo_id",ciclo.id);
+        const vistos=new Set();
+        (pl||[]).forEach(r=>{
+          const n=r.ejercicios?.nombre; if(!n||vistos.has(n))return; vistos.add(n);
+          planEj.push(r.ejercicios?.categoria==="fisio"?`${n} (fisio${r.dosis?`, ${r.dosis}`:""}${r.zona?`, ${r.zona}`:""})`:`${n} (${r.series}×${r.reps})`);
+        });
+      }
       setCtx({
         atleta:{nombre:perfil?.nombre,perfil:perfil?.perfil_deporte,peso:perfil?.peso_actual},
+        ejercicios_en_su_plan:planEj.slice(0,40),
         ciclo:ciclo?{nombre:ciclo.nombre,tipo:ciclo.tipo,semanas:ciclo.semanas,sesiones:ciclo.sesiones_semana}:null,
         biomarcadores:bio?{hrv:bio.hrv,sueno:bio.calidad_sueno,doms:bio.dolor_muscular,estres:bio.estres,motivacion:bio.motivacion,readiness:bio.readiness_score}:null,
         tonelaje_por_semana:tonSem,
