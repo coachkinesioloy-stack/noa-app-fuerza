@@ -1384,7 +1384,7 @@ function Login({ onLogin }) {
 // ─────────────────────────────────────────
 const NAV_ATLETA = [
   {id:"hoy",         icon:"⚡",label:"Sesión de hoy"},
-  {id:"dashboard",   icon:"📊",label:"Mi dashboard"},
+  {id:"dashboard",   icon:"⌂",label:"Inicio"},
   {id:"calendario",  icon:"◈", label:"Mi calendario"},
   {id:"biomarcadores",icon:"◆",label:"Biomarcadores"},
   {id:"marcas",      icon:"◎", label:"Mis marcas"},
@@ -3258,6 +3258,61 @@ export default function NOAApp() {
     }
     @media(min-width:769px){
       .main-with-bottomnav{padding-bottom:0!important}
+    }
+
+    /* ── NOAH PREMIUM UI REFRESH — visual only ── */
+    :root{
+      color-scheme:dark;
+      --noah-bg:#070A0F;
+      --noah-surface:#0D141D;
+      --noah-surface-2:#111B27;
+      --noah-line:rgba(151,177,204,.14);
+      --noah-muted:#8C9DB0;
+      --noah-text:#EAF1F8;
+      --noah-teal:#29D9B5;
+      --noah-blue:#5AB7FF;
+    }
+    html,body{background:#070A0F!important;color:var(--noah-text)!important;letter-spacing:.005em}
+    body{background-image:radial-gradient(ellipse at 78% 0%,rgba(27,91,127,.12),transparent 38%),radial-gradient(ellipse at 0% 55%,rgba(18,112,98,.07),transparent 36%)!important}
+    ::selection{background:rgba(41,217,181,.25);color:#fff}
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-thumb{background:rgba(126,157,184,.28);border-radius:99px}
+    /* Glass sidebar */
+    aside[style*="position: fixed"]{background:rgba(10,16,24,.78)!important;backdrop-filter:blur(34px) saturate(145%)!important;-webkit-backdrop-filter:blur(34px) saturate(145%)!important;border-right:1px solid rgba(153,186,215,.15)!important;box-shadow:12px 0 50px rgba(0,0,0,.22)!important}
+    aside[style*="position: fixed"] > div{border-color:rgba(153,186,215,.11)!important}
+    aside[style*="position: fixed"] nav{padding:16px 10px!important}
+    aside[style*="position: fixed"] nav button{position:relative!important;min-height:44px!important;padding:11px 13px!important;margin:3px 0 5px!important;border:1px solid transparent!important;border-radius:12px!important;letter-spacing:.005em!important;transition:background .2s ease,border-color .2s ease,transform .2s ease!important}
+    aside[style*="position: fixed"] nav button:hover{background:rgba(255,255,255,.045)!important;border-color:rgba(153,186,215,.1)!important;transform:translateX(2px)}
+    aside[style*="position: fixed"] nav button[style*="0, 229, 160"]{background:linear-gradient(105deg,rgba(41,217,181,.13),rgba(41,217,181,.035))!important;border:1px solid rgba(41,217,181,.2)!important;border-left:1px solid rgba(41,217,181,.2)!important;color:#65E8CD!important;box-shadow:inset 3px 0 0 #29D9B5,0 8px 24px rgba(0,0,0,.12)!important}
+    aside[style*="position: fixed"] nav button span{filter:none!important}
+    aside[style*="position: fixed"] button{font-family:'DM Sans',sans-serif!important}
+    /* Fixed topbar: more restrained glass and hairline border */
+    body > div [style*="position: fixed"][style*="height: 56px"]{background:rgba(7,10,15,.72)!important;backdrop-filter:blur(28px) saturate(155%)!important;-webkit-backdrop-filter:blur(28px) saturate(155%)!important;border-bottom:1px solid rgba(153,186,215,.12)!important;box-shadow:0 8px 32px rgba(0,0,0,.16)!important}
+    /* Main content: refined typography and rhythm */
+    main{color:var(--noah-text)}
+    main h1,main h2,main h3{letter-spacing:-.035em!important;line-height:1.16!important}
+    main h1{font-size:clamp(25px,2.3vw,34px)!important;font-weight:650!important}
+    main h2{font-weight:620!important}
+    main p{line-height:1.6}
+    /* Card surfaces: only rounded inline panels, without touching behavior */
+    main div[style*="border-radius"],main section[style*="border-radius"]{border-color:rgba(143,171,198,.15)!important}
+    main div[style*="borderRadius"],main section[style*="borderRadius"]{border-color:rgba(143,171,198,.15)!important}
+    main [style*="box-shadow"],main [style*="boxShadow"]{box-shadow:0 10px 32px rgba(0,0,0,.12)!important}
+    main button{transition:transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease!important}
+    main button:hover{border-color:rgba(41,217,181,.38)!important}
+    main input,main textarea,main select{background:rgba(8,14,21,.78)!important;border-color:rgba(143,171,198,.2)!important;border-radius:10px!important;color:#EAF1F8!important}
+    main input:focus,main textarea:focus,main select:focus{border-color:rgba(41,217,181,.65)!important;box-shadow:0 0 0 3px rgba(41,217,181,.09)!important}
+    /* Small status labels / chips */
+    main [style*="letter-spacing"]{text-rendering:optimizeLegibility}
+    /* Mobile nav glass */
+    .noah-bottom-nav{background:rgba(8,13,20,.82)!important;backdrop-filter:blur(30px) saturate(150%)!important;-webkit-backdrop-filter:blur(30px) saturate(150%)!important;border-top:1px solid rgba(143,171,198,.15)!important;box-shadow:0 -10px 36px rgba(0,0,0,.22)!important}
+    .noah-nav-item{border-radius:12px!important;padding:7px 13px!important;color:#7F91A5!important}
+    .noah-nav-item.active{background:rgba(41,217,181,.09)!important;color:#43E2C1!important}
+    .noah-nav-dot{background:#29D9B5!important;box-shadow:0 0 10px rgba(41,217,181,.5)!important}
+    .noah-nav-label{font-family:'DM Sans',sans-serif!important;font-size:9px!important;letter-spacing:.045em!important;font-weight:600!important}
+    @media(max-width:768px){
+      aside[style*="position: fixed"]{width:min(86vw,300px)!important;min-width:min(86vw,300px)!important}
+      main h1{font-size:25px!important}
     }
   `;
 
