@@ -75,7 +75,144 @@ function lineaEjercicio(e) {
   return `- ${e.nombre} [${meta}]${desc}${e.imagen_url ? " (tiene imagen en la app)" : ""}${e.video_url ? " (tiene video en la app)" : ""}`;
 }
 
-async function askNOA(q, ctx = {}) {
+// ── Atleta con seguimiento personalizado (memoria + trato cercano) ──
+const MAISA_ID = "a70dc05f-3d1f-4316-93f2-e6cb75415b05";
+
+// Memoria en Supabase: tablas noah_chat (mensajes) y noah_memoria (ficha de seguimiento)
+async function memCargarChat(atletaId, limite = 40) {
+  try {
+    const sb = await getSB(); if (!sb) return [];
+    const { data, error } = await sb.from("noah_chat").select("rol,texto,created_at")
+      .eq("atleta_id", atletaId).order("created_at", { ascending: false }).limit(limite);
+    if (error || !data) return [];
+    return data.reverse().map(r => ({ rol: r.rol, texto: r.texto }));
+  } catch (e) { return []; }
+}
+async function memGuardarMsg(atletaId, rol, texto) {
+  try {
+    const sb = await getSB(); if (!sb) return;
+    await sb.from("noah_chat").insert({ atleta_id: atletaId, rol, texto });
+  } catch (e) {}
+}
+async function memCargarResumen(atletaId) {
+  try {
+    const sb = await getSB(); if (!sb) return "";
+    const { data } = await sb.from("noah_memoria").select("resumen").eq("atleta_id", atletaId).maybeSingle();
+    return data?.resumen || "";
+  } catch (e) { return ""; }
+}
+// Actualiza la ficha con lo último que contó. Se encola para que dos mensajes seguidos no se pisen.
+let _memCola = Promise.resolve();
+function memActualizarResumen(atletaId, previo, pregunta, respuesta) {
+  _memCola = _memCola.then(async () => {
+    try {
+      const key = process.env.NEXT_PUBLIC_GROQ_KEY;
+      if (!key || !key.startsWith("gsk_")) return previo;
+      const hoy = new Date().toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" });
+      const sys = `Sos el módulo de memoria de NOAH Coach. Mantenés una ficha de seguimiento breve de una atleta que está en rehabilitación de rodilla, para que el asistente se acuerde de lo que ella le va contando.
+Reglas:
+- Anotá SOLO lo que ella dijo: zona y nivel de dolor (de 0 a 10 si lo dio), cuándo aparece, qué lo provoca o lo alivia, qué ejercicios le cuestan o le salen bien, mejoras o retrocesos, sueño, ánimo, miedos y dudas. No inventes, no diagnostiques, no interpretes.
+- Cada dato con su fecha aproximada (hoy es ${hoy}).
+- Conservá lo importante de la ficha anterior. Si algo cambió (por ejemplo, ya no tiene dolor), dejá registrado el cambio con fecha y cómo estaba antes.
+- Si el último intercambio no aporta nada nuevo sobre ella, devolvé la ficha anterior sin cambios.
+- Formato: viñetas cortas en texto plano, máximo 1500 caracteres. Devolvé SOLO la ficha, sin explicaciones.`;
+      const usr = `FICHA ANTERIOR:\n${previo || "(vacía)"}\n\nÚLTIMO INTERCAMBIO:\nAtleta: ${pregunta}\nNOAH: ${respuesta}`;
+      const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "openai/gpt-oss-120b",
+          messages: [{ role: "system", content: sys }, { role: "user", content: usr }],
+          temperature: 0.2, max_tokens: 1800
+        })
+      });
+      if (!r.ok) return previo;
+      const d = await r.json();
+      const nuevo = (d.choices?.[0]?.message?.content || "").trim();
+      if (!nuevo || nuevo.length > 3000) return previo;
+      if (nuevo === (previo || "").trim()) return previo;
+      const sb = await getSB();
+      if (sb) await sb.from("noah_memoria").upsert({ atleta_id: atletaId, resumen: nuevo, updated_at: new Date().toISOString() });
+      return nuevo;
+    } catch (e) { return previo; }
+  });
+  return _memCola;
+}
+
+// ── Texto con formato (negritas, listas, párrafos) para las respuestas de NOAH ──
+// El modelo escribe markdown; acá se convierte en formato real y se limpian símbolos sueltos.
+function RichInline({ text }) {
+  const out = [];
+  const re = /(\*\*[^*\n]+\*\*|__[^_\n]+__|\*[^*\s][^*\n]*\*|`[^`\n]+`|https?:\/\/[^\s)<>]+)/g;
+  let last = 0, m, k = 0;
+  while ((m = re.exec(text))) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    let tok = m[0];
+    if (tok.startsWith("**") || tok.startsWith("__")) {
+      out.push(<strong key={k++} style={{ color:C.white,fontWeight:700 }}>{tok.slice(2, -2)}</strong>);
+    } else if (tok.startsWith("`")) {
+      out.push(<span key={k++} style={{ fontFamily:"monospace",background:C.surface,borderRadius:4,padding:"1px 5px",fontSize:"0.92em" }}>{tok.slice(1, -1)}</span>);
+    } else if (tok.startsWith("http")) {
+      let tail = "";
+      const t = tok.match(/[.,;:!?]+$/);
+      if (t) { tail = t[0]; tok = tok.slice(0, -tail.length); }
+      const yt = /youtu/.test(tok);
+      out.push(<a key={k++} href={tok} target="_blank" rel="noopener noreferrer" style={{ color:C.jade,textDecoration:"underline",wordBreak:"break-word" }}>{yt ? "▶ Ver ejecución en YouTube" : "Abrir enlace"}</a>);
+      if (tail) out.push(tail);
+    } else {
+      out.push(<em key={k++}>{tok.slice(1, -1)}</em>);
+    }
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return <>{out.map((o, i) => typeof o === "string" ? o.replace(/\*\*|__/g, "") : o)}</>;
+}
+function RichText({ texto }) {
+  const lines = String(texto || "").replace(/\r/g, "").split("\n");
+  const blocks = [];
+  let para = [], list = null;
+  const flushPara = () => { if (para.length) { blocks.push({ t:"p", lines:para }); para = []; } };
+  const flushList = () => { if (list) { blocks.push({ t:list.o ? "ol" : "ul", items:list.items }); list = null; } };
+  for (const raw of lines) {
+    // El link de ejecución queda como un solo botón-link (sin repetir "Ver ejecución:")
+    const l = raw.trim().replace(/▶?\s*Ver ejecución:?\s*(https?:\/\/)/i, "$1");
+    if (!l) { flushPara(); flushList(); continue; }
+    if (/^\|?[\s:|-]+\|?$/.test(l) && l.includes("|") && l.includes("-")) continue;  // fila separadora de tabla
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(l)) { flushPara(); flushList(); continue; }     // línea horizontal
+    let m;
+    if ((m = l.match(/^#{1,6}\s+(.*)$/))) { flushPara(); flushList(); blocks.push({ t:"h", x:m[1].replace(/\*+/g, "") }); continue; }
+    if ((m = l.match(/^[-*•]\s+(.*)$/))) {
+      flushPara(); if (!list || list.o) { flushList(); list = { o:false, items:[] }; }
+      list.items.push(m[1]); continue;
+    }
+    if ((m = l.match(/^\d+[.)]\s+(.*)$/))) {
+      flushPara(); if (!list || !list.o) { flushList(); list = { o:true, items:[] }; }
+      list.items.push(m[1]); continue;
+    }
+    if (l.startsWith("|")) {  // fila de tabla → texto simple
+      flushPara(); flushList();
+      blocks.push({ t:"p", lines:[l.split("|").map(c => c.trim()).filter(Boolean).join(" · ")] }); continue;
+    }
+    flushList(); para.push(l);
+  }
+  flushPara(); flushList();
+  const pStyle = { margin:"0 0 10px",lineHeight:1.65 };
+  return (
+    <div style={{ wordBreak:"break-word",overflowWrap:"anywhere" }}>
+      {blocks.map((b, i) => {
+        const last = i === blocks.length - 1;
+        if (b.t === "h") return <div key={i} style={{ fontWeight:700,color:C.white,margin:`${i ? 4 : 0}px 0 6px`,fontSize:14 }}><RichInline text={b.x}/></div>;
+        if (b.t === "ul" || b.t === "ol") {
+          const Tag2 = b.t;
+          return <Tag2 key={i} style={{ margin:last ? 0 : "0 0 10px",paddingLeft:20,lineHeight:1.6 }}>{b.items.map((it, j) => <li key={j} style={{ marginBottom:4 }}><RichInline text={it}/></li>)}</Tag2>;
+        }
+        return <p key={i} style={{ ...pStyle,marginBottom:last ? 0 : 10 }}>{b.lines.map((ln, j) => <span key={j}>{j > 0 && <br/>}<RichInline text={ln}/></span>)}</p>;
+      })}
+    </div>
+  );
+}
+
+async function askNOA(q, ctx = {}, opts = {}) {
   const key = process.env.NEXT_PUBLIC_GROQ_KEY;
   if (!key || key === "gsk_..." || !key.startsWith("gsk_")) return demoMsg(q);
   try {
@@ -84,6 +221,22 @@ async function askNOA(q, ctx = {}) {
     const bloqueEjercicios = relacionados.length
       ? "Ejercicios del catálogo de la app que coinciden con la pregunta:\n" + relacionados.map(lineaEjercicio).join("\n")
       : "Ningún ejercicio del catálogo de la app coincide con lo que mencionó el atleta.";
+    const hoyTxt = new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    const bloqueMaisa = opts.maisa ? `
+
+ATLETA CON SEGUIMIENTO PERSONALIZADO (estas reglas tienen prioridad sobre las anteriores para esta atleta):
+Hoy es ${hoyTxt}. Esta atleta se llama Maisa. Si ella misma te dice que le dicen "Titis", podés usarlo; si no lo dice ella, no lo uses.
+- Trato: cercano, cálido y de confianza, en español rioplatense, como alguien que la acompaña de verdad. No menciones que el Coach te contó algo sobre ella ni de dónde sale lo que sabés: si lo sabés por su plan o por lo que ella te contó, usalo con naturalidad.
+- Situación: está haciendo rehabilitación de rodilla, con dolor, y tiene ejercicios indicados por Rodri. No conocés el diagnóstico ni el detalle de su lesión: si necesitás algún dato, preguntalo con naturalidad, de a una cosa por vez, y solo si aporta.
+- Tu rol: acompañarla durante todo el proceso y explicarle lo que no sepa, como un kinesiólogo y osteópata deportivo experto. Cuando ella pregunte, explayate con profundidad: fisiología y biomecánica de la rodilla, lesiones deportivas, cómo funciona el dolor y el sistema nervioso, HRV, psicología deportiva, emociones desde la neurociencia. Si no pregunta, no des clases: conversá y acompañá.
+- Memoria: abajo tenés tu ficha de seguimiento y la conversación reciente. Usalas. Cuando cuente cambios (por ejemplo, que ya no tiene dolor), acordate de cómo venía y mencionalo con naturalidad ("antes me contabas que..."). Si algo no figura en tu memoria, no lo inventes.
+- No receta ni cambies nada de lo ya pautado (ejercicios, cargas, progresiones, dosis) ni medicación: eso lo definen Rodri y su médico. No repitas lo que ya le dijiste. Una sola pregunta de seguimiento por vez.
+- Derivación: no cierres cada respuesta con el aviso de consultar. Hacelo solo si cuenta un síntoma nuevo, si empeora o si duda de su tratamiento: ahí sí sugerile hablarlo con Rodri y, si corresponde, con su médico. Los signos de alarma de la sección SEGURIDAD siguen vigentes.
+- Honestidad: si ella te pregunta si te acordás de lo que te cuenta, decile que sí, que vas guardando lo que conversan para acompañarla mejor. Nunca digas que no guardás nada.
+- Largo: respuestas breves por defecto (2 a 3 párrafos). Más largas solo cuando te pidió que expliques o profundices.
+
+FICHA DE SEGUIMIENTO DE MAISA (lo que ella te fue contando):
+${opts.memoria ? opts.memoria : "Todavía no hay nada registrado: es el comienzo del acompañamiento."}` : "";
     const sistema = `Sos NOAH Coach, el asistente de entrenamiento de la app NOAH (Never Over, Always Higher), creada por el Prof. Rodrigo Fernández.
 
 SOBRE EL COACH:
@@ -144,6 +297,12 @@ Rodri tiene un catálogo propio de ejercicios (${catalogo.length} cargados) y mu
 ${bloqueEjercicios}
 Reglas: (1) Si el ejercicio por el que preguntan está en esa lista, explicalo usando esos datos; la descripción que cargó Rodri tiene prioridad sobre tu conocimiento general. (2) Si NO aparece en la lista y no estás seguro de qué es, decí claramente que no lo reconocés en el catálogo y que le pregunte a Rodri; NUNCA lo asimiles a otro ejercicio ni lo inventes. (3) Si es un ejercicio estándar conocido, podés explicarlo aclarando que no lo encontraste cargado en la app. (4) En fisio, no inventes dosis ni variantes.
 
+FORMATO DE LA RESPUESTA (se lee en el celular):
+- Párrafos cortos separados por una línea en blanco. Sin bloques largos de texto.
+- **Negritas** solo en 2 a 4 términos clave por respuesta.
+- Listas con guiones solo si enumerás pasos u opciones; sin tablas, sin encabezados con #, sin líneas de guiones ni símbolos decorativos.
+- Emojis solo de forma muy ocasional.
+
 TONO:
 - Motivador pero honesto
 - Técnico pero accesible  
@@ -151,7 +310,7 @@ TONO:
 
 Contexto del atleta: ${JSON.stringify(ctx, null, 2)}
 Áreas: periodización, tonelaje, %1RM, RIR, RPE, recuperación, ciclos de fuerza (adaptación, hipertrofia, fza resistencia, fza potencia, submáxima, neural), biomarcadores (HRV, sueño, DOMS).
-Fórmula 1RM Epley: kg × (1 + reps/30). Carga para %: 1RM × % / 100.`;
+Fórmula 1RM Epley: kg × (1 + reps/30). Carga para %: 1RM × % / 100.${bloqueMaisa}`;
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -159,9 +318,10 @@ Fórmula 1RM Epley: kg × (1 + reps/30). Carga para %: 1RM × % / 100.`;
         model: "openai/gpt-oss-120b",
         messages: [
           { role: "system", content: sistema },
+          ...(opts.historial || []),
           { role: "user", content: q }
         ],
-        temperature: 0.5, max_tokens: 1000
+        temperature: 0.5, max_tokens: opts.maisa ? 1800 : 1000
       })
     });
     if (!r.ok) {
@@ -3023,7 +3183,11 @@ function Marcas({ user }) {
 // NOAH COACH IA
 // ─────────────────────────────────────────
 function NOACoach({ perfil, user }) {
-  const [msgs,setMsgs]=useState([{rol:"noa",texto:"Hola! Soy NOAH Coach 💪\n\nEstoy cargando tu contexto de entrenamiento para darte respuestas personalizadas. ¿En qué puedo ayudarte?"}]);
+  const esMaisa=user?.id===MAISA_ID;
+  const [msgs,setMsgs]=useState([esMaisa
+    ?{rol:"noa",saludo:true,texto:"Hola, Maisa. Soy NOAH 💪\n\n¿Cómo estás hoy? Contame cómo viene la rodilla y en qué te puedo acompañar."}
+    :{rol:"noa",saludo:true,texto:"Hola! Soy NOAH Coach 💪\n\nEstoy cargando tu contexto de entrenamiento para darte respuestas personalizadas. ¿En qué puedo ayudarte?"}]);
+  const memRef=useRef("");
   const [input,setInput]=useState("");
   const [loading,setLoading]=useState(false);
   const [ctx,setCtx]=useState({perfil});
@@ -3068,6 +3232,19 @@ function NOACoach({ perfil, user }) {
     cargarCtx();
   },[user]);
 
+  // Memoria (solo Maisa): recupera la conversación anterior y la ficha de seguimiento
+  useEffect(()=>{
+    if(!esMaisa||!user?.id)return;
+    let vivo=true;
+    (async()=>{
+      const [hist,resumen]=await Promise.all([memCargarChat(user.id,40),memCargarResumen(user.id)]);
+      if(!vivo)return;
+      memRef.current=resumen||"";
+      if(hist.length)setMsgs(hist);
+    })();
+    return ()=>{vivo=false;};
+  },[esMaisa,user?.id]);
+
   const quick=[
     "¿Cómo se ejecuta la sentadilla trasera?",
     "¿Qué es el RIR y cómo lo uso?",
@@ -3081,15 +3258,27 @@ function NOACoach({ perfil, user }) {
     if (!txt.trim()||loading)return;
     setMsgs(p=>[...p,{rol:"user",texto:txt}]);
     setInput("");setLoading(true);
-    const r=await askNOA(txt,ctx);
+    // Solo Maisa: se envía la charla reciente y la ficha de seguimiento
+    const opts=esMaisa
+      ?{maisa:true,memoria:memRef.current,historial:msgs.filter(m=>!m.saludo).slice(-16).map(m=>({role:m.rol==="user"?"user":"assistant",content:m.texto}))}
+      :{};
+    const r=await askNOA(txt,ctx,opts);
     setMsgs(p=>[...p,{rol:"noa",texto:r}]);
     setLoading(false);
+    if(esMaisa&&user?.id&&!/^Error (Groq|de conexión)/.test(r)){
+      (async()=>{
+        await memGuardarMsg(user.id,"user",txt);
+        await memGuardarMsg(user.id,"noa",r);
+        const nuevo=await memActualizarResumen(user.id,memRef.current,txt,r);
+        if(typeof nuevo==="string")memRef.current=nuevo;
+      })();
+    }
     setTimeout(()=>ref.current?.scrollIntoView({behavior:"smooth"}),80);
   };
 
   return (
-    <div style={{ padding:"28px 32px",maxWidth:720,display:"flex",flexDirection:"column",height:"calc(100vh - 56px)" }}>
-      <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16 }}>
+    <div className="noah-coach-wrap" style={{ padding:"28px 32px",maxWidth:720,display:"flex",flexDirection:"column",height:"calc(100vh - 56px)" }}>
+      <div className="noah-coach-head" style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16 }}>
         <SectionHeader title="NOAH Coach" sub={groqActivo?"Groq · LLaMA 3 70B · contexto real del atleta":"Modo demo · configurá NEXT_PUBLIC_GROQ_KEY en Vercel"}/>
         <div style={{ display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,background:groqActivo?C.jade+"18":C.amber+"18",border:`1px solid ${groqActivo?C.jade+"44":C.amber+"44"}` }}>
           <div style={{ width:7,height:7,borderRadius:"50%",background:groqActivo?C.jade:C.amber }}/>
@@ -3097,7 +3286,7 @@ function NOACoach({ perfil, user }) {
         </div>
       </div>
       {ctx.ciclo&&(
-        <div style={{ display:"flex",gap:8,marginBottom:12,padding:"8px 12px",background:C.surface,borderRadius:9,border:`1px solid ${C.border}`,flexWrap:"wrap" }}>
+        <div className={"noah-ctxstrip"+(msgs.length>1?" noah-hide-m":"")} style={{ display:"flex",gap:8,marginBottom:12,padding:"8px 12px",background:C.surface,borderRadius:9,border:`1px solid ${C.border}`,flexWrap:"wrap" }}>
           <span style={{ fontSize:11,color:C.textS,fontFamily:F.sans }}>Contexto cargado:</span>
           <Tag color={C.jade} sm>{ctx.ciclo.tipo?.replace(/_/g," ")||"ciclo"}</Tag>
           <Tag color={C.blue} sm>{ctx.ciclo.semanas} sem</Tag>
@@ -3105,19 +3294,17 @@ function NOACoach({ perfil, user }) {
           {ctx.biomarcadores?.readiness&&<Tag color={ctx.biomarcadores.readiness>=75?C.jade:C.amber} sm>Readiness {ctx.biomarcadores.readiness}</Tag>}
         </div>
       )}
-      <div style={{ display:"flex",gap:6,flexWrap:"wrap",marginBottom:14 }}>
+      <div className={"noah-chips"+(msgs.length>1?" noah-hide-m":"")} style={{ display:"flex",gap:6,flexWrap:"wrap",marginBottom:14 }}>
         {quick.map(q=><button key={q} onClick={()=>send(q)} style={{ padding:"5px 12px",borderRadius:99,border:`1px solid ${C.border}`,background:"transparent",color:C.textS,fontSize:11,cursor:"pointer",fontFamily:F.sans,transition:"all 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.jade+"88";e.currentTarget.style.color=C.jade;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.textS;}}>{q}</button>)}
       </div>
-      <div style={{ flex:1,overflowY:"auto",background:C.deep,border:`1px solid ${C.border}`,borderRadius:14,padding:16,marginBottom:14,display:"flex",flexDirection:"column",gap:14 }}>
+      <div className="noah-chatbox" style={{ flex:1,minHeight:0,overflowY:"auto",overflowX:"hidden",background:C.deep,border:`1px solid ${C.border}`,borderRadius:14,padding:16,marginBottom:14,display:"flex",flexDirection:"column",gap:14 }}>
         {msgs.map((m,i)=>(
           <div key={i} style={{ display:"flex",justifyContent:m.rol==="user"?"flex-end":"flex-start",gap:8,alignItems:"flex-start" }}>
             {m.rol==="noa"&&<div style={{ width:30,height:30,borderRadius:8,flexShrink:0,background:`linear-gradient(135deg,${C.jade3},${C.jade})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:C.deep,fontFamily:F.serif }}>N</div>}
-            <div style={{ maxWidth:"78%",background:m.rol==="user"?C.jade+"18":C.card,border:`1px solid ${m.rol==="user"?C.jade+"44":C.border}`,borderRadius:m.rol==="user"?"14px 4px 14px 14px":"4px 14px 14px 14px",padding:"10px 14px",fontSize:13,color:C.text,lineHeight:1.65,fontFamily:F.sans }}>
-              {m.texto.split(/(https?:\/\/[^\s]+)/g).map((part,pi)=>
-                part.match(/^https?:\/\//)
-                  ? <a key={pi} href={part} target="_blank" rel="noopener noreferrer" style={{ color:C.jade,textDecoration:"underline",wordBreak:"break-all" }}>▶ Ver en YouTube</a>
-                  : <span key={pi} style={{ whiteSpace:"pre-wrap" }}>{part}</span>
-              )}
+            <div className={m.rol==="user"?"noah-bubble-user":"noah-bubble-noa"} style={{ maxWidth:"78%",minWidth:0,background:m.rol==="user"?C.jade+"18":C.card,border:`1px solid ${m.rol==="user"?C.jade+"44":C.border}`,borderRadius:m.rol==="user"?"14px 4px 14px 14px":"4px 14px 14px 14px",padding:"10px 14px",fontSize:13,color:C.text,lineHeight:1.65,fontFamily:F.sans }}>
+              {m.rol==="noa"
+                ? <RichText texto={m.texto}/>
+                : <span style={{ whiteSpace:"pre-wrap",wordBreak:"break-word" }}>{m.texto}</span>}
             </div>
           </div>
         ))}
@@ -3313,6 +3500,26 @@ export default function NOAApp() {
     @media(max-width:768px){
       aside[style*="position: fixed"]{width:min(86vw,300px)!important;min-width:min(86vw,300px)!important}
       main h1{font-size:25px!important}
+    }
+
+    /* ── MOBILE: sin scroll horizontal, chat a todo el ancho ── */
+    html,body{max-width:100%;overflow-x:hidden}
+    img,video,canvas,svg{max-width:100%}
+    input,select,textarea{min-width:0;max-width:100%}
+    [style*="display: grid"]>*{min-width:0}
+    main{max-width:100vw;overflow-x:hidden}
+    .noah-coach-wrap{height:calc(100vh - 56px);height:calc(100dvh - 56px)}
+    @media(max-width:768px){
+      main [style*="padding: 28px 32px"]{padding:16px 14px!important}
+      [style*="grid-template-columns: 1fr 130px 130px 110px"]{grid-template-columns:minmax(0,1fr) auto auto auto!important;gap:8px!important;padding-left:12px!important;padding-right:12px!important}
+      [style*="grid-template-columns: 220px 1fr"],[style*="grid-template-columns: 200px 1fr"]{grid-template-columns:minmax(0,1fr)!important}
+      .noah-coach-wrap{padding:10px 12px 8px!important;max-width:100%!important;height:calc(100vh - 56px - 84px)!important;height:calc(100dvh - 56px - 84px)!important}
+      .noah-coach-head{margin-bottom:8px!important;gap:8px}
+      .noah-coach-head>div:first-child{margin-bottom:0!important}
+      .noah-hide-m{display:none!important}
+      .noah-chatbox{padding:12px 10px!important;border-radius:12px!important;margin-bottom:10px!important;gap:12px!important}
+      .noah-bubble-noa{max-width:calc(100% - 40px)!important;font-size:14px!important}
+      .noah-bubble-user{max-width:88%!important;font-size:14px!important}
     }
   `;
 
