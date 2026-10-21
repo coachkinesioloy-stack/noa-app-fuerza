@@ -397,7 +397,7 @@ const USUARIOS = [
     email: "franbull",
     password: "fran1234",
     id: "132dce5c-4de6-41c0-8bcb-205f669a71fd",
-    nombre: "Laura Perez",
+    nombre: "Franco",
     rol: "atleta",
     atleta_codigo: "ATL-06",
   },
