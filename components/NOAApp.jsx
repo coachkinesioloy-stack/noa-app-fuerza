@@ -426,10 +426,10 @@ const USUARIOS = [
     atleta_codigo: "ATL-09",
   },
   {
-    email: "leandarkbull",
-    password: "lean1234",
+    email: "matias",
+    password: "mati1234",
     id: "d4d9f8ba-23a4-4723-a888-6fd2f19856ce",
-    nombre: "Lean",
+    nombre: "Mati",
     rol: "atleta",
     atleta_codigo: "ATL-10",
   },
