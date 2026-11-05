@@ -441,6 +441,14 @@ const USUARIOS = [
     rol: "atleta",
     atleta_codigo: "ATL-11",
   },
+  {
+    email: "juan",
+    password: "juan1234",
+    id: "9fada9fd-9376-4c25-abc4-851b5f7f0337",
+    nombre: "JUAN",
+    rol: "atleta",
+    atleta_codigo: "ATL-12",
+  },
 ];
 
 // ─────────────────────────────────────────
