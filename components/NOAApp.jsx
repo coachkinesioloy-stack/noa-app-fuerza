@@ -455,41 +455,35 @@ const USUARIOS = [
 // PALETA + TIPOS
 // ─────────────────────────────────────────
 const C = {
-  // Fondos
-  bg:"#202526", deep:"#202526", surface:"#292F2E",
-  card:"#303735", cardH:"#343B38",
-  border:"#414944", borderH:"#555D55",
-  // Acento principal — Verde jade NOAH
-  jade:"#B87558", jade2:"#B87558", jade3:"#899387",
-  // Azul Francia — identidad NOAH
-  france:"#0055A4", france2:"#0071D4", france3:"#3399FF",
-  // Naranja — energía, alertas altas
-  orange:"#FF6B2B", orange2:"#FF8C54", orange3:"#FF4500",
-  // Rojo — alertas críticas
-  red:"#FF3A3A", red2:"#FF6060",
-  // Blue claro — métricas secundarias
-  blue:"#899387", amber:"#FFB84D", violet:"#A78BFA",
-  // Textos
-  text:"#E9E2D7", textS:"#B7B1A6", textD:"#2E4060", white:"#E9E2D7",
+  // NOAH Premium Minimal — carbón, marfil, cobre y salvia
+  bg:"#202526", deep:"#191E1F", surface:"#293031",
+  card:"#303839", cardH:"#394344",
+  border:"#46504F", borderH:"#66716D",
+  jade:"#B87558", jade2:"#A7654A", jade3:"#8E543E",
+  france:"#899387", france2:"#A2AA9D", france3:"#BAC1B6",
+  orange:"#B87558", orange2:"#C88769", orange3:"#9F6048",
+  red:"#B85F56", red2:"#CC786D",
+  blue:"#899387", amber:"#B87558", violet:"#9A8C9C",
+  text:"#E9E2D7", textS:"#B7B4A9", textD:"#85877F", white:"#F4EEE5",
 };
-const F = { serif:"'DM Serif Display',serif", sans:"'DM Sans',sans-serif", title:"'Rajdhani',sans-serif" };
+const F = { serif:"'Instrument Serif',serif", sans:"'Manrope',sans-serif", title:"'Manrope',sans-serif" };
 
 const DIAS = ["","Día 1","Día 2","Día 3","Día 4","Día 5","Día 6","Día 7"];
 const CICLOS_TIPOS = [
-  { key:"adaptacion",      label:"Adaptación",     color:"#4ade80", pct:"50–65", reps:"12–15" },
-  { key:"hipertrofia",     label:"Hipertrofia",     color:"#899387", pct:"65–75", reps:"8–12"  },
-  { key:"fza_resistencia", label:"Fza Resistencia", color:"#FFB84D", pct:"70–80", reps:"6–10"  },
-  { key:"fza_potencia",    label:"Fza Potencia",    color:"#FF5C5C", pct:"75–85", reps:"3–6"   },
-  { key:"submax",          label:"Submáxima",       color:"#A78BFA", pct:"85–92", reps:"1–4"   },
-  { key:"neural",          label:"Neural / Pico",   color:"#B87558", pct:"90–100",reps:"1–3"   },
+  { key:"adaptacion",      label:"Adaptación",     color:"#899387", pct:"50–65", reps:"12–15" },
+  { key:"hipertrofia",     label:"Hipertrofia",     color:"#B87558", pct:"65–75", reps:"8–12"  },
+  { key:"fza_resistencia", label:"Fza Resistencia", color:"#A2AA9D", pct:"70–80", reps:"6–10"  },
+  { key:"fza_potencia",    label:"Fza Potencia",    color:"#C88769", pct:"75–85", reps:"3–6"   },
+  { key:"submax",          label:"Submáxima",       color:"#9A8C9C", pct:"85–92", reps:"1–4"   },
+  { key:"neural",          label:"Neural / Pico",   color:"#E9E2D7", pct:"90–100",reps:"1–3"   },
 ];
 const PATRONES = ["Sentadilla","Bisagra","Empuje","Jale","Cargada","Core","Full body","Accesorio"];
 
 // Fondo de login y pantalla de carga: mismo azul oscuro del logo
-const NOAH_BG = "radial-gradient(ellipse 80% 60% at 50% 32%, #010b26 0%, #202526 65%, #000208 100%)";
+const NOAH_BG = "radial-gradient(ellipse 90% 70% at 50% 0%, #303839 0%, #202526 58%, #191E1F 100%)";
 
 // ── FISIO / KINESIOLOGÍA ──────────────────
-const FISIO_C = "#22D3EE";
+const FISIO_C = "#899387";
 const FISIO_TIPOS = ["Crioterapia","Termoterapia","Masaje","Elongación","Autopostura","Isométrico","Magnetoterapia","Movilidad","Otro"];
 const TURNOS = { "1":{ txt:"Turno 1", full:"Turno 1 · Mañana" }, "2":{ txt:"Turno 2", full:"Turno 2 · Tarde" } };
 const isFisio = (e) => (e?.ejercicios?.categoria || e?.categoria) === "fisio";
@@ -539,11 +533,11 @@ function Tag({ color=C.jade, children, sm }) {
 
 function Card({ children, style={}, onClick, glow }) {
   const [h,setH]=useState(false);
-  return <div onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ background:h&&onClick?`rgba(17,29,53,0.85)`:`rgba(13,21,40,0.80)`,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",border:`1px solid ${h&&onClick?"rgba(51,153,255,0.25)":"rgba(26,40,64,0.8)"}`,borderRadius:16,padding:"18px 20px",cursor:onClick?"pointer":"default",transition:"all 0.25s ease",boxShadow:glow?`0 0 32px rgba(0,229,160,0.12), 0 8px 32px rgba(0,0,0,0.4)`:"0 4px 24px rgba(0,0,0,0.3)",...style }}>{children}</div>;
+  return <div className="noah-card" onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ background:h&&onClick?`rgba(17,29,53,0.85)`:`rgba(13,21,40,0.80)`,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",border:`1px solid ${h&&onClick?"rgba(51,153,255,0.25)":"rgba(26,40,64,0.8)"}`,borderRadius:16,padding:"18px 20px",cursor:onClick?"pointer":"default",transition:"all 0.25s ease",boxShadow:glow?`0 0 32px rgba(0,229,160,0.12), 0 8px 32px rgba(0,0,0,0.4)`:"0 4px 24px rgba(0,0,0,0.3)",...style }}>{children}</div>;
 }
 
 function Stat({ label, value, unit, color=C.jade }) {
-  return <div style={{
+  return <div className="noah-stat" style={{
     background:"rgba(10,16,32,0.7)",
     backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",
     border:`1px solid rgba(26,40,64,0.8)`,
@@ -565,8 +559,8 @@ function Bar({ value, max=100, color=C.jade, h=5 }) {
 
 function Btn({ children, onClick, color=C.jade, outline, sm, full, disabled, style={} }) {
   const [h,setH]=useState(false);
-  const shadow=color===C.jade?`0 4px 0 #899387, 0 6px 20px rgba(0,229,160,0.3)`:color===C.france||color===C.france2?`0 4px 0 #003A70, 0 6px 20px rgba(0,85,164,0.35)`:color===C.orange?`0 4px 0 #CC4400, 0 6px 20px rgba(255,107,43,0.35)`:`0 4px 0 rgba(0,0,0,0.4), 0 6px 20px ${color}33`;
-  return <button onClick={onClick} disabled={disabled} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ width:full?"100%":"auto",padding:sm?"7px 16px":"11px 24px",borderRadius:10,border:outline?`1.5px solid ${color}`:"none",background:outline?`${color}12`:h&&!disabled?`linear-gradient(135deg,${color},${color}CC)`:`linear-gradient(160deg,${color}EE,${color})`,color:outline?color:"#202526",fontWeight:700,fontSize:sm?11:13,cursor:disabled?"not-allowed":"pointer",fontFamily:F.title||F.sans,letterSpacing:outline?"0.04em":"0.06em",textTransform:"uppercase",opacity:disabled?0.4:1,transition:"all 0.15s",boxShadow:(!outline&&!disabled)?(h?`0 2px 0 ${color}88, 0 4px 14px ${color}33`:shadow):"none",transform:(!outline&&!disabled&&h)?"translateY(2px)":(!outline&&!disabled)?"translateY(0)":"none",...style }}>{children}</button>;
+  const shadow=color===C.jade?`0 2px 0 #8E543E, 0 5px 16px rgba(184,117,88,0.18)`:color===C.france||color===C.france2?`0 2px 0 #596657, 0 5px 16px rgba(137,147,135,0.16)`:color===C.orange?`0 2px 0 #8E543E, 0 5px 16px rgba(184,117,88,0.18)`:`0 4px 0 rgba(0,0,0,0.4), 0 6px 20px ${color}33`;
+  return <button onClick={onClick} disabled={disabled} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ width:full?"100%":"auto",padding:sm?"7px 16px":"11px 24px",borderRadius:10,border:outline?`1.5px solid ${color}`:"none",background:outline?`${color}12`:h&&!disabled?`linear-gradient(135deg,${color},${color}CC)`:`linear-gradient(160deg,${color}EE,${color})`,color:outline?color:"#030810",fontWeight:700,fontSize:sm?11:13,cursor:disabled?"not-allowed":"pointer",fontFamily:F.title||F.sans,letterSpacing:outline?"0.04em":"0.06em",textTransform:"uppercase",opacity:disabled?0.4:1,transition:"all 0.15s",boxShadow:(!outline&&!disabled)?(h?`0 2px 0 ${color}88, 0 4px 14px ${color}33`:shadow):"none",transform:(!outline&&!disabled&&h)?"translateY(2px)":(!outline&&!disabled)?"translateY(0)":"none",...style }}>{children}</button>;
 }
 
 function FInput({ label, value, onChange, type="text", placeholder, min, max, step }) {
@@ -629,8 +623,8 @@ function EmptyState({ title, sub }) {
 // GRÁFICAS SVG (sin dependencias externas)
 // ─────────────────────────────────────────
 function LineChart({ data, color, height, showDots }) {
-  color=color||"#B87558"; height=height||140; showDots=showDots!==false;
-  if (!data||data.length<2) return <div style={{ height,display:"flex",alignItems:"center",justifyContent:"center",color:"#69746B",fontSize:12,fontFamily:"'DM Sans',sans-serif" }}>Sin datos suficientes</div>;
+  color=color||"#00E5A0"; height=height||140; showDots=showDots!==false;
+  if (!data||data.length<2) return <div style={{ height,display:"flex",alignItems:"center",justifyContent:"center",color:"#3A4F6A",fontSize:12,fontFamily:"'Manrope',sans-serif" }}>Sin datos suficientes</div>;
   const W=400,H=height,pl=48,pr=16,pt=16,pb=28;
   const vals=data.map(d=>d.y);
   const minV=Math.min(...vals),maxV=Math.max(...vals),range=maxV-minV||1;
@@ -642,10 +636,10 @@ function LineChart({ data, color, height, showDots }) {
   return (
     <svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height}} preserveAspectRatio="none">
       <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.25"/><stop offset="100%" stopColor={color} stopOpacity="0.02"/></linearGradient></defs>
-      {[0,0.25,0.5,0.75,1].map((t,i)=>{const y=pt+t*(H-pt-pb);const val=maxV-t*range;return(<g key={i}><line x1={pl} y1={y} x2={W-pr} y2={y} stroke="#414944" strokeWidth="1"/><text x={pl-4} y={y+4} textAnchor="end" fontSize="9" fill="#69746B" fontFamily="DM Sans">{Math.round(val).toLocaleString("es")}</text></g>);})}
+      {[0,0.25,0.5,0.75,1].map((t,i)=>{const y=pt+t*(H-pt-pb);const val=maxV-t*range;return(<g key={i}><line x1={pl} y1={y} x2={W-pr} y2={y} stroke="#1E2D45" strokeWidth="1"/><text x={pl-4} y={y+4} textAnchor="end" fontSize="9" fill="#3A4F6A" fontFamily="DM Sans">{Math.round(val).toLocaleString("es")}</text></g>);})}
       <polygon points={fill} fill={"url(#"+gid+")"}/>
       <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
-      {data.map((d,i)=>(<g key={i}>{showDots&&<circle cx={toX(i)} cy={toY(d.y)} r="3.5" fill={color} stroke="#303735" strokeWidth="2"/>}<text x={toX(i)} y={H-pb+12} textAnchor="middle" fontSize="9" fill="#69746B" fontFamily="DM Sans">{d.x}</text></g>))}
+      {data.map((d,i)=>(<g key={i}>{showDots&&<circle cx={toX(i)} cy={toY(d.y)} r="3.5" fill={color} stroke="#101828" strokeWidth="2"/>}<text x={toX(i)} y={H-pb+12} textAnchor="middle" fontSize="9" fill="#3A4F6A" fontFamily="DM Sans">{d.x}</text></g>))}
     </svg>
   );
 }
@@ -659,7 +653,7 @@ function BarChart({ data, color, height }) {
   const barW=gap*0.6;
   return (
     <svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height}} preserveAspectRatio="none">
-      {data.map((d,i)=>{const x=pl+i*gap+gap*0.2;const barH=(d.y/maxV)*(H-pt-pb);const y=H-pb-barH;return(<g key={i}><rect x={x} y={y} width={barW} height={barH} rx="3" fill={color} opacity="0.85"/><text x={x+barW/2} y={H-pb+12} textAnchor="middle" fontSize="9" fill="#69746B" fontFamily="DM Sans">{d.x}</text><text x={x+barW/2} y={y-4} textAnchor="middle" fontSize="8" fill={color} fontFamily="DM Sans">{d.y}</text></g>);})}
+      {data.map((d,i)=>{const x=pl+i*gap+gap*0.2;const barH=(d.y/maxV)*(H-pt-pb);const y=H-pb-barH;return(<g key={i}><rect x={x} y={y} width={barW} height={barH} rx="3" fill={color} opacity="0.85"/><text x={x+barW/2} y={H-pb+12} textAnchor="middle" fontSize="9" fill="#3A4F6A" fontFamily="DM Sans">{d.x}</text><text x={x+barW/2} y={y-4} textAnchor="middle" fontSize="8" fill={color} fontFamily="DM Sans">{d.y}</text></g>);})}
     </svg>
   );
 }
@@ -695,8 +689,8 @@ function MultiLineChart({ series, height=180, yLabel="" }) {
         const y=pt+t*(H-pt-pb);
         const val=Math.round(maxV-t*range);
         return <g key={i}>
-          <line x1={pl} y1={y} x2={W-pr} y2={y} stroke="#414944" strokeWidth="1"/>
-          <text x={pl-4} y={y+4} textAnchor="end" fontSize="8" fill="#69746B" fontFamily="DM Sans">{val>=1000?(val/1000).toFixed(1)+"t":val}</text>
+          <line x1={pl} y1={y} x2={W-pr} y2={y} stroke="#1E2D45" strokeWidth="1"/>
+          <text x={pl-4} y={y+4} textAnchor="end" fontSize="8" fill="#3A4F6A" fontFamily="DM Sans">{val>=1000?(val/1000).toFixed(1)+"t":val}</text>
         </g>;
       })}
       {series.map((s,i)=>{
@@ -708,14 +702,14 @@ function MultiLineChart({ series, height=180, yLabel="" }) {
           <polyline points={pts} fill="none" stroke={s.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
           {s.data.map((d,j)=>{
             const xi=allX.indexOf(d.x);
-            return <circle key={j} cx={toX(xi)} cy={toY(d.y)} r="3" fill={s.color} stroke="#303735" strokeWidth="1.5"/>;
+            return <circle key={j} cx={toX(xi)} cy={toY(d.y)} r="3" fill={s.color} stroke="#101828" strokeWidth="1.5"/>;
           })}
         </g>;
       })}
       {allX.map((x,i)=>(
-        <text key={i} x={toX(i)} y={H-pb+12} textAnchor="middle" fontSize="8" fill="#69746B" fontFamily="DM Sans">{x}</text>
+        <text key={i} x={toX(i)} y={H-pb+12} textAnchor="middle" fontSize="8" fill="#3A4F6A" fontFamily="DM Sans">{x}</text>
       ))}
-      {yLabel&&<text x={10} y={pt} fontSize="8" fill="#69746B" fontFamily="DM Sans" transform={`rotate(-90,10,${H/2})`}>{yLabel}</text>}
+      {yLabel&&<text x={10} y={pt} fontSize="8" fill="#3A4F6A" fontFamily="DM Sans" transform={`rotate(-90,10,${H/2})`}>{yLabel}</text>}
     </svg>
   );
 }
@@ -738,10 +732,10 @@ function RadarChart({ data, color, size=180 }) {
     <svg viewBox={`0 0 ${size} ${size}`} style={{width:size,height:size}}>
       {rings.map((ring,ri)=>{
         const rpts=Array.from({length:n},(_,i)=>({x:cx+r*ring*Math.cos(angle(i)),y:cy+r*ring*Math.sin(angle(i))}));
-        return <polygon key={ri} points={rpts.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke="#414944" strokeWidth="1"/>;
+        return <polygon key={ri} points={rpts.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke="#1E2D45" strokeWidth="1"/>;
       })}
       {Array.from({length:n},(_,i)=>(
-        <line key={i} x1={cx} y1={cy} x2={outer(i).x} y2={outer(i).y} stroke="#414944" strokeWidth="1"/>
+        <line key={i} x1={cx} y1={cy} x2={outer(i).x} y2={outer(i).y} stroke="#1E2D45" strokeWidth="1"/>
       ))}
       <polygon points={polyStr} fill={color+"30"} stroke={color} strokeWidth="2" strokeLinejoin="round"/>
       {data.map((d,i)=>{
@@ -749,8 +743,8 @@ function RadarChart({ data, color, size=180 }) {
         const lx=cx+(r*1.22)*Math.cos(angle(i));
         const ly=cy+(r*1.22)*Math.sin(angle(i));
         return <g key={i}>
-          <circle cx={pt(i,d.value).x} cy={pt(i,d.value).y} r="3" fill={color} stroke="#303735" strokeWidth="1.5"/>
-          <text x={lx} y={ly+3} textAnchor="middle" fontSize="7.5" fill="#B7B1A6" fontFamily="DM Sans">{d.label}</text>
+          <circle cx={pt(i,d.value).x} cy={pt(i,d.value).y} r="3" fill={color} stroke="#101828" strokeWidth="1.5"/>
+          <text x={lx} y={ly+3} textAnchor="middle" fontSize="7.5" fill="#8899BB" fontFamily="DM Sans">{d.label}</text>
           <text x={lx} y={ly+13} textAnchor="middle" fontSize="8" fill={color} fontFamily="DM Sans" fontWeight="700">{d.value}</text>
         </g>;
       })}
@@ -777,15 +771,15 @@ function StackedBarChart({ data, keys, colors, height=120 }) {
             yOff-=bh;
             return <rect key={ki} x={x} y={yOff} width={barW} height={bh} rx="2" fill={colors[ki]} opacity="0.85"/>;
           })}
-          <text x={x+barW/2} y={H-pb+12} textAnchor="middle" fontSize="8" fill="#69746B" fontFamily="DM Sans">{d.x}</text>
+          <text x={x+barW/2} y={H-pb+12} textAnchor="middle" fontSize="8" fill="#3A4F6A" fontFamily="DM Sans">{d.x}</text>
         </g>;
       })}
       {[0,0.5,1].map((t,i)=>{
         const y=pt+t*(H-pt-pb);
         const val=Math.round(maxV*(1-t));
         return <g key={i}>
-          <line x1={pl} y1={y} x2={W-pr} y2={y} stroke="#414944" strokeWidth="1" strokeDasharray="3,3"/>
-          <text x={pl-4} y={y+4} textAnchor="end" fontSize="8" fill="#69746B" fontFamily="DM Sans">{val}</text>
+          <line x1={pl} y1={y} x2={W-pr} y2={y} stroke="#1E2D45" strokeWidth="1" strokeDasharray="3,3"/>
+          <text x={pl-4} y={y+4} textAnchor="end" fontSize="8" fill="#3A4F6A" fontFamily="DM Sans">{val}</text>
         </g>;
       })}
     </svg>
@@ -1470,7 +1464,7 @@ function Login({ onLogin }) {
   return (
     <div style={{ minHeight:"100vh",background:NOAH_BG,display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",overflow:"hidden" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Manrope:wght@300;400;500;600;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
         html,body{background:#202526;color:${C.text};font-family:${F.sans}}
         input::placeholder{color:${C.textD}}
@@ -1479,7 +1473,7 @@ function Login({ onLogin }) {
         @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
         @keyframes glow{0%,100%{opacity:0.4}50%{opacity:0.8}}
         .noah-login-card{animation:fadeUp 0.6s ease forwards}
-        .noah-input:focus{border-color:rgba(0,229,160,0.5)!important;box-shadow:0 0 0 3px rgba(0,229,160,0.08)!important}
+        .noah-input:focus{border-color:rgba(184,117,88,0.65)!important;box-shadow:0 0 0 3px rgba(184,117,88,0.12)!important}
       `}</style>
 
       <div className="noah-login-card" style={{width:"100%",maxWidth:400,position:"relative",zIndex:1}}>
@@ -1530,9 +1524,9 @@ function Login({ onLogin }) {
             style={{
               width:"100%",padding:"13px",borderRadius:11,border:"none",
               background:loading?"rgba(0,229,160,0.3)":`linear-gradient(160deg,${C.jade}EE,${C.jade})`,
-              color:"#202526",fontWeight:700,fontSize:14,cursor:loading?"not-allowed":"pointer",
+              color:"#030810",fontWeight:700,fontSize:14,cursor:loading?"not-allowed":"pointer",
               fontFamily:F.title,letterSpacing:"0.1em",textTransform:"uppercase",
-              boxShadow:loading?"none":"0 4px 0 #899387, 0 6px 20px rgba(0,229,160,0.3)",
+              boxShadow:loading?"none":"0 2px 0 #8E543E, 0 5px 16px rgba(184,117,88,0.18)",
               transition:"all 0.15s",opacity:loading?0.7:1,
               transform:loading?"none":"translateY(0)",
             }}
@@ -3402,7 +3396,7 @@ export default function NOAApp() {
   const rol=perfil?.rol||"atleta";
 
   const GLOBAL_CSS=`
-    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Manrope:wght@300;400;500;600;700&display=swap');
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html,body{background:${C.bg};color:${C.text};font-family:${F.sans};-webkit-tap-highlight-color:transparent;}
     ::-webkit-scrollbar{width:4px;height:4px}
@@ -3419,7 +3413,7 @@ export default function NOAApp() {
     .noah-section{animation:fadeUp 0.4s ease forwards}
     .noah-card-hover{transition:transform 0.2s ease,box-shadow 0.2s ease}
     .noah-card-hover:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,0.5)!important}
-    .noah-input:focus{border-color:rgba(0,229,160,0.5)!important;box-shadow:0 0 0 3px rgba(0,229,160,0.07)!important;outline:none!important}
+    .noah-input:focus{border-color:rgba(184,117,88,0.65)!important;box-shadow:0 0 0 3px rgba(184,117,88,0.12)!important;outline:none!important}
     /* Carrusel mobile */
     .noah-carousel{display:flex;overflow-x:auto;gap:12px;padding:4px 2px 12px;scrollbar-width:none;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
     .noah-carousel::-webkit-scrollbar{display:none}
@@ -3439,9 +3433,9 @@ export default function NOAApp() {
     .noah-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;cursor:pointer;border:none;background:transparent;color:rgba(122,149,187,0.7);min-width:56px;border-radius:12px;transition:all 0.18s}
     .noah-nav-item.active{color:#B87558}
     .noah-nav-item.active .noah-nav-dot{opacity:1}
-    .noah-nav-dot{width:4px;height:4px;border-radius:50%;background:#B87558;box-shadow:0 0 8px #B87558;opacity:0;transition:opacity 0.2s;margin-top:1px}
+    .noah-nav-dot{width:4px;height:4px;border-radius:50%;background:#B87558;box-shadow:none;opacity:0;transition:opacity 0.2s;margin-top:1px}
     .noah-nav-icon{font-size:20px;line-height:1}
-    .noah-nav-label{font-size:8px;letter-spacing:0.1em;font-weight:700;text-transform:uppercase;font-family:'Rajdhani',sans-serif}
+    .noah-nav-label{font-size:8px;letter-spacing:0.1em;font-weight:700;text-transform:uppercase;font-family:'Manrope',sans-serif}
     @media(max-width:768px){
       .noah-bottom-nav{display:block}
       .hide-mobile{display:none!important}
@@ -3455,59 +3449,86 @@ export default function NOAApp() {
       .main-with-bottomnav{padding-bottom:0!important}
     }
 
-    /* ── NOAH PREMIUM UI REFRESH — visual only ── */
+    /* ── NOAH EDITORIAL DESIGN SYSTEM ── */
     :root{
       color-scheme:dark;
-      --noah-bg:#202526;
-      --noah-surface:#0D141D;
-      --noah-surface-2:#111B27;
-      --noah-line:rgba(151,177,204,.14);
-      --noah-muted:#B7B1A6;
-      --noah-text:#E9E2D7;
-      --noah-teal:#B87558;
-      --noah-blue:#899387;
+      --noah-charcoal:#202526;
+      --noah-ivory:#E9E2D7;
+      --noah-copper:#B87558;
+      --noah-sage:#899387;
+      --noah-panel:#293031;
+      --noah-panel-raised:#303839;
+      --noah-line:rgba(233,226,215,.14);
+      --noah-muted:#B7B4A9;
     }
-    html,body{background:#202526!important;color:var(--noah-text)!important;letter-spacing:.005em}
-    body{background-image:radial-gradient(ellipse at 78% 0%,rgba(27,91,127,.12),transparent 38%),radial-gradient(ellipse at 0% 55%,rgba(18,112,98,.07),transparent 36%)!important}
-    ::selection{background:rgba(41,217,181,.25);color:#fff}
-    ::-webkit-scrollbar{width:6px;height:6px}
-    ::-webkit-scrollbar-thumb{background:rgba(126,157,184,.28);border-radius:99px}
-    /* Glass sidebar */
-    aside[style*="position: fixed"]{background:rgba(10,16,24,.78)!important;backdrop-filter:blur(34px) saturate(145%)!important;-webkit-backdrop-filter:blur(34px) saturate(145%)!important;border-right:1px solid rgba(153,186,215,.15)!important;box-shadow:12px 0 50px rgba(0,0,0,.22)!important}
-    aside[style*="position: fixed"] > div{border-color:rgba(153,186,215,.11)!important}
-    aside[style*="position: fixed"] nav{padding:16px 10px!important}
-    aside[style*="position: fixed"] nav button{position:relative!important;min-height:44px!important;padding:11px 13px!important;margin:3px 0 5px!important;border:1px solid transparent!important;border-radius:12px!important;letter-spacing:.005em!important;transition:background .2s ease,border-color .2s ease,transform .2s ease!important}
-    aside[style*="position: fixed"] nav button:hover{background:rgba(255,255,255,.045)!important;border-color:rgba(153,186,215,.1)!important;transform:translateX(2px)}
-    aside[style*="position: fixed"] nav button[style*="0, 229, 160"]{background:linear-gradient(105deg,rgba(41,217,181,.13),rgba(41,217,181,.035))!important;border:1px solid rgba(41,217,181,.2)!important;border-left:1px solid rgba(41,217,181,.2)!important;color:#899387!important;box-shadow:inset 3px 0 0 #B87558,0 8px 24px rgba(0,0,0,.12)!important}
-    aside[style*="position: fixed"] nav button span{filter:none!important}
-    aside[style*="position: fixed"] button{font-family:'DM Sans',sans-serif!important}
-    /* Fixed topbar: more restrained glass and hairline border */
-    body > div [style*="position: fixed"][style*="height: 56px"]{background:rgba(7,10,15,.72)!important;backdrop-filter:blur(28px) saturate(155%)!important;-webkit-backdrop-filter:blur(28px) saturate(155%)!important;border-bottom:1px solid rgba(153,186,215,.12)!important;box-shadow:0 8px 32px rgba(0,0,0,.16)!important}
-    /* Main content: refined typography and rhythm */
-    main{color:var(--noah-text)}
-    main h1,main h2,main h3{letter-spacing:-.035em!important;line-height:1.16!important}
-    main h1{font-size:clamp(25px,2.3vw,34px)!important;font-weight:650!important}
-    main h2{font-weight:620!important}
-    main p{line-height:1.6}
-    /* Card surfaces: only rounded inline panels, without touching behavior */
-    main div[style*="border-radius"],main section[style*="border-radius"]{border-color:rgba(143,171,198,.15)!important}
-    main div[style*="borderRadius"],main section[style*="borderRadius"]{border-color:rgba(143,171,198,.15)!important}
-    main [style*="box-shadow"],main [style*="boxShadow"]{box-shadow:0 10px 32px rgba(0,0,0,.12)!important}
-    main button{transition:transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease!important}
-    main button:hover{border-color:rgba(41,217,181,.38)!important}
-    main input,main textarea,main select{background:rgba(8,14,21,.78)!important;border-color:rgba(143,171,198,.2)!important;border-radius:10px!important;color:#E9E2D7!important}
-    main input:focus,main textarea:focus,main select:focus{border-color:rgba(41,217,181,.65)!important;box-shadow:0 0 0 3px rgba(41,217,181,.09)!important}
-    /* Small status labels / chips */
-    main [style*="letter-spacing"]{text-rendering:optimizeLegibility}
-    /* Mobile nav glass */
-    .noah-bottom-nav{background:rgba(8,13,20,.82)!important;backdrop-filter:blur(30px) saturate(150%)!important;-webkit-backdrop-filter:blur(30px) saturate(150%)!important;border-top:1px solid rgba(143,171,198,.15)!important;box-shadow:0 -10px 36px rgba(0,0,0,.22)!important}
-    .noah-nav-item{border-radius:12px!important;padding:7px 13px!important;color:#B7B1A6!important}
-    .noah-nav-item.active{background:rgba(41,217,181,.09)!important;color:#B87558!important}
-    .noah-nav-dot{background:#B87558!important;box-shadow:0 0 10px rgba(41,217,181,.5)!important}
-    .noah-nav-label{font-family:'DM Sans',sans-serif!important;font-size:9px!important;letter-spacing:.045em!important;font-weight:600!important}
+    html,body{background:var(--noah-charcoal)!important;color:var(--noah-ivory)!important;font-family:'Manrope',sans-serif!important;letter-spacing:0}
+    body{background-image:radial-gradient(ellipse at 78% -10%,rgba(184,117,88,.10),transparent 42%),linear-gradient(145deg,#202526 0%,#232A2A 55%,#1B2021 100%)!important}
+    ::selection{background:rgba(184,117,88,.35);color:#F4EEE5}
+    ::-webkit-scrollbar-thumb{background:rgba(137,147,135,.42);border-radius:99px}
+    input::placeholder,textarea::placeholder{color:#85877F!important}
+    select option{background:#293031;color:#E9E2D7}
+    /* Editorial hierarchy */
+    h1,h2,h3,.noah-section-header h1{font-family:'Instrument Serif',serif!important;font-weight:400!important;letter-spacing:-.025em!important;color:#F4EEE5!important}
+    h1{font-size:clamp(30px,3vw,42px)!important;line-height:1.02!important}
+    h2{font-size:clamp(23px,2.4vw,30px)!important;line-height:1.1!important}
+    h3{font-size:20px!important;line-height:1.2!important}
+    button,input,select,textarea{font-family:'Manrope',sans-serif!important}
+    /* Navigation: solid editorial rail, not glass/tech */
+    aside[style*="position: fixed"]{background:#191E1F!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border-right:1px solid rgba(233,226,215,.13)!important;box-shadow:12px 0 36px rgba(0,0,0,.16)!important}
+    aside[style*="position: fixed"] > div{border-color:rgba(233,226,215,.12)!important}
+    aside[style*="position: fixed"] nav{padding:22px 14px!important}
+    aside[style*="position: fixed"] nav button{min-height:46px!important;padding:12px 14px!important;margin:4px 0!important;border:1px solid transparent!important;border-radius:7px!important;letter-spacing:.015em!important;transition:all .2s ease!important}
+    aside[style*="position: fixed"] nav button:hover{background:rgba(233,226,215,.055)!important;border-color:rgba(233,226,215,.10)!important;transform:translateX(2px)}
+    aside[style*="position: fixed"] nav button[style*="184, 117, 88"]{background:rgba(184,117,88,.13)!important;border:1px solid rgba(184,117,88,.3)!important;color:#E9E2D7!important;box-shadow:inset 3px 0 0 #B87558!important}
+    aside[style*="position: fixed"] button{font-family:'Manrope',sans-serif!important}
+    /* Top bar */
+    body > div [style*="position: fixed"][style*="height: 56px"]{background:rgba(32,37,38,.94)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important;border-bottom:1px solid rgba(233,226,215,.13)!important;box-shadow:0 5px 22px rgba(0,0,0,.12)!important}
+    /* Content frame and spacing */
+    main{color:var(--noah-ivory)!important;max-width:100vw;overflow-x:hidden}
+    main>div{max-width:1440px}
+    .noah-page-frame{width:100%;max-width:1360px;margin:0 auto;padding:22px 30px 48px;min-height:calc(100vh - 56px)}
+    .noah-page-frame>div{margin-left:auto;margin-right:auto}
+    main>div[style*="max-width"]{width:min(100% - 48px,1180px)!important;max-width:1180px!important;margin:0 auto!important;padding:34px 0 44px!important}
+    main>div[style*="padding: 16px"]{padding-top:30px!important}
+    /* Legacy inline panels are normalized into the new warm surface system */
+    main [style*="rgba(13,21,40"],main [style*="rgba(10,16,32"],main [style*="rgba(17,29,53"]{background:#293031!important}
+    main [style*="rgba(26,40,64"],main [style*="rgba(36,58,94"]{border-color:rgba(233,226,215,.14)!important}
+    main [style*="0,229,160"],main [style*="0, 229, 160"]{text-shadow:none!important}
+    main h1,main h2,main h3{letter-spacing:-.025em!important}
+    main p{line-height:1.68}
+    /* Shared surfaces: warm matte panels, restrained radius and depth */
+    .noah-card,main div[style*="border-radius"],main section[style*="border-radius"]{
+      border-color:rgba(233,226,215,.13)!important;
+      box-shadow:0 12px 30px rgba(0,0,0,.13)!important;
+    }
+    .noah-card{background:#293031!important;border-radius:10px!important;padding:22px!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+    .noah-card:hover{border-color:rgba(184,117,88,.42)!important;transform:translateY(-1px)}
+    .noah-stat{background:#293031!important;border:1px solid rgba(233,226,215,.13)!important;border-radius:8px!important;box-shadow:none!important;padding:18px!important;text-align:left!important}
+    .noah-stat>div:nth-child(2){font-family:'Instrument Serif',serif!important;font-size:34px!important;font-weight:400!important;text-shadow:none!important;color:#E9E2D7!important}
+    .noah-stat>div:first-child{font-size:10px!important;letter-spacing:.12em!important;color:#B7B4A9!important}
+    /* Inputs and controls */
+    main input,main textarea,main select{background:#191E1F!important;border:1px solid rgba(233,226,215,.18)!important;border-radius:7px!important;color:#E9E2D7!important;min-height:42px}
+    main input:focus,main textarea:focus,main select:focus{border-color:rgba(184,117,88,.8)!important;box-shadow:0 0 0 3px rgba(184,117,88,.12)!important}
+    main button{transition:transform .18s ease,border-color .18s ease,background .18s ease!important}
+    main button:hover{border-color:rgba(184,117,88,.48)!important}
+    /* Copper is an accent, not a neon glow */
+    .noah-bottom-nav{background:rgba(25,30,31,.97)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important;border-top:1px solid rgba(233,226,215,.14)!important;box-shadow:0 -8px 28px rgba(0,0,0,.18)!important}
+    .noah-nav-item{border-radius:7px!important;padding:8px 12px!important;color:#B7B4A9!important}
+    .noah-nav-item.active{background:rgba(184,117,88,.13)!important;color:#D5A087!important}
+    .noah-nav-dot{background:#B87558!important;box-shadow:none!important}
+    .noah-nav-label{font-family:'Manrope',sans-serif!important;font-size:9px!important;letter-spacing:.08em!important;font-weight:600!important}
+    /* Login panel */
+    .noah-login-card{max-width:430px!important}
+    .noah-login-card>div:first-child{margin-bottom:28px!important}
+    .noah-login-card>div:nth-child(2){background:rgba(41,48,49,.94)!important;border:1px solid rgba(233,226,215,.16)!important;border-radius:12px!important;box-shadow:0 22px 60px rgba(0,0,0,.25)!important;backdrop-filter:none!important}
     @media(max-width:768px){
       aside[style*="position: fixed"]{width:min(86vw,300px)!important;min-width:min(86vw,300px)!important}
-      main h1{font-size:25px!important}
+      main{padding-left:0!important;padding-right:0!important}
+      .noah-page-frame{padding:12px 14px 96px!important}
+      main h1{font-size:30px!important}
+      .noah-card{padding:17px!important}
+      .noah-stat{padding:14px!important}
+      .noah-stat>div:nth-child(2){font-size:30px!important}
     }
 
     /* ── MOBILE: sin scroll horizontal, chat a todo el ancho ── */
@@ -3578,9 +3599,9 @@ export default function NOAApp() {
       <style>{GLOBAL_CSS}</style>
       <div style={{minHeight:"100vh",background:C.bg,position:"relative"}}>
         {/* Fondo con grid sutil */}
-        <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,backgroundImage:`linear-gradient(rgba(0,229,160,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,0.02) 1px,transparent 1px)`,backgroundSize:"48px 48px"}}/>
-        <div style={{position:"fixed",top:"10%",right:"5%",width:400,height:400,background:"radial-gradient(circle,rgba(0,85,164,0.07) 0%,transparent 70%)",pointerEvents:"none",zIndex:0}}/>
-        <div style={{position:"fixed",bottom:"20%",left:"0%",width:300,height:300,background:"radial-gradient(circle,rgba(0,229,160,0.05) 0%,transparent 70%)",pointerEvents:"none",zIndex:0}}/>
+        <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,backgroundImage:`linear-gradient(rgba(233,226,215,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(233,226,215,0.018) 1px,transparent 1px)`,backgroundSize:"48px 48px"}}/>
+        <div style={{position:"fixed",top:"10%",right:"5%",width:400,height:400,background:"radial-gradient(circle,rgba(184,117,88,0.09) 0%,transparent 70%)",pointerEvents:"none",zIndex:0}}/>
+        <div style={{position:"fixed",bottom:"20%",left:"0%",width:300,height:300,background:"radial-gradient(circle,rgba(137,147,135,0.07) 0%,transparent 70%)",pointerEvents:"none",zIndex:0}}/>
         <Sidebar sec={sec} setSec={setSec} rol={rol} perfil={perfil} onLogout={logout} open={sideOpen} setOpen={setSideOpen}/>
 
         {/* TOPBAR fija — glassmorphism */}
@@ -3593,7 +3614,7 @@ export default function NOAApp() {
           display:"flex",alignItems:"center",
           padding:"0 16px",gap:12,
           zIndex:80,
-          boxShadow:"0 1px 0 rgba(0,229,160,0.06), 0 4px 24px rgba(0,0,0,0.4)",
+          boxShadow:"0 1px 0 rgba(233,226,215,0.05), 0 4px 24px rgba(0,0,0,0.22)",
         }}>
           {/* Hamburguesa */}
           <button onClick={()=>setSideOpen(o=>!o)} style={{
@@ -3651,7 +3672,7 @@ export default function NOAApp() {
 
         {/* Contenido con padding top para la topbar */}
         <main className="main-with-bottomnav" style={{paddingTop:56,minHeight:"100vh",overflowY:"auto",position:"relative",zIndex:1}}>
-          {renderContent()}
+          <div className="noah-page-frame">{renderContent()}</div>
         </main>
       </div>
     </>
