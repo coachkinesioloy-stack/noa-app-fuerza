@@ -456,11 +456,11 @@ const USUARIOS = [
 // ─────────────────────────────────────────
 const C = {
   // Fondos
-  bg:"#060A12", deep:"#040709", surface:"#0A1020",
-  card:"#0D1528", cardH:"#111D35",
-  border:"#1A2840", borderH:"#243A5E",
+  bg:"#202526", deep:"#202526", surface:"#292F2E",
+  card:"#303735", cardH:"#343B38",
+  border:"#414944", borderH:"#555D55",
   // Acento principal — Verde jade NOAH
-  jade:"#00E5A0", jade2:"#00BF86", jade3:"#007A56",
+  jade:"#B87558", jade2:"#B87558", jade3:"#899387",
   // Azul Francia — identidad NOAH
   france:"#0055A4", france2:"#0071D4", france3:"#3399FF",
   // Naranja — energía, alertas altas
@@ -468,25 +468,25 @@ const C = {
   // Rojo — alertas críticas
   red:"#FF3A3A", red2:"#FF6060",
   // Blue claro — métricas secundarias
-  blue:"#4D9FFF", amber:"#FFB84D", violet:"#A78BFA",
+  blue:"#899387", amber:"#FFB84D", violet:"#A78BFA",
   // Textos
-  text:"#E8F2FF", textS:"#7A95BB", textD:"#2E4060", white:"#F5F9FF",
+  text:"#E9E2D7", textS:"#B7B1A6", textD:"#2E4060", white:"#E9E2D7",
 };
 const F = { serif:"'DM Serif Display',serif", sans:"'DM Sans',sans-serif", title:"'Rajdhani',sans-serif" };
 
 const DIAS = ["","Día 1","Día 2","Día 3","Día 4","Día 5","Día 6","Día 7"];
 const CICLOS_TIPOS = [
   { key:"adaptacion",      label:"Adaptación",     color:"#4ade80", pct:"50–65", reps:"12–15" },
-  { key:"hipertrofia",     label:"Hipertrofia",     color:"#4D9FFF", pct:"65–75", reps:"8–12"  },
+  { key:"hipertrofia",     label:"Hipertrofia",     color:"#899387", pct:"65–75", reps:"8–12"  },
   { key:"fza_resistencia", label:"Fza Resistencia", color:"#FFB84D", pct:"70–80", reps:"6–10"  },
   { key:"fza_potencia",    label:"Fza Potencia",    color:"#FF5C5C", pct:"75–85", reps:"3–6"   },
   { key:"submax",          label:"Submáxima",       color:"#A78BFA", pct:"85–92", reps:"1–4"   },
-  { key:"neural",          label:"Neural / Pico",   color:"#00E5A0", pct:"90–100",reps:"1–3"   },
+  { key:"neural",          label:"Neural / Pico",   color:"#B87558", pct:"90–100",reps:"1–3"   },
 ];
 const PATRONES = ["Sentadilla","Bisagra","Empuje","Jale","Cargada","Core","Full body","Accesorio"];
 
 // Fondo de login y pantalla de carga: mismo azul oscuro del logo
-const NOAH_BG = "radial-gradient(ellipse 80% 60% at 50% 32%, #010b26 0%, #00030b 65%, #000208 100%)";
+const NOAH_BG = "radial-gradient(ellipse 80% 60% at 50% 32%, #010b26 0%, #202526 65%, #000208 100%)";
 
 // ── FISIO / KINESIOLOGÍA ──────────────────
 const FISIO_C = "#22D3EE";
@@ -565,8 +565,8 @@ function Bar({ value, max=100, color=C.jade, h=5 }) {
 
 function Btn({ children, onClick, color=C.jade, outline, sm, full, disabled, style={} }) {
   const [h,setH]=useState(false);
-  const shadow=color===C.jade?`0 4px 0 #007A56, 0 6px 20px rgba(0,229,160,0.3)`:color===C.france||color===C.france2?`0 4px 0 #003A70, 0 6px 20px rgba(0,85,164,0.35)`:color===C.orange?`0 4px 0 #CC4400, 0 6px 20px rgba(255,107,43,0.35)`:`0 4px 0 rgba(0,0,0,0.4), 0 6px 20px ${color}33`;
-  return <button onClick={onClick} disabled={disabled} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ width:full?"100%":"auto",padding:sm?"7px 16px":"11px 24px",borderRadius:10,border:outline?`1.5px solid ${color}`:"none",background:outline?`${color}12`:h&&!disabled?`linear-gradient(135deg,${color},${color}CC)`:`linear-gradient(160deg,${color}EE,${color})`,color:outline?color:"#030810",fontWeight:700,fontSize:sm?11:13,cursor:disabled?"not-allowed":"pointer",fontFamily:F.title||F.sans,letterSpacing:outline?"0.04em":"0.06em",textTransform:"uppercase",opacity:disabled?0.4:1,transition:"all 0.15s",boxShadow:(!outline&&!disabled)?(h?`0 2px 0 ${color}88, 0 4px 14px ${color}33`:shadow):"none",transform:(!outline&&!disabled&&h)?"translateY(2px)":(!outline&&!disabled)?"translateY(0)":"none",...style }}>{children}</button>;
+  const shadow=color===C.jade?`0 4px 0 #899387, 0 6px 20px rgba(0,229,160,0.3)`:color===C.france||color===C.france2?`0 4px 0 #003A70, 0 6px 20px rgba(0,85,164,0.35)`:color===C.orange?`0 4px 0 #CC4400, 0 6px 20px rgba(255,107,43,0.35)`:`0 4px 0 rgba(0,0,0,0.4), 0 6px 20px ${color}33`;
+  return <button onClick={onClick} disabled={disabled} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ width:full?"100%":"auto",padding:sm?"7px 16px":"11px 24px",borderRadius:10,border:outline?`1.5px solid ${color}`:"none",background:outline?`${color}12`:h&&!disabled?`linear-gradient(135deg,${color},${color}CC)`:`linear-gradient(160deg,${color}EE,${color})`,color:outline?color:"#202526",fontWeight:700,fontSize:sm?11:13,cursor:disabled?"not-allowed":"pointer",fontFamily:F.title||F.sans,letterSpacing:outline?"0.04em":"0.06em",textTransform:"uppercase",opacity:disabled?0.4:1,transition:"all 0.15s",boxShadow:(!outline&&!disabled)?(h?`0 2px 0 ${color}88, 0 4px 14px ${color}33`:shadow):"none",transform:(!outline&&!disabled&&h)?"translateY(2px)":(!outline&&!disabled)?"translateY(0)":"none",...style }}>{children}</button>;
 }
 
 function FInput({ label, value, onChange, type="text", placeholder, min, max, step }) {
@@ -629,8 +629,8 @@ function EmptyState({ title, sub }) {
 // GRÁFICAS SVG (sin dependencias externas)
 // ─────────────────────────────────────────
 function LineChart({ data, color, height, showDots }) {
-  color=color||"#00E5A0"; height=height||140; showDots=showDots!==false;
-  if (!data||data.length<2) return <div style={{ height,display:"flex",alignItems:"center",justifyContent:"center",color:"#3A4F6A",fontSize:12,fontFamily:"'DM Sans',sans-serif" }}>Sin datos suficientes</div>;
+  color=color||"#B87558"; height=height||140; showDots=showDots!==false;
+  if (!data||data.length<2) return <div style={{ height,display:"flex",alignItems:"center",justifyContent:"center",color:"#69746B",fontSize:12,fontFamily:"'DM Sans',sans-serif" }}>Sin datos suficientes</div>;
   const W=400,H=height,pl=48,pr=16,pt=16,pb=28;
   const vals=data.map(d=>d.y);
   const minV=Math.min(...vals),maxV=Math.max(...vals),range=maxV-minV||1;
@@ -642,10 +642,10 @@ function LineChart({ data, color, height, showDots }) {
   return (
     <svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height}} preserveAspectRatio="none">
       <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.25"/><stop offset="100%" stopColor={color} stopOpacity="0.02"/></linearGradient></defs>
-      {[0,0.25,0.5,0.75,1].map((t,i)=>{const y=pt+t*(H-pt-pb);const val=maxV-t*range;return(<g key={i}><line x1={pl} y1={y} x2={W-pr} y2={y} stroke="#1E2D45" strokeWidth="1"/><text x={pl-4} y={y+4} textAnchor="end" fontSize="9" fill="#3A4F6A" fontFamily="DM Sans">{Math.round(val).toLocaleString("es")}</text></g>);})}
+      {[0,0.25,0.5,0.75,1].map((t,i)=>{const y=pt+t*(H-pt-pb);const val=maxV-t*range;return(<g key={i}><line x1={pl} y1={y} x2={W-pr} y2={y} stroke="#414944" strokeWidth="1"/><text x={pl-4} y={y+4} textAnchor="end" fontSize="9" fill="#69746B" fontFamily="DM Sans">{Math.round(val).toLocaleString("es")}</text></g>);})}
       <polygon points={fill} fill={"url(#"+gid+")"}/>
       <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
-      {data.map((d,i)=>(<g key={i}>{showDots&&<circle cx={toX(i)} cy={toY(d.y)} r="3.5" fill={color} stroke="#101828" strokeWidth="2"/>}<text x={toX(i)} y={H-pb+12} textAnchor="middle" fontSize="9" fill="#3A4F6A" fontFamily="DM Sans">{d.x}</text></g>))}
+      {data.map((d,i)=>(<g key={i}>{showDots&&<circle cx={toX(i)} cy={toY(d.y)} r="3.5" fill={color} stroke="#303735" strokeWidth="2"/>}<text x={toX(i)} y={H-pb+12} textAnchor="middle" fontSize="9" fill="#69746B" fontFamily="DM Sans">{d.x}</text></g>))}
     </svg>
   );
 }
@@ -659,7 +659,7 @@ function BarChart({ data, color, height }) {
   const barW=gap*0.6;
   return (
     <svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height}} preserveAspectRatio="none">
-      {data.map((d,i)=>{const x=pl+i*gap+gap*0.2;const barH=(d.y/maxV)*(H-pt-pb);const y=H-pb-barH;return(<g key={i}><rect x={x} y={y} width={barW} height={barH} rx="3" fill={color} opacity="0.85"/><text x={x+barW/2} y={H-pb+12} textAnchor="middle" fontSize="9" fill="#3A4F6A" fontFamily="DM Sans">{d.x}</text><text x={x+barW/2} y={y-4} textAnchor="middle" fontSize="8" fill={color} fontFamily="DM Sans">{d.y}</text></g>);})}
+      {data.map((d,i)=>{const x=pl+i*gap+gap*0.2;const barH=(d.y/maxV)*(H-pt-pb);const y=H-pb-barH;return(<g key={i}><rect x={x} y={y} width={barW} height={barH} rx="3" fill={color} opacity="0.85"/><text x={x+barW/2} y={H-pb+12} textAnchor="middle" fontSize="9" fill="#69746B" fontFamily="DM Sans">{d.x}</text><text x={x+barW/2} y={y-4} textAnchor="middle" fontSize="8" fill={color} fontFamily="DM Sans">{d.y}</text></g>);})}
     </svg>
   );
 }
@@ -695,8 +695,8 @@ function MultiLineChart({ series, height=180, yLabel="" }) {
         const y=pt+t*(H-pt-pb);
         const val=Math.round(maxV-t*range);
         return <g key={i}>
-          <line x1={pl} y1={y} x2={W-pr} y2={y} stroke="#1E2D45" strokeWidth="1"/>
-          <text x={pl-4} y={y+4} textAnchor="end" fontSize="8" fill="#3A4F6A" fontFamily="DM Sans">{val>=1000?(val/1000).toFixed(1)+"t":val}</text>
+          <line x1={pl} y1={y} x2={W-pr} y2={y} stroke="#414944" strokeWidth="1"/>
+          <text x={pl-4} y={y+4} textAnchor="end" fontSize="8" fill="#69746B" fontFamily="DM Sans">{val>=1000?(val/1000).toFixed(1)+"t":val}</text>
         </g>;
       })}
       {series.map((s,i)=>{
@@ -708,14 +708,14 @@ function MultiLineChart({ series, height=180, yLabel="" }) {
           <polyline points={pts} fill="none" stroke={s.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
           {s.data.map((d,j)=>{
             const xi=allX.indexOf(d.x);
-            return <circle key={j} cx={toX(xi)} cy={toY(d.y)} r="3" fill={s.color} stroke="#101828" strokeWidth="1.5"/>;
+            return <circle key={j} cx={toX(xi)} cy={toY(d.y)} r="3" fill={s.color} stroke="#303735" strokeWidth="1.5"/>;
           })}
         </g>;
       })}
       {allX.map((x,i)=>(
-        <text key={i} x={toX(i)} y={H-pb+12} textAnchor="middle" fontSize="8" fill="#3A4F6A" fontFamily="DM Sans">{x}</text>
+        <text key={i} x={toX(i)} y={H-pb+12} textAnchor="middle" fontSize="8" fill="#69746B" fontFamily="DM Sans">{x}</text>
       ))}
-      {yLabel&&<text x={10} y={pt} fontSize="8" fill="#3A4F6A" fontFamily="DM Sans" transform={`rotate(-90,10,${H/2})`}>{yLabel}</text>}
+      {yLabel&&<text x={10} y={pt} fontSize="8" fill="#69746B" fontFamily="DM Sans" transform={`rotate(-90,10,${H/2})`}>{yLabel}</text>}
     </svg>
   );
 }
@@ -738,10 +738,10 @@ function RadarChart({ data, color, size=180 }) {
     <svg viewBox={`0 0 ${size} ${size}`} style={{width:size,height:size}}>
       {rings.map((ring,ri)=>{
         const rpts=Array.from({length:n},(_,i)=>({x:cx+r*ring*Math.cos(angle(i)),y:cy+r*ring*Math.sin(angle(i))}));
-        return <polygon key={ri} points={rpts.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke="#1E2D45" strokeWidth="1"/>;
+        return <polygon key={ri} points={rpts.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke="#414944" strokeWidth="1"/>;
       })}
       {Array.from({length:n},(_,i)=>(
-        <line key={i} x1={cx} y1={cy} x2={outer(i).x} y2={outer(i).y} stroke="#1E2D45" strokeWidth="1"/>
+        <line key={i} x1={cx} y1={cy} x2={outer(i).x} y2={outer(i).y} stroke="#414944" strokeWidth="1"/>
       ))}
       <polygon points={polyStr} fill={color+"30"} stroke={color} strokeWidth="2" strokeLinejoin="round"/>
       {data.map((d,i)=>{
@@ -749,8 +749,8 @@ function RadarChart({ data, color, size=180 }) {
         const lx=cx+(r*1.22)*Math.cos(angle(i));
         const ly=cy+(r*1.22)*Math.sin(angle(i));
         return <g key={i}>
-          <circle cx={pt(i,d.value).x} cy={pt(i,d.value).y} r="3" fill={color} stroke="#101828" strokeWidth="1.5"/>
-          <text x={lx} y={ly+3} textAnchor="middle" fontSize="7.5" fill="#8899BB" fontFamily="DM Sans">{d.label}</text>
+          <circle cx={pt(i,d.value).x} cy={pt(i,d.value).y} r="3" fill={color} stroke="#303735" strokeWidth="1.5"/>
+          <text x={lx} y={ly+3} textAnchor="middle" fontSize="7.5" fill="#B7B1A6" fontFamily="DM Sans">{d.label}</text>
           <text x={lx} y={ly+13} textAnchor="middle" fontSize="8" fill={color} fontFamily="DM Sans" fontWeight="700">{d.value}</text>
         </g>;
       })}
@@ -777,15 +777,15 @@ function StackedBarChart({ data, keys, colors, height=120 }) {
             yOff-=bh;
             return <rect key={ki} x={x} y={yOff} width={barW} height={bh} rx="2" fill={colors[ki]} opacity="0.85"/>;
           })}
-          <text x={x+barW/2} y={H-pb+12} textAnchor="middle" fontSize="8" fill="#3A4F6A" fontFamily="DM Sans">{d.x}</text>
+          <text x={x+barW/2} y={H-pb+12} textAnchor="middle" fontSize="8" fill="#69746B" fontFamily="DM Sans">{d.x}</text>
         </g>;
       })}
       {[0,0.5,1].map((t,i)=>{
         const y=pt+t*(H-pt-pb);
         const val=Math.round(maxV*(1-t));
         return <g key={i}>
-          <line x1={pl} y1={y} x2={W-pr} y2={y} stroke="#1E2D45" strokeWidth="1" strokeDasharray="3,3"/>
-          <text x={pl-4} y={y+4} textAnchor="end" fontSize="8" fill="#3A4F6A" fontFamily="DM Sans">{val}</text>
+          <line x1={pl} y1={y} x2={W-pr} y2={y} stroke="#414944" strokeWidth="1" strokeDasharray="3,3"/>
+          <text x={pl-4} y={y+4} textAnchor="end" fontSize="8" fill="#69746B" fontFamily="DM Sans">{val}</text>
         </g>;
       })}
     </svg>
@@ -1472,7 +1472,7 @@ function Login({ onLogin }) {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
-        html,body{background:#00030b;color:${C.text};font-family:${F.sans}}
+        html,body{background:#202526;color:${C.text};font-family:${F.sans}}
         input::placeholder{color:${C.textD}}
         select option{background:${C.card};color:${C.text}}
         @keyframes spin{to{transform:rotate(360deg)}}
@@ -1530,9 +1530,9 @@ function Login({ onLogin }) {
             style={{
               width:"100%",padding:"13px",borderRadius:11,border:"none",
               background:loading?"rgba(0,229,160,0.3)":`linear-gradient(160deg,${C.jade}EE,${C.jade})`,
-              color:"#030810",fontWeight:700,fontSize:14,cursor:loading?"not-allowed":"pointer",
+              color:"#202526",fontWeight:700,fontSize:14,cursor:loading?"not-allowed":"pointer",
               fontFamily:F.title,letterSpacing:"0.1em",textTransform:"uppercase",
-              boxShadow:loading?"none":"0 4px 0 #007A56, 0 6px 20px rgba(0,229,160,0.3)",
+              boxShadow:loading?"none":"0 4px 0 #899387, 0 6px 20px rgba(0,229,160,0.3)",
               transition:"all 0.15s",opacity:loading?0.7:1,
               transform:loading?"none":"translateY(0)",
             }}
@@ -3437,9 +3437,9 @@ export default function NOAApp() {
     }
     .noah-bottom-nav-inner{display:flex;justify-content:space-around;align-items:center}
     .noah-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;cursor:pointer;border:none;background:transparent;color:rgba(122,149,187,0.7);min-width:56px;border-radius:12px;transition:all 0.18s}
-    .noah-nav-item.active{color:#00E5A0}
+    .noah-nav-item.active{color:#B87558}
     .noah-nav-item.active .noah-nav-dot{opacity:1}
-    .noah-nav-dot{width:4px;height:4px;border-radius:50%;background:#00E5A0;box-shadow:0 0 8px #00E5A0;opacity:0;transition:opacity 0.2s;margin-top:1px}
+    .noah-nav-dot{width:4px;height:4px;border-radius:50%;background:#B87558;box-shadow:0 0 8px #B87558;opacity:0;transition:opacity 0.2s;margin-top:1px}
     .noah-nav-icon{font-size:20px;line-height:1}
     .noah-nav-label{font-size:8px;letter-spacing:0.1em;font-weight:700;text-transform:uppercase;font-family:'Rajdhani',sans-serif}
     @media(max-width:768px){
@@ -3458,16 +3458,16 @@ export default function NOAApp() {
     /* ── NOAH PREMIUM UI REFRESH — visual only ── */
     :root{
       color-scheme:dark;
-      --noah-bg:#070A0F;
+      --noah-bg:#202526;
       --noah-surface:#0D141D;
       --noah-surface-2:#111B27;
       --noah-line:rgba(151,177,204,.14);
-      --noah-muted:#8C9DB0;
-      --noah-text:#EAF1F8;
-      --noah-teal:#29D9B5;
-      --noah-blue:#5AB7FF;
+      --noah-muted:#B7B1A6;
+      --noah-text:#E9E2D7;
+      --noah-teal:#B87558;
+      --noah-blue:#899387;
     }
-    html,body{background:#070A0F!important;color:var(--noah-text)!important;letter-spacing:.005em}
+    html,body{background:#202526!important;color:var(--noah-text)!important;letter-spacing:.005em}
     body{background-image:radial-gradient(ellipse at 78% 0%,rgba(27,91,127,.12),transparent 38%),radial-gradient(ellipse at 0% 55%,rgba(18,112,98,.07),transparent 36%)!important}
     ::selection{background:rgba(41,217,181,.25);color:#fff}
     ::-webkit-scrollbar{width:6px;height:6px}
@@ -3478,7 +3478,7 @@ export default function NOAApp() {
     aside[style*="position: fixed"] nav{padding:16px 10px!important}
     aside[style*="position: fixed"] nav button{position:relative!important;min-height:44px!important;padding:11px 13px!important;margin:3px 0 5px!important;border:1px solid transparent!important;border-radius:12px!important;letter-spacing:.005em!important;transition:background .2s ease,border-color .2s ease,transform .2s ease!important}
     aside[style*="position: fixed"] nav button:hover{background:rgba(255,255,255,.045)!important;border-color:rgba(153,186,215,.1)!important;transform:translateX(2px)}
-    aside[style*="position: fixed"] nav button[style*="0, 229, 160"]{background:linear-gradient(105deg,rgba(41,217,181,.13),rgba(41,217,181,.035))!important;border:1px solid rgba(41,217,181,.2)!important;border-left:1px solid rgba(41,217,181,.2)!important;color:#65E8CD!important;box-shadow:inset 3px 0 0 #29D9B5,0 8px 24px rgba(0,0,0,.12)!important}
+    aside[style*="position: fixed"] nav button[style*="0, 229, 160"]{background:linear-gradient(105deg,rgba(41,217,181,.13),rgba(41,217,181,.035))!important;border:1px solid rgba(41,217,181,.2)!important;border-left:1px solid rgba(41,217,181,.2)!important;color:#899387!important;box-shadow:inset 3px 0 0 #B87558,0 8px 24px rgba(0,0,0,.12)!important}
     aside[style*="position: fixed"] nav button span{filter:none!important}
     aside[style*="position: fixed"] button{font-family:'DM Sans',sans-serif!important}
     /* Fixed topbar: more restrained glass and hairline border */
@@ -3495,15 +3495,15 @@ export default function NOAApp() {
     main [style*="box-shadow"],main [style*="boxShadow"]{box-shadow:0 10px 32px rgba(0,0,0,.12)!important}
     main button{transition:transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease!important}
     main button:hover{border-color:rgba(41,217,181,.38)!important}
-    main input,main textarea,main select{background:rgba(8,14,21,.78)!important;border-color:rgba(143,171,198,.2)!important;border-radius:10px!important;color:#EAF1F8!important}
+    main input,main textarea,main select{background:rgba(8,14,21,.78)!important;border-color:rgba(143,171,198,.2)!important;border-radius:10px!important;color:#E9E2D7!important}
     main input:focus,main textarea:focus,main select:focus{border-color:rgba(41,217,181,.65)!important;box-shadow:0 0 0 3px rgba(41,217,181,.09)!important}
     /* Small status labels / chips */
     main [style*="letter-spacing"]{text-rendering:optimizeLegibility}
     /* Mobile nav glass */
     .noah-bottom-nav{background:rgba(8,13,20,.82)!important;backdrop-filter:blur(30px) saturate(150%)!important;-webkit-backdrop-filter:blur(30px) saturate(150%)!important;border-top:1px solid rgba(143,171,198,.15)!important;box-shadow:0 -10px 36px rgba(0,0,0,.22)!important}
-    .noah-nav-item{border-radius:12px!important;padding:7px 13px!important;color:#7F91A5!important}
-    .noah-nav-item.active{background:rgba(41,217,181,.09)!important;color:#43E2C1!important}
-    .noah-nav-dot{background:#29D9B5!important;box-shadow:0 0 10px rgba(41,217,181,.5)!important}
+    .noah-nav-item{border-radius:12px!important;padding:7px 13px!important;color:#B7B1A6!important}
+    .noah-nav-item.active{background:rgba(41,217,181,.09)!important;color:#B87558!important}
+    .noah-nav-dot{background:#B87558!important;box-shadow:0 0 10px rgba(41,217,181,.5)!important}
     .noah-nav-label{font-family:'DM Sans',sans-serif!important;font-size:9px!important;letter-spacing:.045em!important;font-weight:600!important}
     @media(max-width:768px){
       aside[style*="position: fixed"]{width:min(86vw,300px)!important;min-width:min(86vw,300px)!important}
