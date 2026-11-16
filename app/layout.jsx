@@ -3,7 +3,7 @@ export const metadata = {
   title: 'NOAH — Never Over, Always Higher',
   description: 'Plataforma de entrenamiento de fuerza inteligente',
   manifest: '/manifest.json',
-  themeColor: '#202526',
+  themeColor: '#332735',
   icons: {
     icon: [{ url: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { url: '/icon-512.png', sizes: '512x512', type: 'image/png' }],
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
@@ -22,7 +22,7 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="NOAH" />
       </head>
-      <body style={{ margin: 0, padding: 0, background: '#202526', color: '#E9E2D7' }}>
+      <body style={{ margin: 0, padding: 0, background: '#E8E0D1', color: '#332735' }}>
         {children}
       </body>
     </html>
