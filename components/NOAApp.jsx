@@ -480,7 +480,7 @@ const CICLOS_TIPOS = [
 const PATRONES = ["Sentadilla","Bisagra","Empuje","Jale","Cargada","Core","Full body","Accesorio"];
 
 // Fondo de login y pantalla de carga: mismo azul oscuro del logo
-const NOAH_BG = "radial-gradient(ellipse 90% 70% at 50% 0%, #303839 0%, #202526 58%, #191E1F 100%)";
+const NOAH_BG = "#E8E0D1";
 
 // ── FISIO / KINESIOLOGÍA ──────────────────
 const FISIO_C = "#899387";
@@ -1462,85 +1462,123 @@ function Login({ onLogin }) {
   const handleKey = (e) => { if (e.key==="Enter") doLogin(); };
 
   return (
-    <div style={{ minHeight:"100vh",background:NOAH_BG,display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",overflow:"hidden" }}>
+    <div className="noah-editorial-login" style={{
+      minHeight:"100vh",background:"#E8E0D1",color:"#332735",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      padding:"34px 22px",position:"relative",overflow:"hidden",
+      isolation:"isolate",
+    }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Manrope:wght@300;400;500;600;700&display=swap');
-        *{box-sizing:border-box;margin:0;padding:0}
-        html,body{background:#202526;color:${C.text};font-family:${F.sans}}
-        input::placeholder{color:${C.textD}}
-        select option{background:${C.card};color:${C.text}}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes glow{0%,100%{opacity:0.4}50%{opacity:0.8}}
-        .noah-login-card{animation:fadeUp 0.6s ease forwards}
-        .noah-input:focus{border-color:rgba(184,117,88,0.65)!important;box-shadow:0 0 0 3px rgba(184,117,88,0.12)!important}
+        .noah-editorial-login,.noah-editorial-login *{box-sizing:border-box}
+        .noah-editorial-login{font-family:'Manrope',sans-serif}
+        .noah-editorial-login .editorial-shape{position:absolute;z-index:-1;pointer-events:none}
+        .noah-editorial-login .editorial-input{
+          width:100%;height:54px;padding:0 15px;border:0;border-bottom:1px solid rgba(232,224,209,.32);
+          border-radius:0;background:rgba(232,224,209,.055);color:#F4EDE2;
+          font:400 15px 'Manrope',sans-serif;outline:none;transition:border-color .2s,background .2s;
+        }
+        .noah-editorial-login .editorial-input::placeholder{color:rgba(232,224,209,.48)}
+        .noah-editorial-login .editorial-input:focus{border-bottom-color:#D1B85E;background:rgba(232,224,209,.09);box-shadow:none}
+        .noah-editorial-login .editorial-submit{
+          width:100%;min-height:56px;border:0;border-radius:2px;background:#B95740;color:#FFF5E9;
+          font:700 12px 'Manrope',sans-serif;letter-spacing:.2em;text-transform:uppercase;
+          cursor:pointer;transition:background .2s,transform .2s;box-shadow:5px 5px 0 #D1B85E;
+        }
+        .noah-editorial-login .editorial-submit:hover:not(:disabled){background:#A94B37;transform:translate(-1px,-1px)}
+        .noah-editorial-login .editorial-submit:disabled{opacity:.65;cursor:not-allowed}
+        .noah-editorial-login .editorial-error{color:#F0B9A8;background:rgba(185,87,64,.17);border-left:3px solid #B95740}
+        @keyframes editorialArrive{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+        .noah-editorial-login .editorial-content{animation:editorialArrive .55s ease both}
+        @media(max-width:480px){
+          .noah-editorial-login{padding:26px 20px 34px!important}
+          .noah-editorial-login .editorial-content{max-width:390px!important}
+          .noah-editorial-login .editorial-wordmark{width:260px!important}
+          .noah-editorial-login .editorial-panel{padding:28px 24px!important}
+        }
+        @media(min-height:850px){
+          .noah-editorial-login .editorial-content{transform:translateY(-8px)}
+        }
       `}</style>
 
-      <div className="noah-login-card" style={{width:"100%",maxWidth:400,position:"relative",zIndex:1}}>
-        {/* Logo section */}
-        <div style={{textAlign:"center",marginBottom:36}}>
-          <img src="/noah-login-logo.png" alt="NOAH" style={{width:"100%",maxWidth:340,height:"auto",display:"block",margin:"0 auto"}}/>
+      <div className="editorial-shape" style={{
+        top:-100,right:-92,width:290,height:390,background:"#B95740",
+        borderRadius:"0 0 0 72%",transform:"rotate(8deg)",opacity:.96,
+      }}/>
+      <div className="editorial-shape" style={{
+        left:-130,bottom:-180,width:330,height:330,border:"1px solid #72877B",
+        borderRadius:"50%",boxShadow:"0 0 0 22px rgba(114,135,123,.08),0 0 0 48px rgba(114,135,123,.05)",
+      }}/>
+      <div className="editorial-shape" style={{
+        top:"17%",left:"8%",width:12,height:12,background:"#D1B85E",borderRadius:"50%",
+      }}/>
+
+      <div className="editorial-content" style={{width:"100%",maxWidth:420,position:"relative",zIndex:1}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:28}}>
+          <div style={{fontSize:9,fontWeight:700,letterSpacing:".22em",textTransform:"uppercase",color:"#72877B"}}>
+            NOAH / ESTUDIO DE RENDIMIENTO
+          </div>
+          <div style={{width:30,height:1,background:"#332735",opacity:.45}}/>
+          <div style={{fontSize:9,letterSpacing:".12em",color:"#332735",opacity:.65}}>01 — 01</div>
         </div>
 
-        {/* Card glass */}
-        <div style={{
-          background:"rgba(13,21,40,0.75)",
-          backdropFilter:"blur(28px)",WebkitBackdropFilter:"blur(28px)",
-          border:"1px solid rgba(26,40,64,0.8)",
-          borderRadius:20,
-          padding:"28px 28px",
-          boxShadow:"0 8px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
+        <div style={{textAlign:"center",margin:"0 auto 30px",position:"relative"}}>
+          <img className="editorial-wordmark" src="/noah-login-logo.png" alt="NOAH — Never Over, Always Higher"
+            style={{width:"min(100%,300px)",height:"auto",display:"block",margin:"0 auto"}}/>
+        </div>
+
+        <div className="editorial-panel" style={{
+          background:"#332735",color:"#E8E0D1",padding:"34px 34px 30px",
+          borderRadius:2,position:"relative",boxShadow:"12px 12px 0 rgba(51,39,53,.12)",
         }}>
-          {/* Email */}
-          <div style={{marginBottom:16}}>
-            <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.12em",textTransform:"uppercase",fontFamily:F.title}}>EMAIL</div>
-            <input
-              className="noah-input"
-              type="email"
-              value={email}
-              onChange={e=>setEmail(e.target.value)}
-              onKeyDown={handleKey}
-              placeholder="tu@email.com"
-              style={{width:"100%",padding:"12px 14px",background:"rgba(6,10,18,0.7)",border:"1px solid rgba(26,40,64,0.9)",borderRadius:11,color:C.text,fontSize:14,outline:"none",fontFamily:F.sans,boxSizing:"border-box",transition:"border-color 0.2s, box-shadow 0.2s"}}
-            />
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:26}}>
+            <div style={{width:28,height:2,background:"#D1B85E"}}/>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:".2em",textTransform:"uppercase",color:"#D1B85E"}}>
+              Acceso de atletas
+            </div>
           </div>
-          {/* Password */}
-          <div style={{marginBottom:20}}>
-            <div style={{fontSize:10,fontWeight:700,color:C.textS,marginBottom:6,letterSpacing:"0.12em",textTransform:"uppercase",fontFamily:F.title}}>CONTRASEÑA</div>
-            <input
-              className="noah-input"
-              type="password"
-              value={pass}
-              onChange={e=>setPass(e.target.value)}
-              onKeyDown={handleKey}
-              placeholder="••••••••"
-              style={{width:"100%",padding:"12px 14px",background:"rgba(6,10,18,0.7)",border:"1px solid rgba(26,40,64,0.9)",borderRadius:11,color:C.text,fontSize:14,outline:"none",fontFamily:F.sans,boxSizing:"border-box",transition:"border-color 0.2s, box-shadow 0.2s"}}
-            />
+
+          <div style={{marginBottom:21}}>
+            <label htmlFor="noah-login-email" style={{display:"block",fontSize:9,fontWeight:700,color:"#B8B0A5",marginBottom:8,letterSpacing:".18em",textTransform:"uppercase"}}>
+              Email
+            </label>
+            <input id="noah-login-email" className="editorial-input" type="email" value={email}
+              onChange={e=>setEmail(e.target.value)} onKeyDown={handleKey}
+              placeholder="tu@email.com" autoComplete="username"/>
           </div>
-          {error&&<div style={{fontSize:12,color:C.red,marginBottom:14,fontFamily:F.sans,padding:"8px 12px",background:"rgba(255,58,58,0.08)",borderRadius:8,border:"1px solid rgba(255,58,58,0.2)"}}>{error}</div>}
-          <button
-            onClick={doLogin}
-            disabled={loading}
-            style={{
-              width:"100%",padding:"13px",borderRadius:11,border:"none",
-              background:loading?"rgba(0,229,160,0.3)":`linear-gradient(160deg,${C.jade}EE,${C.jade})`,
-              color:"#030810",fontWeight:700,fontSize:14,cursor:loading?"not-allowed":"pointer",
-              fontFamily:F.title,letterSpacing:"0.1em",textTransform:"uppercase",
-              boxShadow:loading?"none":"0 2px 0 #8E543E, 0 5px 16px rgba(184,117,88,0.18)",
-              transition:"all 0.15s",opacity:loading?0.7:1,
-              transform:loading?"none":"translateY(0)",
-            }}
-          >{loading?"Ingresando…":"Ingresar"}</button>
+
+          <div style={{marginBottom:24}}>
+            <label htmlFor="noah-login-password" style={{display:"block",fontSize:9,fontWeight:700,color:"#B8B0A5",marginBottom:8,letterSpacing:".18em",textTransform:"uppercase"}}>
+              Contraseña
+            </label>
+            <input id="noah-login-password" className="editorial-input" type="password" value={pass}
+              onChange={e=>setPass(e.target.value)} onKeyDown={handleKey}
+              placeholder="••••••••" autoComplete="current-password"/>
+          </div>
+
+          {error&&<div className="editorial-error" style={{fontSize:12,marginBottom:18,padding:"11px 13px",fontFamily:"'Manrope',sans-serif"}}>{error}</div>}
+
+          <button className="editorial-submit" onClick={doLogin} disabled={loading}>
+            {loading?"Ingresando…":"Ingresar"}
+          </button>
+
+          <div style={{display:"flex",alignItems:"center",gap:12,marginTop:24}}>
+            <div style={{height:1,flex:1,background:"rgba(232,224,209,.2)"}}/>
+            <div style={{fontSize:9,letterSpacing:".14em",color:"#B8B0A5",textTransform:"uppercase",whiteSpace:"nowrap"}}>
+              Las cuentas las crea tu coach
+            </div>
+            <div style={{height:1,flex:1,background:"rgba(232,224,209,.2)"}}/>
+          </div>
         </div>
 
-        <div style={{textAlign:"center",marginTop:18,fontSize:11,color:C.textD,fontFamily:F.sans,letterSpacing:"0.04em"}}>
-          Las cuentas las crea tu coach · NOAH v2.0
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:24,padding:"0 2px"}}>
+          <div style={{fontFamily:"'Instrument Serif',serif",fontSize:20,color:"#332735"}}>NOAH <span style={{fontFamily:"'Manrope',sans-serif",fontSize:9,letterSpacing:".16em",verticalAlign:"middle"}}>V2.0</span></div>
+          <div style={{fontSize:9,letterSpacing:".16em",textTransform:"uppercase",color:"#72877B",fontWeight:700}}>Ciencia · Movimiento · Adaptación</div>
         </div>
       </div>
     </div>
   );
 }
-
 // ─────────────────────────────────────────
 // SIDEBAR
 // ─────────────────────────────────────────
@@ -3580,8 +3618,8 @@ export default function NOAApp() {
       <div style={{ textAlign:"center",position:"relative",zIndex:1,width:"100%",maxWidth:300,padding:"0 20px",boxSizing:"content-box" }}>
         <img src="/noah-login-logo.png" alt="NOAH" style={{width:"100%",maxWidth:300,height:"auto",display:"block",margin:"0 auto 20px"}}/>
         <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-          <div style={{width:6,height:6,borderRadius:"50%",background:C.jade,boxShadow:`0 0 8px ${C.jade}`,animation:"spin 1s linear infinite"}}/>
-          <div style={{fontSize:12,color:C.textS,fontFamily:F.sans,letterSpacing:"0.06em"}}>Cargando NOAH…</div>
+          <div style={{width:6,height:6,borderRadius:"50%",background:"#D1B85E",boxShadow:"none",animation:"spin 1s linear infinite"}}/>
+          <div style={{fontSize:12,color:"#332735",fontFamily:F.sans,letterSpacing:"0.06em"}}>Cargando NOAH…</div>
         </div>
       </div>
     </div>
