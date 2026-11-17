@@ -1466,154 +1466,152 @@ function Login({ onLogin }) {
       <style>{`
         .noah-login-v2,.noah-login-v2 *{box-sizing:border-box}
         .noah-login-v2{
-          min-height:100svh;width:100%;display:grid;
-          grid-template-columns:minmax(0,1.08fr) minmax(420px,.92fr);
-          background:#F4F1E9;color:#102F3A;
-          font-family:'Manrope',Arial,sans-serif;position:relative;
-          overflow:hidden;isolation:isolate
-        }
-        .noah-login-v2:before{
-          content:"";position:absolute;width:650px;height:650px;
-          border:1px solid rgba(7,91,105,.13);border-radius:50%;
-          left:-310px;bottom:-430px;
-          box-shadow:0 0 0 36px rgba(7,91,105,.035),0 0 0 82px rgba(7,91,105,.025);
-          pointer-events:none;z-index:-1
-        }
-        .noah-login-v2:after{
-          content:"";position:absolute;width:430px;height:430px;border-radius:50%;
-          right:-230px;top:-250px;background:rgba(184,117,88,.075);
-          pointer-events:none;z-index:-1
+          --nl-ink:#092C3B;--nl-deep:#062B3A;--nl-teal:#087F91;--nl-cyan:#28D5D5;
+          --nl-paper:#F4F7F4;--nl-muted:#52666B;--nl-accent:#B95B43;
+          width:100%;min-height:100vh;min-height:100svh;display:grid;
+          grid-template-columns:minmax(0,1.06fr) minmax(430px,.94fr);
+          background:var(--nl-paper);color:var(--nl-ink);
+          font-family:Arial,Helvetica,sans-serif;position:relative;isolation:isolate;
+          overflow:hidden
         }
         .noah-login-v2 .nl-brand{
-          min-height:100svh;padding:clamp(32px,5.5vw,82px);
-          display:flex;flex-direction:column;justify-content:space-between;
-          position:relative;z-index:1
+          min-width:0;min-height:100vh;min-height:100svh;padding:clamp(30px,5vw,76px);
+          display:flex;flex-direction:column;justify-content:space-between;position:relative;
+          overflow:hidden;color:#F7FBFA;
+          background:radial-gradient(ellipse at 12% 88%,rgba(0,197,195,.22),transparent 36%),
+                     radial-gradient(ellipse at 92% 10%,rgba(40,213,213,.16),transparent 32%),
+                     linear-gradient(145deg,#073B4A 0%,#062D3C 54%,#061F2E 100%)
+        }
+        .noah-login-v2 .nl-brand:before{
+          content:"";position:absolute;width:min(62vw,720px);aspect-ratio:1;border-radius:50%;
+          border:1px solid rgba(69,220,219,.17);right:-32%;bottom:-58%;
+          box-shadow:0 0 0 34px rgba(40,213,213,.035),0 0 0 82px rgba(40,213,213,.025);
+          pointer-events:none
         }
         .noah-login-v2 .nl-kicker{
-          display:flex;align-items:center;gap:13px;font-size:10px;
-          letter-spacing:.22em;text-transform:uppercase;font-weight:800;
-          color:#315C66;line-height:1.5
+          position:relative;z-index:1;display:flex;align-items:center;gap:12px;
+          color:#C8E6E5;font-size:10px;line-height:1.5;font-weight:700;
+          letter-spacing:.22em;text-transform:uppercase
         }
-        .noah-login-v2 .nl-kicker:before{content:"";width:30px;height:2px;background:#B95740;flex:none}
-        .noah-login-v2 .nl-brand-main{max-width:680px;margin:48px 0 58px}
-        .noah-login-v2 .nl-logo{
-          display:block;width:min(100%,430px);height:auto;max-height:150px;
-          object-fit:contain;object-position:left center;margin:0 0 48px 0
+        .noah-login-v2 .nl-kicker:before{content:"";width:30px;height:2px;background:var(--nl-cyan);flex:none}
+        .noah-login-v2 .nl-brand-main{position:relative;z-index:1;width:100%;max-width:680px;margin:48px 0}
+        .noah-login-v2 .nl-logo-wrap{
+          display:inline-flex;align-items:center;justify-content:center;
+          width:min(100%,420px);min-height:112px;padding:15px 22px;margin:0 0 48px;
+          border:1px solid rgba(255,255,255,.72);border-radius:12px;
+          background:#F7FAF7;box-shadow:0 16px 42px rgba(0,0,0,.16)
         }
+        .noah-login-v2 .nl-logo{display:block;width:100%;max-width:370px;height:auto;max-height:116px;object-fit:contain}
         .noah-login-v2 .nl-headline{
-          font-family:'Instrument Serif',Georgia,serif;font-weight:400;
-          font-size:clamp(44px,5.1vw,72px);line-height:1.02;
-          letter-spacing:-.035em;max-width:650px;margin:0;color:#123642
+          margin:0;max-width:620px;color:#F6FAF8;font-weight:400;
+          font-family:Georgia,'Times New Roman',serif;font-size:clamp(42px,5vw,72px);
+          line-height:1.04;letter-spacing:-.035em;text-align:left
         }
-        .noah-login-v2 .nl-headline em{font-style:normal;color:#B95740}
+        .noah-login-v2 .nl-headline span{display:block}
+        .noah-login-v2 .nl-headline .nl-headline-accent{color:#42D6D2;margin-top:3px}
         .noah-login-v2 .nl-description{
-          font-size:15px;line-height:1.8;letter-spacing:.005em;
-          color:#455B60;max-width:430px;margin:24px 0 0
+          max-width:430px;margin:24px 0 0;color:#D5E4E3;
+          font-size:15px;line-height:1.8;letter-spacing:.005em;text-align:left
         }
         .noah-login-v2 .nl-brand-foot{
-          display:flex;align-items:center;gap:14px;color:#52676A;
-          font-size:10px;letter-spacing:.19em;text-transform:uppercase;font-weight:800
+          position:relative;z-index:1;display:flex;align-items:center;gap:13px;
+          color:#B8D2D1;font-size:10px;line-height:1.5;letter-spacing:.19em;
+          text-transform:uppercase;font-weight:700
         }
-        .noah-login-v2 .nl-brand-foot:before{content:"";height:1px;width:34px;background:#B95740}
+        .noah-login-v2 .nl-brand-foot:before{content:"";width:32px;height:1px;background:var(--nl-cyan);flex:none}
         .noah-login-v2 .nl-access{
-          min-height:100svh;display:flex;align-items:center;justify-content:center;
-          padding:48px clamp(26px,5vw,76px);position:relative;z-index:1
+          min-width:0;min-height:100vh;min-height:100svh;padding:clamp(28px,5vw,76px);
+          display:flex;align-items:center;justify-content:center;background:#F2F6F3;position:relative
         }
         .noah-login-v2 .nl-access:before{
-          content:"";position:absolute;left:0;top:13%;bottom:13%;width:1px;
-          background:linear-gradient(transparent,rgba(7,91,105,.22),transparent)
+          content:"";position:absolute;inset:0 auto 0 0;width:1px;
+          background:linear-gradient(transparent,rgba(8,127,145,.28),transparent)
         }
         .noah-login-v2 .nl-card{
-          width:100%;max-width:450px;background:#FFFEFB;
-          border:1px solid #E1DED5;border-radius:10px;
-          padding:clamp(30px,4vw,50px);
-          box-shadow:0 22px 65px rgba(16,47,58,.10)
+          width:100%;max-width:450px;padding:clamp(30px,3.8vw,50px);
+          background:#FFFFFF;border:1px solid #DCE6E2;border-radius:14px;
+          box-shadow:0 24px 70px rgba(6,43,58,.10),0 3px 12px rgba(6,43,58,.04)
         }
-        .noah-login-v2 .nl-card-top{
-          display:flex;align-items:center;justify-content:space-between;margin-bottom:38px;gap:12px
-        }
-        .noah-login-v2 .nl-card-label{
-          font-size:10px;font-weight:800;letter-spacing:.18em;
-          text-transform:uppercase;color:#315C66
-        }
-        .noah-login-v2 .nl-index{font-family:'Instrument Serif',Georgia,serif;font-size:17px;color:#7B8987}
+        .noah-login-v2 .nl-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 38px}
+        .noah-login-v2 .nl-card-label{color:#087383;font-size:10px;line-height:1.4;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
+        .noah-login-v2 .nl-index{flex:none;color:#71858A;font-family:Georgia,'Times New Roman',serif;font-size:16px}
         .noah-login-v2 .nl-title{
-          font-family:'Instrument Serif',Georgia,serif;font-size:clamp(34px,3vw,42px);
-          line-height:1.06;font-weight:400;letter-spacing:-.025em;margin:0;color:#123642
+          margin:0;color:#092C3B;font-family:Georgia,'Times New Roman',serif;
+          font-size:clamp(34px,3vw,42px);font-weight:400;line-height:1.08;letter-spacing:-.025em
         }
-        .noah-login-v2 .nl-subtitle{font-size:13px;line-height:1.75;color:#526267;margin:13px 0 32px}
-        .noah-login-v2 .nl-field{margin-bottom:21px}
+        .noah-login-v2 .nl-subtitle{margin:14px 0 32px;color:#4C6268;font-size:14px;line-height:1.7}
+        .noah-login-v2 .nl-field{min-width:0;margin:0 0 21px}
         .noah-login-v2 .nl-field label{
-          display:block;font-size:10px;font-weight:800;letter-spacing:.14em;
-          text-transform:uppercase;color:#40575C;margin:0 0 9px
+          display:block;margin:0 0 9px;color:#294A53;font-size:10px;line-height:1.4;
+          font-weight:800;letter-spacing:.14em;text-transform:uppercase
         }
         .noah-login-v2 .nl-input{
-          display:block;width:100%;height:54px;padding:0 16px;
-          border:1px solid #C9D1CE;border-radius:6px;background:#F8FAF8;
-          color:#102F3A;font:500 14px 'Manrope',Arial,sans-serif;outline:none;
-          transition:border-color .2s,box-shadow .2s,background .2s
+          display:block;width:100%;min-width:0;height:56px;padding:0 16px;
+          border:1px solid #B9CBC9;border-radius:7px;background:#F8FBF9;
+          color:#092C3B;font:500 15px Arial,Helvetica,sans-serif;outline:none;
+          transition:border-color .18s,box-shadow .18s,background .18s
         }
-        .noah-login-v2 .nl-input::placeholder{color:#788783;opacity:1}
-        .noah-login-v2 .nl-input:focus{
-          border-color:#087F91;background:#fff;box-shadow:0 0 0 3px rgba(8,127,145,.14)
-        }
+        .noah-login-v2 .nl-input::placeholder{color:#71858A;opacity:1}
+        .noah-login-v2 .nl-input:focus{border-color:#087F91;background:#FFFFFF;box-shadow:0 0 0 3px rgba(8,127,145,.15)}
         .noah-login-v2 .nl-submit{
-          width:100%;min-height:56px;margin-top:8px;border:0;border-radius:6px;
-          background:#B95740;color:#fff;font-family:'Manrope',Arial,sans-serif;
-          font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
-          cursor:pointer;transition:background .2s,transform .2s,box-shadow .2s;
-          box-shadow:0 4px 0 #91432F
+          display:block;width:100%;min-height:58px;margin:9px 0 0;padding:12px 18px;
+          border:0;border-radius:7px;background:#087F91;color:#FFFFFF;
+          font:800 11px Arial,Helvetica,sans-serif;letter-spacing:.16em;text-transform:uppercase;
+          cursor:pointer;box-shadow:0 4px 0 #055B6B;
+          transition:background .18s,transform .18s,box-shadow .18s
         }
-        .noah-login-v2 .nl-submit:hover:not(:disabled){background:#A94D39;transform:translateY(-1px);box-shadow:0 5px 0 #91432F}
-        .noah-login-v2 .nl-submit:active:not(:disabled){transform:translateY(2px);box-shadow:0 2px 0 #91432F}
+        .noah-login-v2 .nl-submit:hover:not(:disabled){background:#066C7D;transform:translateY(-1px);box-shadow:0 5px 0 #055B6B}
+        .noah-login-v2 .nl-submit:active:not(:disabled){transform:translateY(2px);box-shadow:0 2px 0 #055B6B}
         .noah-login-v2 .nl-submit:disabled{opacity:.68;cursor:not-allowed}
-        .noah-login-v2 .nl-error{
-          font-size:12px;line-height:1.55;color:#842F27;background:#FCEDE8;
-          border-left:3px solid #B95740;padding:12px 14px;margin:0 0 18px
-        }
+        .noah-login-v2 .nl-error{margin:0 0 17px;padding:12px 14px;border:1px solid #F0C7BC;border-left:4px solid #B94F3A;border-radius:6px;background:#FFF2EE;color:#852F22;font-size:13px;line-height:1.55}
         .noah-login-v2 .nl-note{
-          display:flex;align-items:center;gap:12px;margin-top:28px;color:#596B6D;
-          font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;line-height:1.6
+          display:flex;align-items:center;gap:12px;margin:27px 0 0;color:#526A70;
+          font-size:10px;line-height:1.5;font-weight:700;letter-spacing:.08em;
+          text-align:center;text-transform:uppercase
         }
-        .noah-login-v2 .nl-note:before,.noah-login-v2 .nl-note:after{content:"";height:1px;background:#D9DFDA;flex:1}
+        .noah-login-v2 .nl-note:before,.noah-login-v2 .nl-note:after{content:"";height:1px;background:#D6E1DE;flex:1;min-width:12px}
         @media(max-width:900px){
-          .noah-login-v2{grid-template-columns:1fr;min-height:100svh}
-          .noah-login-v2 .nl-brand{min-height:auto;padding:34px clamp(22px,6vw,56px) 18px}
-          .noah-login-v2 .nl-brand-main{margin:30px 0 12px}
-          .noah-login-v2 .nl-logo{width:min(72vw,330px);max-height:112px;margin:0 0 25px}
-          .noah-login-v2 .nl-headline{font-size:clamp(38px,7vw,58px);max-width:650px}
-          .noah-login-v2 .nl-description{font-size:14px;margin-top:13px}
+          .noah-login-v2{grid-template-columns:minmax(0,1fr);overflow:visible}
+          .noah-login-v2 .nl-brand{min-height:auto;padding:30px clamp(22px,6vw,54px) 28px}
+          .noah-login-v2 .nl-brand-main{margin:30px 0 0}
+          .noah-login-v2 .nl-logo-wrap{width:min(100%,340px);min-height:88px;padding:12px 18px;margin:0 0 30px}
+          .noah-login-v2 .nl-logo{max-width:300px;max-height:90px}
+          .noah-login-v2 .nl-headline{font-size:clamp(38px,7vw,58px);max-width:600px}
+          .noah-login-v2 .nl-description{margin-top:16px;font-size:14px;max-width:480px}
           .noah-login-v2 .nl-brand-foot{display:none}
-          .noah-login-v2 .nl-access{min-height:auto;padding:22px clamp(22px,6vw,56px) 48px}
+          .noah-login-v2 .nl-access{min-height:auto;padding:30px clamp(22px,6vw,54px) 48px}
           .noah-login-v2 .nl-access:before{display:none}
-          .noah-login-v2 .nl-card{max-width:540px}
+          .noah-login-v2 .nl-card{max-width:560px}
         }
         @media(max-width:520px){
-          .noah-login-v2{min-height:100svh}
-          .noah-login-v2 .nl-brand{padding:25px 22px 10px}
-          .noah-login-v2 .nl-kicker{font-size:9px;letter-spacing:.15em;gap:9px}
+          .noah-login-v2{min-height:100vh;min-height:100svh}
+          .noah-login-v2 .nl-brand{padding:23px 21px 24px}
+          .noah-login-v2 .nl-kicker{gap:9px;font-size:9px;letter-spacing:.13em}
           .noah-login-v2 .nl-kicker:before{width:20px}
-          .noah-login-v2 .nl-brand-main{margin:25px 0 8px}
-          .noah-login-v2 .nl-logo{width:min(78vw,270px);max-height:92px;margin:0 0 22px}
-          .noah-login-v2 .nl-headline{font-size:clamp(36px,10vw,46px);line-height:1.02}
-          .noah-login-v2 .nl-description{font-size:12px;line-height:1.65;max-width:360px}
-          .noah-login-v2 .nl-access{padding:18px 16px 30px}
-          .noah-login-v2 .nl-card{padding:27px 22px;border-radius:9px}
+          .noah-login-v2 .nl-brand-main{margin-top:23px}
+          .noah-login-v2 .nl-logo-wrap{width:min(100%,280px);min-height:72px;padding:10px 14px;margin-bottom:24px;border-radius:9px}
+          .noah-login-v2 .nl-logo{max-height:72px}
+          .noah-login-v2 .nl-headline{font-size:clamp(34px,9.2vw,43px);line-height:1.08;letter-spacing:-.025em}
+          .noah-login-v2 .nl-headline span{max-width:100%}
+          .noah-login-v2 .nl-description{margin-top:13px;font-size:13px;line-height:1.65;max-width:360px}
+          .noah-login-v2 .nl-access{padding:20px 15px 30px}
+          .noah-login-v2 .nl-card{padding:27px 22px 25px;border-radius:11px}
           .noah-login-v2 .nl-card-top{margin-bottom:27px}
-          .noah-login-v2 .nl-title{font-size:35px}
-          .noah-login-v2 .nl-subtitle{font-size:12px;margin:11px 0 27px}
-          .noah-login-v2 .nl-input{height:52px;font-size:16px}
-          .noah-login-v2 .nl-submit{min-height:54px}
-          .noah-login-v2 .nl-note{font-size:8px;letter-spacing:.08em;gap:8px}
+          .noah-login-v2 .nl-card-label{font-size:9px;letter-spacing:.13em}
+          .noah-login-v2 .nl-title{font-size:34px;line-height:1.1}
+          .noah-login-v2 .nl-subtitle{margin:11px 0 25px;font-size:13px;line-height:1.6}
+          .noah-login-v2 .nl-field{margin-bottom:18px}
+          .noah-login-v2 .nl-input{height:54px;font-size:16px}
+          .noah-login-v2 .nl-submit{min-height:56px}
+          .noah-login-v2 .nl-note{gap:8px;margin-top:24px;font-size:9px;letter-spacing:.045em}
         }
-        @media(max-height:700px) and (min-width:901px){
-          .noah-login-v2 .nl-brand{padding-top:28px;padding-bottom:28px}
-          .noah-login-v2 .nl-brand-main{margin:20px 0}
-          .noah-login-v2 .nl-logo{width:min(100%,350px);max-height:115px;margin-bottom:25px}
-          .noah-login-v2 .nl-headline{font-size:clamp(38px,4.5vw,58px)}
-          .noah-login-v2 .nl-card{padding:30px}
-          .noah-login-v2 .nl-card-top{margin-bottom:25px}
-          .noah-login-v2 .nl-subtitle{margin-bottom:22px}
+        @media(max-width:360px){
+          .noah-login-v2 .nl-brand{padding-left:17px;padding-right:17px}
+          .noah-login-v2 .nl-kicker{font-size:8px;letter-spacing:.1em}
+          .noah-login-v2 .nl-headline{font-size:33px}
+          .noah-login-v2 .nl-access{padding-left:12px;padding-right:12px}
+          .noah-login-v2 .nl-card{padding-left:18px;padding-right:18px}
+          .noah-login-v2 .nl-title{font-size:31px}
         }
         @media(prefers-reduced-motion:reduce){.noah-login-v2 *{transition:none!important}}
       `}</style>
@@ -1621,8 +1619,13 @@ function Login({ onLogin }) {
       <section className="nl-brand" aria-label="NOAH">
         <div className="nl-kicker">NOAH · Never Over, Always Higher</div>
         <div className="nl-brand-main">
-          <img className="nl-logo" src="/noah-login-logo.svg" alt="NOAH — Never Over, Always Higher"/>
-          <h1 className="nl-headline">La fuerza se construye. <em>La constancia</em> la transforma.</h1>
+          <div className="nl-logo-wrap">
+            <img className="nl-logo" src="/noah-login-logo.svg" alt="NOAH — Never Over, Always Higher"/>
+          </div>
+          <h1 className="nl-headline">
+            <span>La fuerza se construye.</span>
+            <span className="nl-headline-accent">La constancia la transforma.</span>
+          </h1>
           <p className="nl-description">Un espacio para entrenar con intención, medir tu progreso y superar tus propios límites.</p>
         </div>
         <div className="nl-brand-foot">Ciencia · Movimiento · Adaptación</div>
@@ -3700,7 +3703,7 @@ export default function NOAApp() {
     <div style={{ minHeight:"100vh",background:NOAH_BG,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden" }}>
       <style>{GLOBAL_CSS}</style>
       <div style={{ textAlign:"center",position:"relative",zIndex:1,width:"100%",maxWidth:300,padding:"0 20px",boxSizing:"content-box" }}>
-        <img src="/noah-login-logo.svg" alt="NOAH" style={{width:"100%",maxWidth:300,height:"auto",display:"block",margin:"0 auto 20px"}}/>
+        <img src="/noah-login-logo.png" alt="NOAH" style={{width:"100%",maxWidth:300,height:"auto",display:"block",margin:"0 auto 20px"}}/>
         <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
           <div style={{width:6,height:6,borderRadius:"50%",background:"#D1B85E",boxShadow:"none",animation:"spin 1s linear infinite"}}/>
           <div style={{fontSize:12,color:"#332735",fontFamily:F.sans,letterSpacing:"0.06em"}}>Cargando NOAH…</div>
