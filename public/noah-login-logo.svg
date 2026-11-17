@@ -1,45 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" role="img" aria-labelledby="t">
-<title id="t">NOAH — logo principal</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240" role="img" aria-labelledby="title desc">
+<title id="title">NOAH — identidad visual</title>
+<desc id="desc">Isotipo geométrico tridimensional en cian, turquesa, coral y azul profundo, acompañado por la palabra NOAH en tipografía geométrica de letras separadas.</desc>
 <defs>
-<linearGradient id="top" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#087F91"/><stop offset="1" stop-color="#00566B"/></linearGradient>
-<linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#35E7ED"/><stop offset="1" stop-color="#00AEB5"/></linearGradient>
-<linearGradient id="teal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#00C5C3"/><stop offset="1" stop-color="#007C88"/></linearGradient>
-<linearGradient id="navy" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#063D50"/><stop offset="1" stop-color="#071F2D"/></linearGradient>
+  <linearGradient id="crown" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#42F0E7"/><stop offset="1" stop-color="#00B9C8"/></linearGradient>
+  <linearGradient id="leftFace" x1="0" y1="0" x2="0.9" y2="1"><stop stop-color="#00D8D0"/><stop offset="1" stop-color="#009AAB"/></linearGradient>
+  <linearGradient id="rightFace" x1="0" y1="0" x2="0.85" y2="1"><stop offset="0" stop-color="#FF786B"/><stop offset="0.24" stop-color="#E96A67"/><stop offset="0.48" stop-color="#247F9B"/><stop offset="1" stop-color="#073D60"/></linearGradient>
+  <linearGradient id="sideLight" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5AF5E7"/><stop offset="1" stop-color="#00B9B5"/></linearGradient>
+  <linearGradient id="deep" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#123E59"/><stop offset="1" stop-color="#071F32"/></linearGradient>
+  <!-- Plano inferior derecho: coral integrado progresivamente al azul petróleo -->
+  <linearGradient id="lowerRightFace" gradientUnits="userSpaceOnUse" x1="190" y1="145" x2="120" y2="232">
+    <stop offset="0" stop-color="#F07870"/>
+    <stop offset="0.28" stop-color="#C96A6D"/>
+    <stop offset="0.62" stop-color="#286C80"/>
+    <stop offset="1" stop-color="#0B354B"/>
+  </linearGradient>
 </defs>
+<!-- Isotipo: misma construcción facetada, con contraste claro entre planos -->
 <g transform="translate(8 0) scale(.9)">
-<title id="title">NOAH — isotipo</title><desc id="desc">Isotipo geométrico tridimensional facetado en azul petróleo, teal y cyan.</desc>
-<defs>
-  <linearGradient id="top" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#087F91"/><stop offset="1" stop-color="#00566B"/></linearGradient>
-  <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#35E7ED"/><stop offset="1" stop-color="#00AEB5"/></linearGradient>
-  <linearGradient id="teal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#00C5C3"/><stop offset="1" stop-color="#007C88"/></linearGradient>
-  <linearGradient id="navy" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#063D50"/><stop offset="1" stop-color="#071F2D"/></linearGradient>
-</defs>
-<!-- upper crown -->
-<polygon points="120,8 190,49 120,91 50,49" fill="url(#top)"/>
-<polygon points="50,49 120,91 120,135 50,94" fill="#06495A"/>
-<polygon points="190,49 120,91 120,135 190,94" fill="#087D8B"/>
-<!-- left and right outer facets -->
-<polygon points="50,49 50,145 83,164 83,111" fill="url(#teal)"/>
-<polygon points="50,49 83,111 120,91" fill="url(#cyan)"/>
-<polygon points="190,49 190,145 157,164 157,111" fill="url(#cyan)"/>
-<polygon points="190,49 157,111 120,91" fill="#00AEB7"/>
-<!-- lower facets, central negative N channel is intentionally left open -->
-<polygon points="50,145 120,186 120,232 50,191" fill="url(#teal)"/>
-<polygon points="190,145 120,186 120,232 190,191" fill="url(#navy)"/>
-<polygon points="83,111 120,91 157,111 157,164 120,143 83,164" fill="#FFFFFF"/>
-<polygon points="83,164 120,143 157,164 120,186" fill="#07394A"/>
-<polygon points="83,164 120,186 120,232 83,211" fill="#0A3040"/>
-<polygon points="157,164 120,143 120,186 157,211" fill="#061F2C"/>
+  <polygon points="120,8 190,49 120,91 50,49" fill="url(#crown)"/>
+  <polygon points="50,49 120,91 120,135 50,94" fill="#087F91"/>
+  <polygon points="190,49 120,91 120,135 190,94" fill="#145B83"/>
+  <polygon points="50,49 50,145 83,164 83,111" fill="url(#sideLight)"/>
+  <polygon points="50,49 83,111 120,91" fill="#36E9DC"/>
+  <polygon points="190,49 190,145 157,164 157,111" fill="url(#rightFace)"/>
+  <!-- Plano coral: conecta el cian con los azules profundos sin alterar la estructura -->
+  <polygon points="190,94 190,145 157,164 157,111" fill="url(#rightFace)" opacity=".96"/>
+  <polygon points="190,49 157,111 120,91" fill="#F27A70"/>
+  <polygon points="50,145 120,186 120,232 50,191" fill="#00A9A8"/>
+  <polygon points="190,145 120,186 120,232 190,191" fill="url(#lowerRightFace)"/>
+  <polygon points="83,111 120,91 157,111 157,164 120,143 83,164" fill="#FFFFFF"/>
+  <polygon points="83,164 120,143 157,164 120,186" fill="#0A526B"/>
+  <polygon points="83,164 120,186 120,232 83,211" fill="#0A354B"/>
+  <polygon points="157,164 120,143 120,186 157,211" fill="#17465B"/>
 </g>
-<path d="M250 42V178" stroke="#0B2D3B" stroke-width="1.5" opacity=".7"/>
-<g transform="translate(290 81) scale(1.25)" fill="#0B2D3B">
-<!-- N -->
-<path d="M0 0h12l42 39V0h12v58H54L12 19v39H0z"/>
-<!-- O -->
-<path fill-rule="evenodd" d="M82 0h31c11 0 18 7 18 18v22c0 11-7 18-18 18H82c-11 0-18-7-18-18V18C64 7 71 0 82 0zm1 11c-4 0-7 3-7 7v22c0 4 3 7 7 7h29c4 0 7-3 7-7V18c0-4-3-7-7-7z"/>
-<!-- A -->
-<path fill-rule="evenodd" d="M146 58 173 0h13l27 58h-14l-6-14h-28l-6 14zm24-25h18l-9-21z"/>
-<!-- H -->
-<path d="M226 0h12v23h35V0h12v58h-12V34h-35v24h-12z"/>
+<path d="M250 42V198" stroke="#123B50" stroke-width="2" opacity=".55"/>
+<!-- Wordmark drawn as vector paths: no dependency on installed fonts -->
+<g transform="translate(286 88) scale(1.12)" fill="#0B2D3B">
+  <!-- N --> <path d="M0 0H13L55 43V0H68V64H55L13 21V64H0Z"/>
+  <!-- O --> <path fill-rule="evenodd" d="M99 0H133C145 0 153 8 153 20V44C153 56 145 64 133 64H99C87 64 79 56 79 44V20C79 8 87 0 99 0ZM101 13C95 13 92 16 92 22V42C92 48 95 51 101 51H131C137 51 140 48 140 42V22C140 16 137 13 131 13Z"/>
+  <!-- A --> <path fill-rule="evenodd" d="M166 64L194 0H209L237 64H222L216 49H187L181 64ZM192 37H211L201.5 14Z"/>
+  <!-- H --> <path d="M250 0H264V25H300V0H314V64H300V38H264V64H250Z"/>
 </g>
 </svg>
