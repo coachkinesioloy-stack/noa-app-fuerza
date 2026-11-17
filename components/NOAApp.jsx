@@ -1462,121 +1462,90 @@ function Login({ onLogin }) {
   const handleKey = (e) => { if (e.key==="Enter") doLogin(); };
 
   return (
-    <div className="noah-editorial-login" style={{
-      minHeight:"100vh",background:"#E8E0D1",color:"#332735",
-      display:"flex",alignItems:"center",justifyContent:"center",
-      padding:"34px 22px",position:"relative",overflow:"hidden",
-      isolation:"isolate",
-    }}>
+    <main className="noah-login-v2">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Manrope:wght@300;400;500;600;700&display=swap');
-        .noah-editorial-login,.noah-editorial-login *{box-sizing:border-box}
-        .noah-editorial-login{font-family:'Manrope',sans-serif}
-        .noah-editorial-login .editorial-shape{position:absolute;z-index:-1;pointer-events:none}
-        .noah-editorial-login .editorial-input{
-          width:100%;height:54px;padding:0 15px;border:0;border-bottom:1px solid rgba(232,224,209,.32);
-          border-radius:0;background:rgba(232,224,209,.055);color:#F4EDE2;
-          font:400 15px 'Manrope',sans-serif;outline:none;transition:border-color .2s,background .2s;
-        }
-        .noah-editorial-login .editorial-input::placeholder{color:rgba(232,224,209,.48)}
-        .noah-editorial-login .editorial-input:focus{border-bottom-color:#D1B85E;background:rgba(232,224,209,.09);box-shadow:none}
-        .noah-editorial-login .editorial-submit{
-          width:100%;min-height:56px;border:0;border-radius:2px;background:#B95740;color:#FFF5E9;
-          font:700 12px 'Manrope',sans-serif;letter-spacing:.2em;text-transform:uppercase;
-          cursor:pointer;transition:background .2s,transform .2s;box-shadow:5px 5px 0 #D1B85E;
-        }
-        .noah-editorial-login .editorial-submit:hover:not(:disabled){background:#A94B37;transform:translate(-1px,-1px)}
-        .noah-editorial-login .editorial-submit:disabled{opacity:.65;cursor:not-allowed}
-        .noah-editorial-login .editorial-error{color:#F0B9A8;background:rgba(185,87,64,.17);border-left:3px solid #B95740}
-        @keyframes editorialArrive{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-        .noah-editorial-login .editorial-content{animation:editorialArrive .55s ease both}
-        @media(max-width:480px){
-          .noah-editorial-login{padding:26px 20px 34px!important}
-          .noah-editorial-login .editorial-content{max-width:390px!important}
-          .noah-editorial-login .editorial-wordmark{width:260px!important}
-          .noah-editorial-login .editorial-panel{padding:28px 24px!important}
-        }
-        @media(min-height:850px){
-          .noah-editorial-login .editorial-content{transform:translateY(-8px)}
-        }
+        .noah-login-v2,.noah-login-v2 *{box-sizing:border-box}
+        .noah-login-v2{min-height:100vh;width:100%;display:grid;grid-template-columns:minmax(0,1.12fr) minmax(390px,.88fr);background:#F1EDE4;color:#332735;font-family:Arial,Helvetica,sans-serif;position:relative;overflow:hidden;isolation:isolate}
+        .noah-login-v2:before{content:"";position:absolute;width:620px;height:620px;border:1px solid rgba(114,135,123,.24);border-radius:50%;left:-260px;bottom:-390px;box-shadow:0 0 0 34px rgba(114,135,123,.045),0 0 0 78px rgba(114,135,123,.035);pointer-events:none;z-index:-1}
+        .noah-login-v2:after{content:"";position:absolute;width:380px;height:380px;border-radius:50%;right:-190px;top:-210px;background:rgba(185,87,64,.08);pointer-events:none;z-index:-1}
+        .noah-login-v2 .nl-brand{min-height:100vh;padding:clamp(34px,6vw,86px);display:flex;flex-direction:column;justify-content:space-between;position:relative}
+        .noah-login-v2 .nl-kicker{display:flex;align-items:center;gap:12px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;font-weight:700;color:#72877B}
+        .noah-login-v2 .nl-kicker:before{content:"";width:28px;height:2px;background:#B95740}
+        .noah-login-v2 .nl-brand-main{max-width:690px;margin:50px 0 64px}
+        .noah-login-v2 .nl-logo{display:block;width:min(100%,390px);height:auto;object-fit:contain;object-position:left center;margin:0 0 46px -8px}
+        .noah-login-v2 .nl-headline{font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:clamp(42px,5.3vw,76px);line-height:.98;letter-spacing:-.045em;max-width:650px;margin:0;color:#332735}
+        .noah-login-v2 .nl-headline em{font-style:normal;color:#B95740}
+        .noah-login-v2 .nl-description{font-size:14px;line-height:1.8;letter-spacing:.015em;color:#716B68;max-width:390px;margin:25px 0 0}
+        .noah-login-v2 .nl-brand-foot{display:flex;align-items:center;gap:14px;color:#8A827A;font-size:9px;letter-spacing:.2em;text-transform:uppercase;font-weight:700}
+        .noah-login-v2 .nl-brand-foot:before{content:"";height:1px;width:34px;background:#D1B85E}
+        .noah-login-v2 .nl-access{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:48px clamp(26px,5vw,76px);position:relative}
+        .noah-login-v2 .nl-access:before{content:"";position:absolute;left:0;top:12%;bottom:12%;width:1px;background:linear-gradient(transparent,rgba(114,135,123,.32),transparent)}
+        .noah-login-v2 .nl-card{width:100%;max-width:430px;background:rgba(255,253,248,.78);border:1px solid rgba(51,39,53,.09);border-radius:5px;padding:clamp(30px,4vw,48px);box-shadow:0 24px 70px rgba(51,39,53,.075),0 3px 10px rgba(51,39,53,.035);backdrop-filter:blur(12px)}
+        .noah-login-v2 .nl-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:42px}
+        .noah-login-v2 .nl-card-label{font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#72877B}
+        .noah-login-v2 .nl-index{font-family:Georgia,serif;font-size:16px;color:#B9ADA0}
+        .noah-login-v2 .nl-title{font-family:Georgia,'Times New Roman',serif;font-size:37px;line-height:1.05;font-weight:400;letter-spacing:-.035em;margin:0;color:#332735}
+        .noah-login-v2 .nl-subtitle{font-size:13px;line-height:1.7;color:#817970;margin:12px 0 34px}
+        .noah-login-v2 .nl-field{margin-bottom:22px}
+        .noah-login-v2 .nl-field label{display:block;font-size:9px;font-weight:700;letter-spacing:.19em;text-transform:uppercase;color:#817970;margin:0 0 9px}
+        .noah-login-v2 .nl-input{width:100%;height:53px;padding:0 15px;border:1px solid #DED7CC;border-radius:3px;background:#FBF9F4;color:#332735;font:400 14px Arial,Helvetica,sans-serif;outline:none;transition:border-color .2s,box-shadow .2s,background .2s}
+        .noah-login-v2 .nl-input::placeholder{color:#B5ADA2}
+        .noah-login-v2 .nl-input:focus{border-color:#72877B;background:#fff;box-shadow:0 0 0 3px rgba(114,135,123,.12)}
+        .noah-login-v2 .nl-submit{width:100%;height:56px;margin-top:8px;border:0;border-radius:3px;background:#B95740;color:#FFF9F0;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:background .2s,transform .2s,box-shadow .2s;box-shadow:0 5px 0 #91432F}
+        .noah-login-v2 .nl-submit:hover:not(:disabled){background:#A94D39;transform:translateY(-1px);box-shadow:0 6px 0 #91432F}
+        .noah-login-v2 .nl-submit:active:not(:disabled){transform:translateY(2px);box-shadow:0 2px 0 #91432F}
+        .noah-login-v2 .nl-submit:disabled{opacity:.65;cursor:not-allowed}
+        .noah-login-v2 .nl-error{font-size:12px;line-height:1.5;color:#963F32;background:#F7E9E3;border-left:3px solid #B95740;padding:12px 14px;margin:0 0 18px}
+        .noah-login-v2 .nl-note{display:flex;align-items:center;gap:12px;margin-top:30px;color:#938A80;font-size:9px;letter-spacing:.12em;text-transform:uppercase;line-height:1.5}
+        .noah-login-v2 .nl-note:before,.noah-login-v2 .nl-note:after{content:"";height:1px;background:#E3DDD3;flex:1}
+        @media(max-width:850px){.noah-login-v2{grid-template-columns:1fr}.noah-login-v2 .nl-brand{min-height:auto;padding:34px 28px 20px}.noah-login-v2 .nl-brand-main{margin:34px 0 18px}.noah-login-v2 .nl-logo{width:min(76%,300px);margin:0 0 26px}.noah-login-v2 .nl-headline{font-size:clamp(38px,8vw,58px);max-width:560px}.noah-login-v2 .nl-description{margin-top:14px}.noah-login-v2 .nl-brand-foot{display:none}.noah-login-v2 .nl-access{min-height:auto;padding:20px 24px 48px}.noah-login-v2 .nl-access:before{display:none}.noah-login-v2 .nl-card{max-width:520px}}
+        @media(max-width:480px){.noah-login-v2 .nl-brand{padding:26px 22px 12px}.noah-login-v2 .nl-brand-main{margin:28px 0 10px}.noah-login-v2 .nl-logo{width:230px;margin:0 0 20px}.noah-login-v2 .nl-headline{font-size:42px}.noah-login-v2 .nl-description{font-size:12px;max-width:330px}.noah-login-v2 .nl-access{padding:18px 18px 34px}.noah-login-v2 .nl-card{padding:28px 23px}.noah-login-v2 .nl-card-top{margin-bottom:32px}.noah-login-v2 .nl-title{font-size:33px}}
+        @media(prefers-reduced-motion:reduce){.noah-login-v2 *{transition:none!important}}
       `}</style>
 
-      <div className="editorial-shape" style={{
-        top:-100,right:-92,width:290,height:390,background:"#B95740",
-        borderRadius:"0 0 0 72%",transform:"rotate(8deg)",opacity:.96,
-      }}/>
-      <div className="editorial-shape" style={{
-        left:-130,bottom:-180,width:330,height:330,border:"1px solid #72877B",
-        borderRadius:"50%",boxShadow:"0 0 0 22px rgba(114,135,123,.08),0 0 0 48px rgba(114,135,123,.05)",
-      }}/>
-      <div className="editorial-shape" style={{
-        top:"17%",left:"8%",width:12,height:12,background:"#D1B85E",borderRadius:"50%",
-      }}/>
-
-      <div className="editorial-content" style={{width:"100%",maxWidth:420,position:"relative",zIndex:1}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:28}}>
-          <div style={{fontSize:9,fontWeight:700,letterSpacing:".22em",textTransform:"uppercase",color:"#72877B"}}>
-            NOAH / ESTUDIO DE RENDIMIENTO
-          </div>
-          <div style={{width:30,height:1,background:"#332735",opacity:.45}}/>
-          <div style={{fontSize:9,letterSpacing:".12em",color:"#332735",opacity:.65}}>01 — 01</div>
+      <section className="nl-brand" aria-label="NOAH">
+        <div className="nl-kicker">NOAH · Never Over, Always Higher</div>
+        <div className="nl-brand-main">
+          <img className="nl-logo" src="/noah-login-logo.png" alt="NOAH — Never Over, Always Higher"/>
+          <h1 className="nl-headline">La fuerza se construye. <em>La constancia</em> la transforma.</h1>
+          <p className="nl-description">Un espacio para entrenar con intención, medir tu progreso y superar tus propios límites.</p>
         </div>
+        <div className="nl-brand-foot">Ciencia · Movimiento · Adaptación</div>
+      </section>
 
-        <div style={{textAlign:"center",margin:"0 auto 30px",position:"relative"}}>
-          <img className="editorial-wordmark" src="/noah-login-logo.png" alt="NOAH — Never Over, Always Higher"
-            style={{width:"min(100%,300px)",height:"auto",display:"block",margin:"0 auto"}}/>
-        </div>
-
-        <div className="editorial-panel" style={{
-          background:"#332735",color:"#E8E0D1",padding:"34px 34px 30px",
-          borderRadius:2,position:"relative",boxShadow:"12px 12px 0 rgba(51,39,53,.12)",
-        }}>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:26}}>
-            <div style={{width:28,height:2,background:"#D1B85E"}}/>
-            <div style={{fontSize:10,fontWeight:700,letterSpacing:".2em",textTransform:"uppercase",color:"#D1B85E"}}>
-              Acceso de atletas
-            </div>
+      <section className="nl-access" aria-label="Acceso a la plataforma">
+        <div className="nl-card">
+          <div className="nl-card-top">
+            <div className="nl-card-label">Acceso de atletas</div>
+            <div className="nl-index">01 / 01</div>
           </div>
+          <h2 className="nl-title">Bienvenido<br/>a tu entrenamiento.</h2>
+          <p className="nl-subtitle">Ingresá con los datos de tu cuenta para continuar.</p>
 
-          <div style={{marginBottom:21}}>
-            <label htmlFor="noah-login-email" style={{display:"block",fontSize:9,fontWeight:700,color:"#B8B0A5",marginBottom:8,letterSpacing:".18em",textTransform:"uppercase"}}>
-              Email
-            </label>
-            <input id="noah-login-email" className="editorial-input" type="email" value={email}
+          <div className="nl-field">
+            <label htmlFor="noah-login-email">Email</label>
+            <input id="noah-login-email" className="nl-input" type="email" value={email}
               onChange={e=>setEmail(e.target.value)} onKeyDown={handleKey}
               placeholder="tu@email.com" autoComplete="username"/>
           </div>
 
-          <div style={{marginBottom:24}}>
-            <label htmlFor="noah-login-password" style={{display:"block",fontSize:9,fontWeight:700,color:"#B8B0A5",marginBottom:8,letterSpacing:".18em",textTransform:"uppercase"}}>
-              Contraseña
-            </label>
-            <input id="noah-login-password" className="editorial-input" type="password" value={pass}
+          <div className="nl-field" style={{marginBottom:24}}>
+            <label htmlFor="noah-login-password">Contraseña</label>
+            <input id="noah-login-password" className="nl-input" type="password" value={pass}
               onChange={e=>setPass(e.target.value)} onKeyDown={handleKey}
               placeholder="••••••••" autoComplete="current-password"/>
           </div>
 
-          {error&&<div className="editorial-error" style={{fontSize:12,marginBottom:18,padding:"11px 13px",fontFamily:"'Manrope',sans-serif"}}>{error}</div>}
+          {error&&<div className="nl-error" role="alert">{error}</div>}
 
-          <button className="editorial-submit" onClick={doLogin} disabled={loading}>
-            {loading?"Ingresando…":"Ingresar"}
+          <button className="nl-submit" onClick={doLogin} disabled={loading}>
+            {loading?"Ingresando…":"Ingresar a NOAH"}
           </button>
 
-          <div style={{display:"flex",alignItems:"center",gap:12,marginTop:24}}>
-            <div style={{height:1,flex:1,background:"rgba(232,224,209,.2)"}}/>
-            <div style={{fontSize:9,letterSpacing:".14em",color:"#B8B0A5",textTransform:"uppercase",whiteSpace:"nowrap"}}>
-              Las cuentas las crea tu coach
-            </div>
-            <div style={{height:1,flex:1,background:"rgba(232,224,209,.2)"}}/>
-          </div>
+          <div className="nl-note">Las cuentas las crea tu coach</div>
         </div>
-
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:24,padding:"0 2px"}}>
-          <div style={{fontFamily:"'Instrument Serif',serif",fontSize:20,color:"#332735"}}>NOAH <span style={{fontFamily:"'Manrope',sans-serif",fontSize:9,letterSpacing:".16em",verticalAlign:"middle"}}>V2.0</span></div>
-          <div style={{fontSize:9,letterSpacing:".16em",textTransform:"uppercase",color:"#72877B",fontWeight:700}}>Ciencia · Movimiento · Adaptación</div>
-        </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
 // ─────────────────────────────────────────
