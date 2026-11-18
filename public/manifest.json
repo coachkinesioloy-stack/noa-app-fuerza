@@ -4,8 +4,8 @@
   "description": "Plataforma de entrenamiento de fuerza inteligente",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#332735",
-  "theme_color": "#332735",
+  "background_color": "#101522",
+  "theme_color": "#101522",
   "orientation": "portrait-primary",
   "icons": [
     {

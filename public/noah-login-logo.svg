@@ -1,44 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240" role="img" aria-labelledby="title desc">
-<title id="title">NOAH — identidad visual</title>
-<desc id="desc">Isotipo geométrico tridimensional en cian, turquesa, coral y azul profundo, acompañado por la palabra NOAH en tipografía geométrica de letras separadas.</desc>
-<defs>
-  <linearGradient id="crown" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#42F0E7"/><stop offset="1" stop-color="#00B9C8"/></linearGradient>
-  <linearGradient id="leftFace" x1="0" y1="0" x2="0.9" y2="1"><stop stop-color="#00D8D0"/><stop offset="1" stop-color="#009AAB"/></linearGradient>
-  <linearGradient id="rightFace" x1="0" y1="0" x2="0.85" y2="1"><stop offset="0" stop-color="#FF786B"/><stop offset="0.24" stop-color="#E96A67"/><stop offset="0.48" stop-color="#247F9B"/><stop offset="1" stop-color="#073D60"/></linearGradient>
-  <linearGradient id="sideLight" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5AF5E7"/><stop offset="1" stop-color="#00B9B5"/></linearGradient>
-  <linearGradient id="deep" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#123E59"/><stop offset="1" stop-color="#071F32"/></linearGradient>
-  <!-- Plano inferior derecho: coral integrado progresivamente al azul petróleo -->
-  <linearGradient id="lowerRightFace" gradientUnits="userSpaceOnUse" x1="190" y1="145" x2="120" y2="232">
-    <stop offset="0" stop-color="#F07870"/>
-    <stop offset="0.28" stop-color="#C96A6D"/>
-    <stop offset="0.62" stop-color="#286C80"/>
-    <stop offset="1" stop-color="#0B354B"/>
-  </linearGradient>
-</defs>
-<!-- Isotipo: misma construcción facetada, con contraste claro entre planos -->
-<g transform="translate(8 0) scale(.9)">
-  <polygon points="120,8 190,49 120,91 50,49" fill="url(#crown)"/>
-  <polygon points="50,49 120,91 120,135 50,94" fill="#087F91"/>
-  <polygon points="190,49 120,91 120,135 190,94" fill="#145B83"/>
-  <polygon points="50,49 50,145 83,164 83,111" fill="url(#sideLight)"/>
-  <polygon points="50,49 83,111 120,91" fill="#36E9DC"/>
-  <polygon points="190,49 190,145 157,164 157,111" fill="url(#rightFace)"/>
-  <!-- Plano coral: conecta el cian con los azules profundos sin alterar la estructura -->
-  <polygon points="190,94 190,145 157,164 157,111" fill="url(#rightFace)" opacity=".96"/>
-  <polygon points="190,49 157,111 120,91" fill="#F27A70"/>
-  <polygon points="50,145 120,186 120,232 50,191" fill="#00A9A8"/>
-  <polygon points="190,145 120,186 120,232 190,191" fill="url(#lowerRightFace)"/>
-  <polygon points="83,111 120,91 157,111 157,164 120,143 83,164" fill="#FFFFFF"/>
-  <polygon points="83,164 120,143 157,164 120,186" fill="#0A526B"/>
-  <polygon points="83,164 120,186 120,232 83,211" fill="#0A354B"/>
-  <polygon points="157,164 120,143 120,186 157,211" fill="#17465B"/>
-</g>
-<path d="M250 42V198" stroke="#123B50" stroke-width="2" opacity=".55"/>
-<!-- Wordmark drawn as vector paths: no dependency on installed fonts -->
-<g transform="translate(286 88) scale(1.12)" fill="#0B2D3B">
-  <!-- N --> <path d="M0 0H13L55 43V0H68V64H55L13 21V64H0Z"/>
-  <!-- O --> <path fill-rule="evenodd" d="M99 0H133C145 0 153 8 153 20V44C153 56 145 64 133 64H99C87 64 79 56 79 44V20C79 8 87 0 99 0ZM101 13C95 13 92 16 92 22V42C92 48 95 51 101 51H131C137 51 140 48 140 42V22C140 16 137 13 131 13Z"/>
-  <!-- A --> <path fill-rule="evenodd" d="M166 64L194 0H209L237 64H222L216 49H187L181 64ZM192 37H211L201.5 14Z"/>
-  <!-- H --> <path d="M250 0H264V25H300V0H314V64H300V38H264V64H250Z"/>
-</g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1476 592" role="img" aria-label="NOAH"><g transform="translate(-458,-114)"><g id="isotipo"><polygon points="460,223 553,169 650,222 552,275" fill="#7054C7" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="553,169 643,116 741,173 650,222" fill="#7054C7" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="460,223 552,275 552,395 460,344" fill="#7054C7" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="552,275 650,222 650,344 552,395" fill="#7054C7" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="460,351 552,402 552,522 460,472" fill="#7054C7" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="552,402 650,349 650,469 552,522" fill="#7054C7" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="460,480 552,530 552,648 460,597" fill="#7054C7" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="650,349 742,401 742,522 650,470" fill="#7054C7" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="742,401 839,349 936,400 839,453" fill="#7054C7" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="742,401 839,453 839,577 742,524" fill="#7054C7" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="839,453 936,400 936,522 839,577" fill="#7054C7" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="650,224 741,173 830,224 738,275" fill="#F3F4F6" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="650,224 738,275 738,395 650,344" fill="#F3F4F6" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="738,275 830,224 830,345 738,395" fill="#F3F4F6" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="552,529 650,475 650,597 552,648" fill="#F3F4F6" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="650,475 742,528 742,650 650,597" fill="#F3F4F6" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="742,528 839,580 936,527 839,474" fill="#F3F4F6" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="742,528 839,580 839,704 742,650" fill="#F3F4F6" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="839,580 936,527 936,650 839,704" fill="#F3F4F6" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="830,207 927,153 1032,207 935,261" fill="#399B7B" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="830,207 935,261 935,376 830,323" fill="#399B7B" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="935,261 1032,207 1032,324 935,376" fill="#399B7B" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="936,382 1032,331 1032,447 936,499" fill="#399B7B" stroke="#101522" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="936,507 1032,454 1032,574 936,626" fill="#399B7B" stroke="#101522" stroke-width="3" stroke-linejoin="round"/></g></g><g transform="translate(375.20,-415.90) scale(0.9)"><g id="logotipo"><g fill="#F3F4F6" fill-rule="evenodd">
+<path d="M312 866 V716 H354 L472 815 V716 H518 V866 H479 L358 765 V866 Z"/>
+<path d="M650 710 C727 710 771 743 771 791 C771 839 727 872 650 872 C573 872 529 839 529 791 C529 743 573 710 650 710 Z M650 750 C602 750 579 766 579 791 C579 816 602 832 650 832 C698 832 721 816 721 791 C721 766 698 750 650 750 Z"/>
+<path d="M762 866 L861 716 H905 L1004 866 H952 L883 759 L814 866 Z"/>
+<path d="M1022 716 H1069 V770 H1176 V716 H1223 V866 H1176 V813 H1069 V866 H1022 Z"/>
+</g></g></g></svg>
